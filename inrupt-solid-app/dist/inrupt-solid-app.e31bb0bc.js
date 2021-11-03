@@ -54075,6 +54075,7 @@ async function writeProfile() {
 
 async function readProfile() {
   const webID = document.getElementById("webID").value;
+  console.log(webID);
 
   if (webID === NOT_ENTERED_WEBID) {
     document.getElementById("labelFN").textContent = `Login first, or enter a WebID (any WebID!) to read from its profile`;
@@ -54089,6 +54090,7 @@ async function readProfile() {
   }
 
   const profileDocumentUrl = new URL(webID);
+  console.log(profileDocumentUrl);
   profileDocumentUrl.hash = ""; // Profile is public data; i.e., you do not need to be logged in to read the data.
   // For illustrative purposes, shows both an authenticated and non-authenticated reads.
 
@@ -54114,16 +54116,58 @@ async function readProfile() {
   const formattedName = (0, _solidClient.getStringNoLocale)(profile, _vocabCommonRdf.VCARD.fn); // Update the page with the retrieved values.
 
   document.getElementById("labelFN").textContent = `[${formattedName}]`;
-} // async function readDummyFile() {
-//     const webID = document.getElementById("webID").value;
-//     if (webID === NOT_ENTERED_WEBID) {
-//         document.getElementById(
-//             "labelFN"
-//         ).textContent = `Login first, or enter a WebID (any WebID!) to read from its profile`;
-//         return false;
-//     }
-// }
+}
 
+async function readDummyFile() {
+  const webID = document.getElementById("webID").value;
+  console.log(webID);
+
+  if (webID === NOT_ENTERED_WEBID) {
+    document.getElementById("labelFN").textContent = `Login first, or enter a WebID (any WebID!) to read from its profile`;
+    return false;
+  }
+
+  const profileDocumentUrl = new URL(webID);
+  console.log(profileDocumentUrl);
+  profileDocumentUrl.hash = ""; // Profile is public data; i.e., you do not need to be logged in to read the data.
+  // For illustrative purposes, shows both an authenticated and non-authenticated reads.
+
+  let myDataset;
+
+  try {
+    if (session.info.isLoggedIn) {
+      myDataset = await (0, _solidClient.getSolidDataset)(profileDocumentUrl.href, {
+        fetch: session.fetch
+      }); //myDataset = await getSolidDataset()
+    } else {
+      myDataset = await (0, _solidClient.getSolidDataset)(profileDocumentUrl.href);
+    }
+  } catch (error) {
+    document.getElementById("labelFN").textContent = `Entered value [${webID}] does not appear to be a WebID. Error: [${error}]`;
+    return false;
+  }
+
+  console.log(myDataset);
+  const testDataUrl = new URL('https://storeydy.solidcommunity.net/public/testData.ttl');
+  console.log(testDataUrl);
+  const testDataFile = await (0, _solidClient.getFile)('https://storeydy.solidcommunity.net/public/testData.ttl', {
+    fetch: session.fetch
+  });
+  console.log(testDataFile);
+  console.log((0, _solidClient.getContentType)(testDataFile)); //npm install rdflib.js
+  //const $rdf = require('rdflib');
+  //const store = $rdf.graph();
+  //var file = $rdf.sym('https://storeydy.solidcommunity.net/public/testData.ttl');
+  //var obj = store.any(file, rel('enemyOf'));
+
+  var fileReader = new FileReader();
+
+  fileReader.onload = function () {
+    console.log(fileReader.result);
+  };
+
+  fileReader.readAsText(testDataFile);
+}
 
 buttonLogin.onclick = function () {
   login();
@@ -54136,10 +54180,11 @@ writeForm.addEventListener("submit", event => {
 readForm.addEventListener("submit", event => {
   event.preventDefault();
   readProfile();
-}); // readDummyForm.addEventListener("submit", (event) => {
-//     event.preventDefault();
-//     readDummyFile();
-// })
+});
+readDummyForm.addEventListener("submit", event => {
+  event.preventDefault();
+  readDummyFile();
+});
 },{"@inrupt/solid-client":"node_modules/@inrupt/solid-client/dist/index.es.js","@inrupt/solid-client-authn-browser":"node_modules/@inrupt/solid-client-authn-browser/dist/index.js","@inrupt/vocab-common-rdf":"node_modules/@inrupt/vocab-common-rdf/dist/index.es.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
@@ -54168,7 +54213,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "61510" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "57561" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
