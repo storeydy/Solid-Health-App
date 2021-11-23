@@ -13,6 +13,7 @@ import {
 } from "@inrupt/solid-client";
 import { Session } from "@inrupt/solid-client-authn-browser";
 import { VCARD } from "@inrupt/vocab-common-rdf";
+//import fetch from 'unfetch';
 
 // If your Pod is *not* on `solidcommunity.net`, change this to your identity provider.
 const SOLID_IDENTITY_PROVIDER = "https://solidcommunity.net";
@@ -198,7 +199,8 @@ async function readDummyFile() {
     }
     console.log(myDataset);
 
-    const testDataUrl = new URL('https://storeydy.solidcommunity.net/public/testData.ttl');
+    //const testDataUrl = new URL('https://storeydy.solidcommunity.net/public/testData.ttl');
+    const testDataUrl = new URL('https://storeydy.solidcommunity.net/public/testData.ttl')
     console.log(testDataUrl);
     
     const testDataFile = await getFile('https://storeydy.solidcommunity.net/public/testData.ttl', { fetch: session.fetch });
@@ -215,8 +217,68 @@ async function readDummyFile() {
         console.log(fileReader.result);
     }
     fileReader.readAsText(testDataFile);
+}
+
+
+async function readPrivateFile() {
+    const webID = document.getElementById("webID").value;
+    console.log(webID)
+
+    if (webID === NOT_ENTERED_WEBID) {
+        document.getElementById(
+            "labelFN"
+        ).textContent = `Login first, or enter a WebID (any WebID!) to read from its profile`;
+        return false;
+    }
+
+    const profileDocumentUrl = new URL(webID);
+    console.log(profileDocumentUrl);
+    profileDocumentUrl.hash = "";
+
+    // Profile is public data; i.e., you do not need to be logged in to read the data.
+    // For illustrative purposes, shows both an authenticated and non-authenticated reads.
+
+    let myDataset;
+    try {
+        if (session.info.isLoggedIn) {
+            myDataset = await getSolidDataset(profileDocumentUrl.href, { fetch: session.fetch });
+            //myDataset = await getSolidDataset()
+        } else {
+            myDataset = await getSolidDataset(profileDocumentUrl.href);
+        }
+    } catch (error) {
+        document.getElementById(
+            "labelFN"
+        ).textContent = `Entered value [${webID}] does not appear to be a WebID. Error: [${error}]`;
+        return false;
+    }
+    console.log(myDataset);
+
+    //const testDataUrl = new URL('https://storeydy.solidcommunity.net/public/testData.ttl');
+    const testDataUrl = new URL('https://testuser1.solidcommunity.net/private/testUser1HealthRecords.txt')
+    console.log(testDataUrl);
+    
+
+    //const fetch = window.fetch.bind(window);
+
+    const testDataFile = await getFile('https://testuser1.solidcommunity.net/private/testUser1HealthRecords.txt', { fetch: session.fetch });
+    console.log(testDataFile)
+    console.log(getContentType(testDataFile));
+
+    //npm install rdflib.js
+    //const $rdf = require('rdflib');
+    //const store = $rdf.graph();
+    //var file = $rdf.sym('https://storeydy.solidcommunity.net/public/testData.ttl');
+    //var obj = store.any(file, rel('enemyOf'));
+    var fileReader = new FileReader();
+    fileReader.onload = function(){
+        console.log(fileReader.result);
+    }
+    fileReader.readAsText(testDataFile);
 
 }
+
+
 
 buttonLogin.onclick = function () {
     login();
@@ -235,4 +297,9 @@ readForm.addEventListener("submit", (event) => {
 readDummyForm.addEventListener("submit", (event) => {
     event.preventDefault();
     readDummyFile();
+});
+
+readPrivateForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    readPrivateFile();
 });
