@@ -9,10 +9,19 @@ import {
     getContentType,
     getSourceUrl,
     getSourceIri,
-    saveSolidDatasetAt
+    getSolidDatasetWithAcl,
+    getPublicAccess,
+    saveSolidDatasetAt,
+    createSolidDataset,
+    buildThing,
+    createThing,
+    createAcl,
+    setAgentDefaultAccess,
+    setAgentResourceAccess,
+    saveAclFor
 } from "@inrupt/solid-client";
 import { Session } from "@inrupt/solid-client-authn-browser";
-import { VCARD } from "@inrupt/vocab-common-rdf";
+import { SCHEMA_INRUPT, VCARD, RDF } from "@inrupt/vocab-common-rdf";
 //import fetch from 'unfetch';
 
 // If your Pod is *not* on `solidcommunity.net`, change this to your identity provider.
@@ -62,7 +71,7 @@ handleRedirectAfterLogin();
 
 // 2. Write to profile
 async function writeProfile() {
-    const name = document.getElementById("input_name").value;
+    // const name = document.getElementById("input_name").value;
 
     if (!session.info.isLoggedIn) {
         // You must be authenticated to write.
@@ -81,23 +90,61 @@ async function writeProfile() {
 
     // To write to a profile, you must be authenticated. That is the role of the fetch
     // parameter in the following call.
-    let myProfileDataset = await getSolidDataset(profileDocumentUrl.href, {
+
+    let publicInformationDataset = createSolidDataset();
+    const publicInfoDocument = buildThing(createThing({name: "some_public_file.txt"}))
+    .addStringNoLocale(SCHEMA_INRUPT.name, "Some text that should be publicly available")
+    .addUrl(RDF.type, "https://testuser1.solidcommunity.net/somePublicFile.txt")
+    .build();
+
+    publicInformationDataset = setThing(publicInformationDataset, publicInfoDocument);  //Insert new doc into new dataset
+    //publicInformationDataset = createAcl("https://testuser1.solidcommunity.net/publicInfoDataset");
+    
+
+    const savedPublicInfoDataset = await saveSolidDatasetAt(
+        "https://testuser1.solidcommunity.net/publicInfoDataset",
+        publicInformationDataset,
+        { fetch: session.fetch}
+    )
+
+    const myDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/publicInfoDataset", { fetch: session.fetch })
+    const resourceAcl = createAcl(myDatasetWithAcl)
+    let updatedAcl = setAgentResourceAccess(
+        resourceAcl,
+        "https://testuser1.solidcommunity.net/card#me",
+        { read: true, append: true, write: true, control: true }
+      )
+
+      updatedAcl = setAgentDefaultAccess(
+        updatedAcl,
+        "https://testuser1.solidcommunity.net/card#me",
+        { read: true, append: true, write: true, control: true }
+      )
+
+    await saveAclFor(myDatasetWithAcl, updatedAcl, { fetch: session.fetch })
+    const myUpdateDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/publicInfoDataset", { fetch: session.fetch })
+    const agentAccess = getAgentAccess(myUpdateDatasetWithAcl, "https://testuser1.solidcommunity.net/card#me")
+
+
+    let myProfileDataset = await getSolidDataset("https://testuser1.solidcommunity.net/publicInfoDataset", {
         fetch: session.fetch
     });
 
+    //myProfileDataset.createAcl("https://testuser1.solidcommunity.net/publicInfoDataset/aclPolicy")
+
     // The profile data is a "Thing" in the profile dataset.
-    let profile = getThing(myProfileDataset, webID);
+    //let profile = getThing(myProfileDataset, webID);
 
     // Using the name provided in text field, update the name in your profile.
     // VCARD.fn object is a convenience object that includes the identifier string "http://www.w3.org/2006/vcard/ns#fn".
     // As an alternative, you can pass in the "http://www.w3.org/2006/vcard/ns#fn" string instead of VCARD.fn.
-    profile = setStringNoLocale(profile, VCARD.fn, name);
+    //profile = setStringNoLocale(profile, VCARD.fn, name);
 
     // Write back the profile to the dataset.
-    myProfileDataset = setThing(myProfileDataset, profile);
+    //myProfileDataset = setThing(myProfileDataset, profile);
 
     // Write back the dataset to your Pod.
-    await saveSolidDatasetAt(profileDocumentUrl.href, myProfileDataset, {
+    await saveSolidDatasetAt("https://testuser1.solidcommunity.net/publicInfoDataset", myProfileDataset, {
         fetch: session.fetch
     });
 
@@ -155,11 +202,15 @@ async function readProfile() {
 
     const profile = getThing(myDataset, webID);
 
+    const myDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/publicInfoDataset", {fetch: session.fetch});
+    const publicAccess = JSON.stringify(getPublicAccess(myDatasetWithAcl));
+    
+
     // Get the formatted name (fn) using the property identifier "http://www.w3.org/2006/vcard/ns#fn".
     // VCARD.fn object is a convenience object that includes the identifier string "http://www.w3.org/2006/vcard/ns#fn".
     // As an alternative, you can pass in the "http://www.w3.org/2006/vcard/ns#fn" string instead of VCARD.fn.
 
-    const formattedName = getStringNoLocale(profile, VCARD.fn);
+    const formattedName = getStringNoLocale(profile, VCARD.fn) + " " + publicAccess;
 
     // Update the page with the retrieved values.
     document.getElementById("labelFN").textContent = `[${formattedName}]`;
