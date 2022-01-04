@@ -9,17 +9,26 @@ import {
     getContentType,
     getSourceUrl,
     getSourceIri,
-    getSolidDatasetWithAcl,
     getPublicAccess,
+    getAgentAccess,
     saveSolidDatasetAt,
     createSolidDataset,
     buildThing,
     createThing,
+    getSolidDatasetWithAcl,
+    hasResourceAcl,
+    hasFallbackAcl,
+    hasAccessibleAcl,
     createAcl,
-    setAgentDefaultAccess,
+    createAclFromFallbackAcl,
+    getResourceAcl,
     setAgentResourceAccess,
-    saveAclFor
+    saveAclFor,
 } from "@inrupt/solid-client";
+// import {
+//     setPublicAccess,
+// } from "@inrupt/solid-client/access/universal";
+
 import { Session } from "@inrupt/solid-client-authn-browser";
 import { SCHEMA_INRUPT, VCARD, RDF } from "@inrupt/vocab-common-rdf";
 //import fetch from 'unfetch';
@@ -69,7 +78,7 @@ async function handleRedirectAfterLogin() {
 // If the function is called when not part of the login redirect, the function is a no-op.
 handleRedirectAfterLogin();
 
-// 2. Write to profile
+// 2. Create new dataset with a file in it
 async function writeProfile() {
     // const name = document.getElementById("input_name").value;
 
@@ -91,74 +100,22 @@ async function writeProfile() {
     // To write to a profile, you must be authenticated. That is the role of the fetch
     // parameter in the following call.
 
-    let publicInformationDataset = createSolidDataset();
-    const publicInfoDocument = buildThing(createThing({name: "some_public_file.txt"}))
-    .addStringNoLocale(SCHEMA_INRUPT.name, "Some text that should be publicly available")
-    .addUrl(RDF.type, "https://testuser1.solidcommunity.net/somePublicFile.txt")
-    .build();
+    let healthRecordDataset = createSolidDataset();
+    const privateInfoDocument = buildThing(createThing({ name: "some_private_file.txt" }))
+        .addStringNoLocale(SCHEMA_INRUPT.name, "Some text that should be privately available")
+        .addUrl(RDF.type, "https://testuser1.solidcommunity.net/private/somePrivateFile.txt")
+        .build();
 
-    publicInformationDataset = setThing(publicInformationDataset, publicInfoDocument);  //Insert new doc into new dataset
-    //publicInformationDataset = createAcl("https://testuser1.solidcommunity.net/publicInfoDataset");
-    
+    healthRecordDataset = setThing(healthRecordDataset, privateInfoDocument);  //Insert new doc into new dataset    
 
-    const savedPublicInfoDataset = await saveSolidDatasetAt(
-        "https://testuser1.solidcommunity.net/publicInfoDataset",
-        publicInformationDataset,
-        { fetch: session.fetch}
+    const savedPrivateInfoDataset = await saveSolidDatasetAt(
+        "https://testuser1.solidcommunity.net/privateInfoDataset",
+        healthRecordDataset,
+        { fetch: session.fetch }
     )
-
-    const myDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/publicInfoDataset", { fetch: session.fetch })
-    const resourceAcl = createAcl(myDatasetWithAcl)
-    let updatedAcl = setAgentResourceAccess(
-        resourceAcl,
-        "https://testuser1.solidcommunity.net/card#me",
-        { read: true, append: true, write: true, control: true }
-      )
-
-      updatedAcl = setAgentDefaultAccess(
-        updatedAcl,
-        "https://testuser1.solidcommunity.net/card#me",
-        { read: true, append: true, write: true, control: true }
-      )
-
-    await saveAclFor(myDatasetWithAcl, updatedAcl, { fetch: session.fetch })
-    const myUpdateDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/publicInfoDataset", { fetch: session.fetch })
-    const agentAccess = getAgentAccess(myUpdateDatasetWithAcl, "https://testuser1.solidcommunity.net/card#me")
-
-
-    let myProfileDataset = await getSolidDataset("https://testuser1.solidcommunity.net/publicInfoDataset", {
-        fetch: session.fetch
-    });
-
-    //myProfileDataset.createAcl("https://testuser1.solidcommunity.net/publicInfoDataset/aclPolicy")
-
-    // The profile data is a "Thing" in the profile dataset.
-    //let profile = getThing(myProfileDataset, webID);
-
-    // Using the name provided in text field, update the name in your profile.
-    // VCARD.fn object is a convenience object that includes the identifier string "http://www.w3.org/2006/vcard/ns#fn".
-    // As an alternative, you can pass in the "http://www.w3.org/2006/vcard/ns#fn" string instead of VCARD.fn.
-    //profile = setStringNoLocale(profile, VCARD.fn, name);
-
-    // Write back the profile to the dataset.
-    //myProfileDataset = setThing(myProfileDataset, profile);
-
-    // Write back the dataset to your Pod.
-    await saveSolidDatasetAt("https://testuser1.solidcommunity.net/publicInfoDataset", myProfileDataset, {
-        fetch: session.fetch
-    });
-
-    // Update the page with the retrieved values.
-    document.getElementById(
-        "labelWriteStatus"
-    ).textContent = `Wrote [${name}] as name successfully!`;
-    document.getElementById("labelWriteStatus").setAttribute("role", "alert");
-    document.getElementById(
-        "labelFN"
-    ).textContent = `...click the 'Read Profile' button to to see what the name might be now...?!`;
 }
 
-// 3. Read profile
+// 3. Create ACL for created Dataset
 async function readProfile() {
     const webID = document.getElementById("webID").value;
     console.log(webID);
@@ -179,38 +136,89 @@ async function readProfile() {
         return false;
     }
 
-    const profileDocumentUrl = new URL(webID);
-    console.log(profileDocumentUrl);
-    profileDocumentUrl.hash = "";
+    const myDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/privateInfoDataset", {fetch: session.fetch});
 
-    // Profile is public data; i.e., you do not need to be logged in to read the data.
-    // For illustrative purposes, shows both an authenticated and non-authenticated reads.
-
-    let myDataset;
-    try {
-        if (session.info.isLoggedIn) {
-            myDataset = await getSolidDataset(profileDocumentUrl.href, { fetch: session.fetch });
-        } else {
-            myDataset = await getSolidDataset(profileDocumentUrl.href);
+    let resourceAcl;
+    if (!hasResourceAcl(myDatasetWithAcl, {fetch: session.fetch})) {
+        if (!hasAccessibleAcl(myDatasetWithAcl, {fetch: session.fetch} )) {
+            throw new Error(
+                "The current user does not have permission to change access rights to this Resource."
+            );
         }
-    } catch (error) {
+        if (!hasFallbackAcl(myDatasetWithAcl, {fetch: session.fetch} )) {
+            throw new Error(
+                "The current user does not have permission to see who currently has access to this Resource."
+            );
+            // Alternatively, initialise a new empty ACL as follows,
+            // but be aware that if you do not give someone Control access,
+            // **nobody will ever be able to change Access permissions in the future**:
+            // resourceAcl = createAcl(myDatasetWithAcl);
+        }
+        resourceAcl = createAclFromFallbackAcl(myDatasetWithAcl, {fetch: session.fetch});
+    } else {
+        resourceAcl = getResourceAcl(myDatasetWithAcl, {fetch: session.fetch});
+    }
+
+    // Give someone Control access to the given Resource:
+    const updatedAcl = setAgentResourceAccess(
+        resourceAcl,
+        "https://testuser1.solidcommunity.net/profile/card#me",
+        { read: false, append: false, write: false, control: true },
+        { fetch: session.fetch}
+    );
+
+    // Now save the ACL:
+    await saveAclFor(myDatasetWithAcl, updatedAcl, {fetch: session.fetch});
+
+    const formattedName = getStringNoLocale(profile, VCARD.fn) + " " + publicAccess;
+
+    // Update the page with the retrieved values.
+    document.getElementById("labelFN").textContent = `[${formattedName}]`;
+}
+
+// 3. Read agent access
+async function readAgentAccess() {
+    const webID = document.getElementById("webID").value;
+    console.log(webID);
+
+    if (webID === NOT_ENTERED_WEBID) {
         document.getElementById(
             "labelFN"
-        ).textContent = `Entered value [${webID}] does not appear to be a WebID. Error: [${error}]`;
+        ).textContent = `Login first, or enter a WebID (any WebID!) to read from its profile`;
         return false;
     }
 
-    const profile = getThing(myDataset, webID);
+    try {
+        new URL(webID);
+    } catch (_) {
+        document.getElementById(
+            "labelFN"
+        ).textContent = `Provided WebID [${webID}] is not a valid URL - please try again`;
+        return false;
+    }
 
-    const myDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/publicInfoDataset", {fetch: session.fetch});
-    const publicAccess = JSON.stringify(getPublicAccess(myDatasetWithAcl));
-    
 
-    // Get the formatted name (fn) using the property identifier "http://www.w3.org/2006/vcard/ns#fn".
-    // VCARD.fn object is a convenience object that includes the identifier string "http://www.w3.org/2006/vcard/ns#fn".
-    // As an alternative, you can pass in the "http://www.w3.org/2006/vcard/ns#fn" string instead of VCARD.fn.
+    getAgentAccess(
+        "https://testuser1.solidcommunity.net/privateInfoDataset",       // resource  
+        "https://testuser1.solidcommunity.net/profile/card#me",  // agent
+        { fetch: session.fetch }                      // fetch function from authenticated session
+      ).then(access => {
+        logAccessInfo("https://testuser1.solidcommunity.net/profile/card#me", access, "https://testuser1.solidcommunity.net/private/somePrivateFile.txt");
+      });
 
-    const formattedName = getStringNoLocale(profile, VCARD.fn) + " " + publicAccess;
+      function logAccessInfo(agent, access, resource){
+        if (access === null) {
+          console.log("Could not load access details for this Resource.");
+        } else {
+          console.log(`${agent}'s Access:: `, JSON.stringify(access));
+          console.log("...", agent, (access.read ? 'CAN' : 'CANNOT'), "read the Resource", resource);
+          console.log("...", agent, (access.append ? 'CAN' : 'CANNOT'), "add data to the Resource", resource);
+          console.log("...", agent, (access.write ? 'CAN' : 'CANNOT'), "change data in the Resource", resource);
+          console.log("...", agent, (access.controlRead ? 'CAN' : 'CANNOT'), "see access to the Resource", resource);
+          console.log("...", agent, (access.controlWrite ? 'CAN' : 'CANNOT'), "change access to the Resource", resource);
+        }
+      }
+
 
     // Update the page with the retrieved values.
     document.getElementById("labelFN").textContent = `[${formattedName}]`;
@@ -253,7 +261,7 @@ async function readDummyFile() {
     //const testDataUrl = new URL('https://storeydy.solidcommunity.net/public/testData.ttl');
     const testDataUrl = new URL('https://storeydy.solidcommunity.net/public/testData.ttl')
     console.log(testDataUrl);
-    
+
     const testDataFile = await getFile('https://storeydy.solidcommunity.net/public/testData.ttl', { fetch: session.fetch });
     console.log(testDataFile)
     console.log(getContentType(testDataFile));
@@ -264,7 +272,7 @@ async function readDummyFile() {
     //var file = $rdf.sym('https://storeydy.solidcommunity.net/public/testData.ttl');
     //var obj = store.any(file, rel('enemyOf'));
     var fileReader = new FileReader();
-    fileReader.onload = function(){
+    fileReader.onload = function () {
         console.log(fileReader.result);
     }
     fileReader.readAsText(testDataFile);
@@ -308,7 +316,7 @@ async function readPrivateFile() {
     //const testDataUrl = new URL('https://storeydy.solidcommunity.net/public/testData.ttl');
     const testDataUrl = new URL('https://testuser1.solidcommunity.net/private/testUser1HealthRecords.txt')
     console.log(testDataUrl);
-    
+
 
     //const fetch = window.fetch.bind(window);
 
@@ -322,7 +330,7 @@ async function readPrivateFile() {
     //var file = $rdf.sym('https://storeydy.solidcommunity.net/public/testData.ttl');
     //var obj = store.any(file, rel('enemyOf'));
     var fileReader = new FileReader();
-    fileReader.onload = function(){
+    fileReader.onload = function () {
         console.log(fileReader.result);
     }
     fileReader.readAsText(testDataFile);
@@ -343,6 +351,11 @@ writeForm.addEventListener("submit", (event) => {
 readForm.addEventListener("submit", (event) => {
     event.preventDefault();
     readProfile();
+});
+
+readAgentAccessForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    readAgentAccess();
 });
 
 readDummyForm.addEventListener("submit", (event) => {

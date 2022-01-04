@@ -16162,13 +16162,14 @@ exports.getGroupResourceAccess = getGroupResourceAccess;
 exports.getGroupResourceAccessAll = getGroupResourceAccessAll;
 exports.getInteger = getInteger;
 exports.getIntegerAll = getIntegerAll;
-exports.getIriAll = exports.getIri = void 0;
+exports.getJsonLdParser = exports.getIriAll = exports.getIri = void 0;
 exports.getLinkedResourceUrlAll = getLinkedResourceUrlAll;
 exports.getLiteral = getLiteral;
 exports.getLiteralAll = getLiteralAll;
 exports.getNamedNode = getNamedNode;
 exports.getNamedNodeAll = getNamedNodeAll;
 exports.getPodOwner = getPodOwner;
+exports.getProfileAll = getProfileAll;
 exports.getProfileJwksIri = getProfileJwksIri;
 exports.getPropertyAll = getPropertyAll;
 exports.getPublicAccess = getPublicAccess$3;
@@ -16194,6 +16195,7 @@ exports.getThing = getThing;
 exports.getThingAll = getThingAll;
 exports.getTime = getTime;
 exports.getTimeAll = getTimeAll;
+exports.getTurtleParser = void 0;
 exports.getUrl = getUrl;
 exports.getUrlAll = getUrlAll;
 exports.getWellKnownSolid = getWellKnownSolid;
@@ -16618,7 +16620,9 @@ const ldp = {
 /** @hidden */
 
 const foaf = {
-  Agent: "http://xmlns.com/foaf/0.1/Agent"
+  Agent: "http://xmlns.com/foaf/0.1/Agent",
+  primaryTopic: "http://xmlns.com/foaf/0.1/primaryTopic",
+  isPrimaryTopicOf: "http://xmlns.com/foaf/0.1/isPrimaryTopicOf"
 };
 /** @hidden */
 
@@ -16634,7 +16638,10 @@ const acp = {
   Rule: "http://www.w3.org/ns/solid/acp#Rule",
   Matcher: "http://www.w3.org/ns/solid/acp#Matcher",
   accessControl: "http://www.w3.org/ns/solid/acp#accessControl",
+  memberAccessControl: "http://www.w3.org/ns/solid/acp#memberAccessControl",
   apply: "http://www.w3.org/ns/solid/acp#apply",
+
+  /** @deprecated Removed from the ACP proposal, to be replaced by memberAccessControls. */
   applyMembers: "http://www.w3.org/ns/solid/acp#applyMembers",
   allow: "http://www.w3.org/ns/solid/acp#allow",
   deny: "http://www.w3.org/ns/solid/acp#deny",
@@ -16642,6 +16649,8 @@ const acp = {
   anyOf: "http://www.w3.org/ns/solid/acp#anyOf",
   noneOf: "http://www.w3.org/ns/solid/acp#noneOf",
   access: "http://www.w3.org/ns/solid/acp#access",
+
+  /** @deprecated Removed from the ACP proposal, to be replaced by memberAccessControls. */
   accessMembers: "http://www.w3.org/ns/solid/acp#accessMembers",
   agent: "http://www.w3.org/ns/solid/acp#agent",
   group: "http://www.w3.org/ns/solid/acp#group",
@@ -17309,7 +17318,6 @@ function getBlankNodeId(blankNode) {
 
 /**
  * IRIs of the XML Schema data types we support
- * @internal
  */
 
 
@@ -18143,6 +18151,16 @@ function isBlankNode(term) {
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/**
+ * ```{note} This function is still experimental and subject to change, even
+ * in a non-major release.
+ * ```
+ * This returns a parser that transforms a JSON-LD string into a set of RDFJS quads.
+ *
+ * @returns A Parser object.
+ * @since 1.15.0
+ */
+
 
 const getJsonLdParser = () => {
   const onQuadCallbacks = [];
@@ -18182,6 +18200,8 @@ const getJsonLdParser = () => {
  * Also, no specific type for these 'quads' is exposed by the library
  */
 
+
+exports.getJsonLdParser = getJsonLdParser;
 
 function fixQuads(plainQuads) {
   const fixedQuads = plainQuads.map(plainQuad => DataFactory.quad(term(plainQuad.subject), term(plainQuad.predicate), term(plainQuad.object), term(plainQuad.graph)));
@@ -18228,6 +18248,16 @@ function term(term) {
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/**
+ * ```{note} This function is still experimental and subject to change, even
+ * in a non-major release.
+ * ```
+ * This returns a parser that transforms a JSON-LD string into a set of RDFJS quads.
+ *
+ * @returns A Parser object.
+ * @since 1.15.0
+ */
+
 
 const getTurtleParser = () => {
   const onQuadCallbacks = [];
@@ -18257,6 +18287,8 @@ const getTurtleParser = () => {
     }
   };
 };
+
+exports.getTurtleParser = getTurtleParser;
 
 async function getParser(baseIri) {
   const n3 = await loadN3();
@@ -19770,7 +19802,8 @@ async function deleteSolidDataset(solidDataset, options = internal_defaultFetchO
   }
 }
 /**
- * Create an empty Container at the given URL.
+ * Create a Container at the given URL. Some content may optionally be specified,
+ * e.g. to add metadata describing the container.
  *
  * Throws an error if creating the Container failed, e.g. because the current user does not have
  * permissions to, or because the Container already exists.
@@ -19781,16 +19814,20 @@ async function deleteSolidDataset(solidDataset, options = internal_defaultFetchO
  *
  * @param url URL of the empty Container that is to be created.
  * @param options Optional parameter `options.fetch`: An alternative `fetch` function to make the HTTP request, compatible with the browser-native [fetch API](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/fetch#parameters).
+ * @param solidDataset Optional parameter - if provided we use this dataset as the body of the HTT request, meaning it's data is included in the Container resource.
  * @since 0.2.0
  */
 
 
 async function createContainerAt(url, options = internal_defaultFetchOptions) {
+  var _a;
+
   url = internal_toIriString(url);
   url = url.endsWith("/") ? url : url + "/";
   const config = Object.assign(Object.assign({}, internal_defaultFetchOptions), options);
   const response = await config.fetch(url, {
     method: "PUT",
+    body: config.initialContent ? await triplesToTurtle(toRdfJsQuads(config.initialContent).map(getNamedNodesForLocalNodes)) : undefined,
     headers: {
       Accept: "text/turtle",
       "Content-Type": "text/turtle",
@@ -19806,11 +19843,12 @@ async function createContainerAt(url, options = internal_defaultFetchOptions) {
       return createContainerWithNssWorkaroundAt(url, options);
     }
 
-    throw new FetchError(`Creating the empty Container at [${url}] failed: [${response.status}] [${response.statusText}].`, response);
+    const containerType = config.initialContent === undefined ? "empty" : "non-empty";
+    throw new FetchError(`Creating the ${containerType} Container at [${url}] failed: [${response.status}] [${response.statusText}].`, response);
   }
 
   const resourceInfo = internal_parseResourceInfo(response);
-  const containerDataset = freeze(Object.assign(Object.assign({}, createSolidDataset()), {
+  const containerDataset = freeze(Object.assign(Object.assign({}, (_a = options.initialContent) !== null && _a !== void 0 ? _a : createSolidDataset()), {
     internal_changeLog: {
       additions: [],
       deletions: []
@@ -23466,6 +23504,66 @@ async function addPublicKeyToProfileJwks(publicKey, webId, options = internal_de
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/**
+ * Get all the Profile Resources discoverable from a WebID Profile.
+ *
+ * A WebID Profile may be any RDF resource on the Web, it doesn't have
+ * to be a Solid resource. That is why, in order to expose a Solid-enabled part
+ * of their profile, some WebID profiles link to a Profile Resource, which may
+ * be a Solid resource.
+ *
+ * @param webId WebID of the agent you want the profile of.
+ * @param options Optional parameter
+ *  - `options.webIdProfile`: The data retrieved when looking up the WebID. This
+ *    will be fetched if not provided.
+ *  - `options.fetch`: An alternative `fetch` function to make the HTTP request,
+ *    compatible with the browser-native [fetch API](https://developer.mozilla.org/docs/Web/API/WindowOrWorkerGlobalScope/fetch#parameters).
+ * @returns Promise resolving to an array of [[SolidDataset]], each corresponding
+ *  to a personal profile document discoverable from the WebID Profile Document.
+ *  If none are found, the WebID profile document itself is returned.
+ * @since 1.16.0
+ */
+
+
+async function getProfileAll(webId, options = internal_defaultFetchOptions) {
+  const {
+    fetch,
+    webIdProfile = await getSolidDataset(webId, {
+      fetch
+    })
+  } = options;
+  const webIdThing = getThing(webIdProfile, webId);
+  const altProfilesIri = getThingAll(webIdProfile).filter(thing => getIriAll(thing, foaf.primaryTopic).length > 0).map(asIri).concat(webIdThing ? getIriAll(webIdThing, foaf.isPrimaryTopicOf) : []).filter(profileIri => profileIri !== getSourceIri(webIdProfile)); // Ensure that each given profile only appears once.
+
+  const altProfileAll = await Promise.all(Array.from(new Set(altProfilesIri)).map(uniqueProfileIri => getSolidDataset(uniqueProfileIri, {
+    fetch
+  })));
+  return {
+    webIdProfile,
+    altProfileAll
+  };
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 /** @hidden */
 
 
@@ -23539,7 +23637,17 @@ function internal_getControl(withAccessControlResource, url, options) {
 function internal_getControlAll(withAccessControlResource, options) {
   const acr = internal_getAcr(withAccessControlResource);
   const foundThings = getThingAll(acr, options);
-  return foundThings.filter(foundThing => getIriAll(foundThing, rdf.type).includes(acp.AccessControl));
+  const explicitAccessControl = foundThings.filter(foundThing => getIriAll(foundThing, rdf.type).includes(acp.AccessControl));
+  const implicitAccessControl = foundThings.filter(foundThing => getIriAll(foundThing, acp.accessControl).length > 0).map(thingWithAccessControl => {
+    // The initial filter ensures that at least one AccessControl will be found.
+    const controlIri = getIriAll(thingWithAccessControl, acp.accessControl)[0]; // The found control is only an object in the current dataset, so we create the
+    // associated thing in order to possibly make it a subject.
+
+    return createThing({
+      url: controlIri
+    });
+  });
+  return explicitAccessControl.concat(implicitAccessControl);
 }
 /**
  * ```{note} The Web Access Control specification is not yet finalised. As such, this
@@ -23777,7 +23885,7 @@ function hasLinkedAcr(resource) {
  */
 
 
-function addAcrPolicyUrl(resourceWithAcr, policyUrl) {
+function addAcrPolicyUrl$1(resourceWithAcr, policyUrl) {
   var _a;
 
   const acr = internal_getAcr(resourceWithAcr);
@@ -23805,7 +23913,7 @@ function addAcrPolicyUrl(resourceWithAcr, policyUrl) {
  */
 
 
-function addMemberAcrPolicyUrl(resourceWithAcr, policyUrl) {
+function addMemberAcrPolicyUrl$1(resourceWithAcr, policyUrl) {
   var _a;
 
   const acr = internal_getAcr(resourceWithAcr);
@@ -23832,7 +23940,7 @@ function addMemberAcrPolicyUrl(resourceWithAcr, policyUrl) {
  */
 
 
-function getAcrPolicyUrlAll(resourceWithAcr) {
+function getAcrPolicyUrlAll$1(resourceWithAcr) {
   const acr = internal_getAcr(resourceWithAcr);
   const acrUrl = getSourceUrl(acr);
   const acrThing = getThing(acr, acrUrl);
@@ -23857,7 +23965,7 @@ function getAcrPolicyUrlAll(resourceWithAcr) {
  */
 
 
-function getMemberAcrPolicyUrlAll(resourceWithAcr) {
+function getMemberAcrPolicyUrlAll$1(resourceWithAcr) {
   const acr = internal_getAcr(resourceWithAcr);
   const acrUrl = getSourceUrl(acr);
   const acrThing = getThing(acr, acrUrl);
@@ -23882,7 +23990,7 @@ function getMemberAcrPolicyUrlAll(resourceWithAcr) {
  */
 
 
-function removeAcrPolicyUrl(resourceWithAcr, policyUrl) {
+function removeAcrPolicyUrl$1(resourceWithAcr, policyUrl) {
   const acr = internal_getAcr(resourceWithAcr);
   const acrUrl = getSourceUrl(acr);
   const acrThing = getThing(acr, acrUrl);
@@ -23910,7 +24018,7 @@ function removeAcrPolicyUrl(resourceWithAcr, policyUrl) {
  */
 
 
-function removeMemberAcrPolicyUrl(resourceWithAcr, policyUrl) {
+function removeMemberAcrPolicyUrl$1(resourceWithAcr, policyUrl) {
   const acr = internal_getAcr(resourceWithAcr);
   const acrUrl = getSourceUrl(acr);
   const acrThing = getThing(acr, acrUrl);
@@ -23990,7 +24098,7 @@ function removeMemberAcrPolicyUrlAll(resourceWithAcr) {
  */
 
 
-function addPolicyUrl(resourceWithAcr, policyUrl) {
+function addPolicyUrl$1(resourceWithAcr, policyUrl) {
   const control = internal_getInitialisedControl(resourceWithAcr);
   const updatedControl = internal_addPolicyUrl(control, policyUrl);
   const updatedResource = internal_setControl(resourceWithAcr, updatedControl);
@@ -24011,7 +24119,7 @@ function addPolicyUrl(resourceWithAcr, policyUrl) {
  */
 
 
-function addMemberPolicyUrl(resourceWithAcr, policyUrl) {
+function addMemberPolicyUrl$1(resourceWithAcr, policyUrl) {
   const control = internal_getInitialisedControl(resourceWithAcr);
   const updatedControl = internal_addMemberPolicyUrl(control, policyUrl);
   const updatedResource = internal_setControl(resourceWithAcr, updatedControl);
@@ -24030,7 +24138,7 @@ function addMemberPolicyUrl(resourceWithAcr, policyUrl) {
  */
 
 
-function getPolicyUrlAll(resourceWithAcr) {
+function getPolicyUrlAll$1(resourceWithAcr) {
   const controls = internal_getControlAll(resourceWithAcr);
   const policyUrlsByControl = controls.map(control => internal_getPolicyUrlAll(control));
   const uniquePolicyUrls = new Set();
@@ -24052,7 +24160,7 @@ function getPolicyUrlAll(resourceWithAcr) {
  */
 
 
-function getMemberPolicyUrlAll(resourceWithAcr) {
+function getMemberPolicyUrlAll$1(resourceWithAcr) {
   const controls = internal_getControlAll(resourceWithAcr);
   const memberPolicyUrlsByControl = controls.map(control => internal_getMemberPolicyUrlAll(control));
   const uniquePolicyUrls = new Set();
@@ -24075,7 +24183,7 @@ function getMemberPolicyUrlAll(resourceWithAcr) {
  */
 
 
-function removePolicyUrl(resourceWithAcr, policyUrl) {
+function removePolicyUrl$1(resourceWithAcr, policyUrl) {
   const controls = internal_getControlAll(resourceWithAcr);
   const updatedControls = controls.map(control => internal_removePolicyUrl(control, policyUrl));
   const updatedResource = updatedControls.reduce(internal_setControl, resourceWithAcr);
@@ -24095,7 +24203,7 @@ function removePolicyUrl(resourceWithAcr, policyUrl) {
  */
 
 
-function removeMemberPolicyUrl(resourceWithAcr, policyUrl) {
+function removeMemberPolicyUrl$1(resourceWithAcr, policyUrl) {
   const controls = internal_getControlAll(resourceWithAcr);
   const updatedControls = controls.map(control => internal_removeMemberPolicyUrl(control, policyUrl));
   const updatedResource = updatedControls.reduce(internal_setControl, resourceWithAcr);
@@ -24152,10 +24260,10 @@ function removeMemberPolicyUrlAll(resourceWithAcr) {
 
 function acrAsMarkdown(resourceWithAcr) {
   let markdown = `# Access controls for ${getSourceUrl(resourceWithAcr)}\n`;
-  const policyUrls = getPolicyUrlAll(resourceWithAcr);
-  const memberPolicyUrls = getMemberPolicyUrlAll(resourceWithAcr);
-  const acrPolicyUrls = getAcrPolicyUrlAll(resourceWithAcr);
-  const memberAcrPolicyUrls = getMemberAcrPolicyUrlAll(resourceWithAcr);
+  const policyUrls = getPolicyUrlAll$1(resourceWithAcr);
+  const memberPolicyUrls = getMemberPolicyUrlAll$1(resourceWithAcr);
+  const acrPolicyUrls = getAcrPolicyUrlAll$1(resourceWithAcr);
+  const memberAcrPolicyUrls = getMemberAcrPolicyUrlAll$1(resourceWithAcr);
 
   if (policyUrls.length === 0 && memberPolicyUrls.length === 0 && acrPolicyUrls.length === 0 && memberAcrPolicyUrls.length === 0) {
     markdown += "\n<no policies specified yet>\n";
@@ -24182,6 +24290,452 @@ function acrAsMarkdown(resourceWithAcr) {
   }
 
   return markdown;
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/** @hidden */
+
+
+const ACP_NAMESPACE = "http://www.w3.org/ns/solid/acp#";
+/** @hidden */
+
+const ACP = {
+  AccessControl: ACP_NAMESPACE.concat("AccessControl"),
+  AccessControlResource: ACP_NAMESPACE.concat("AccessControlResource"),
+  AuthenticatedAgent: ACP_NAMESPACE.concat("AuthenticatedAgent"),
+  CreatorAgent: ACP_NAMESPACE.concat("CreatorAgent"),
+  Matcher: ACP_NAMESPACE.concat("Matcher"),
+  Policy: ACP_NAMESPACE.concat("Policy"),
+  PublicAgent: ACP_NAMESPACE.concat("PublicAgent"),
+  access: ACP_NAMESPACE.concat("access"),
+  accessControl: ACP_NAMESPACE.concat("accessControl"),
+  agent: ACP_NAMESPACE.concat("agent"),
+  allOf: ACP_NAMESPACE.concat("allOf"),
+  allow: ACP_NAMESPACE.concat("allow"),
+  anyOf: ACP_NAMESPACE.concat("anyOf"),
+  apply: ACP_NAMESPACE.concat("apply"),
+  client: ACP_NAMESPACE.concat("client"),
+  deny: ACP_NAMESPACE.concat("deny"),
+  memberAccessControl: ACP_NAMESPACE.concat("memberAccessControl"),
+  noneOf: ACP_NAMESPACE.concat("noneOf"),
+  vc: ACP_NAMESPACE.concat("vc")
+};
+/** @hidden */
+
+const ACL_NAMESPACE = "http://www.w3.org/ns/auth/acl#";
+/** @hidden */
+
+const ACL = {
+  Append: ACL_NAMESPACE.concat("Append"),
+  Control: ACL_NAMESPACE.concat("Control"),
+  Read: ACL_NAMESPACE.concat("Read"),
+  Write: ACL_NAMESPACE.concat("Write")
+};
+/** @hidden */
+
+const VC_ACCESS_GRANT = "http://www.w3.org/ns/solid/vc#SolidAccessGrant";
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/** @hidden */
+
+function getAccessControlResourceThing(resource) {
+  const acr = internal_getAcr(resource);
+  const acrUrl = getSourceUrl(acr);
+  return getThing(acr, acrUrl);
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/** @hidden */
+
+
+const DEFAULT_ACCESS_CONTROL = "defaultAccessControl";
+/** @hidden */
+
+const DEFAULT_ACR_ACCESS_CONTROL = "defaultAcrAccessControl";
+/** @hidden */
+
+const DEFAULT_MEMBER_ACCESS_CONTROL = "defaultMemberAccessControl";
+/** @hidden */
+
+const DEFAULT_MEMBER_ACR_ACCESS_CONTROL = "defaultMemberAcrAccessControl";
+/** @hidden */
+
+function getDefaultAccessControlUrl(resource, name) {
+  const acr = internal_getAcr(resource);
+  const acrUrl = getSourceUrl(acr);
+  return acrUrl.concat("#").concat(name);
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/** @hidden */
+
+
+function getDefaultAccessControlThing(resource, name) {
+  const acr = internal_getAcr(resource);
+  const defaultAccessControlUrl = getDefaultAccessControlUrl(resource, name);
+  const accessControlThing = getThing(acr, defaultAccessControlUrl);
+
+  if (accessControlThing === null || typeof accessControlThing === "undefined") {
+    return createThing({
+      url: defaultAccessControlUrl
+    });
+  }
+
+  return accessControlThing;
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/** @hidden */
+
+
+function getModes(policy, type) {
+  const modes = getIriAll(policy, type);
+  return {
+    read: modes.includes(ACL.Read),
+    append: modes.includes(ACL.Append),
+    write: modes.includes(ACL.Write),
+    controlRead: false,
+    controlWrite: false
+  };
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * @hidden
+ *
+ * Internal function that attaches an ACR to a Resource. Prefer using this than
+ * setting the internal values manually (easier to refactor when changing the internals).
+ */
+
+
+function setAcr(resource, acr) {
+  return Object.assign(internal_cloneResource(resource), {
+    internal_acp: {
+      acr
+    }
+  });
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/** @hidden */
+
+
+function setModes(policy, modes, type) {
+  let newPolicy = removeAll(policy, type);
+
+  if (modes.read || modes.controlRead) {
+    newPolicy = addIri(newPolicy, type, ACL.Read);
+  }
+
+  if (modes.append) {
+    newPolicy = addIri(newPolicy, type, ACL.Append);
+  }
+
+  if (modes.write || modes.controlWrite) {
+    newPolicy = addIri(newPolicy, type, ACL.Write);
+  }
+
+  return newPolicy;
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+
+const DEFAULT_VC_POLICY_NAME = "defaultVcPolicy";
+const DEFAULT_VC_MATCHER_NAME = "defaultVcMatcher";
+/**
+ * * ```{note}
+ * The ACP specification is a draft. As such, this function is experimental and
+ * subject to change, even in a non-major release.
+ * See also: https://solid.github.io/authorization-panel/acp-specification/
+ * ```
+ *
+ * Set the maximum access modes that are allowed for a VC holder for a given resource.
+ * If the resource owner issued an Access Grant for the resource, the agent that
+ * has been granted access will have at most the permissions set by this function.
+ * The Access Grant may be more restrictive.
+ *
+ * Note that additional access may have been set if the ACR has been manipulated
+ * not using this library, which is currently out of scope. In this case, the access
+ * set by this function may not apply.
+ *
+ * @param resourceWithAcr The resource for which the access modes are being set for VC holders.
+ * @param access The access modes to set. Setting a mode to `true` will enable it, to `false`
+ * will disable it, and to `undefined` will leave it unchanged compared to what was previously
+ * set.
+ * @returns A copy of the resource and its attached ACR, updated to the new access modes.
+ * @since 1.17.0
+ */
+
+function setVcAccess(resourceWithAcr, access) {
+  var _a, _b;
+
+  let acr = internal_getAcr(resourceWithAcr);
+  const defaultVcPolicyIri = `${getSourceIri(acr)}#${DEFAULT_VC_POLICY_NAME}`;
+  const defaultVcMatcherIri = `${getSourceIri(acr)}#${DEFAULT_VC_MATCHER_NAME}`;
+  let accessControl = getDefaultAccessControlThing(resourceWithAcr, "defaultAccessControl");
+  let acrThing = (_a = getAccessControlResourceThing(resourceWithAcr)) !== null && _a !== void 0 ? _a : buildThing({
+    url: getSourceIri(acr)
+  }).addIri(ACP.accessControl, accessControl).build();
+
+  if (!getIriAll(acrThing, ACP.accessControl).includes(asIri(accessControl))) {
+    // Case when the ACR Thing existed, but did not include a link to the default Access Control.
+    acrThing = addIri(acrThing, ACP.accessControl, accessControl);
+  }
+
+  let vcPolicy = getThing(acr, defaultVcPolicyIri);
+
+  if (vcPolicy === null) {
+    // If the policy does not exist, create it and link the default Access Control to it.
+    vcPolicy = buildThing({
+      url: defaultVcPolicyIri
+    }).addIri(rdf.type, ACP.Policy).addIri(ACP.anyOf, defaultVcMatcherIri).build();
+    accessControl = addIri(accessControl, ACP.apply, vcPolicy);
+  }
+
+  const vcMatcher = (_b = getThing(acr, defaultVcMatcherIri)) !== null && _b !== void 0 ? _b : buildThing({
+    url: defaultVcMatcherIri
+  }).addIri(rdf.type, ACP.Matcher).addIri(ACP.vc, VC_ACCESS_GRANT).build();
+  const currentModes = getModes(vcPolicy, ACP.allow); // Only change the modes which are set in `access`, and preserve the others.
+
+  vcPolicy = setModes(vcPolicy, Object.assign(Object.assign({}, currentModes), access), ACP.allow); // Write the changed access control, policy and matchers in the ACR
+
+  acr = [acrThing, accessControl, vcPolicy, vcMatcher].reduce(setThing, acr);
+  return setAcr(resourceWithAcr, acr);
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+
+const DEFAULT_NO_ACCESS = {
+  read: false,
+  append: false,
+  write: false,
+  controlRead: false,
+  controlWrite: false
+};
+
+const linkExists = (subject, predicate, object) => getIriAll(subject, predicate).includes(asIri(object)); // TODO: It should be possible to write a `chainExists` function, taking in a chain
+// of Thing, predicate, Thing, predicate... and checks whether such chain exists
+// in a given dataset. It would make the following function much easier to read,
+// instead of checking at each link that it isn't null and it is connected to the
+// next link.
+
+/**
+ * ```{note}
+ * The ACP specification is a draft. As such, this function is experimental and
+ * subject to change, even in a non-major release.
+ * See also: https://solid.github.io/authorization-panel/acp-specification/
+ * ```
+ *
+ * Get the maximum access modes that are allowed for a VC holder for a given resource.
+ * If the resource owner issued an Access Grant for the resource, the agent that
+ * has been granted access will have at most the permissions returned by this function.
+ * The Access Grant may be more restrictive.
+ *
+ * Note that only the modes set using [[setVcAccess]] will be returned by this function.
+ * Additional access may have been set if the ACR has been manipulated not using this
+ * library, which is currently out of scope.
+ *
+ * @param resourceWithAcr The resource for which the VC access modes are looked up.
+ * @returns The access modes available to a VC holder.
+ * @since 1.17.0
+ */
+
+
+function getVcAccess(resourceWithAcr) {
+  const acr = internal_getAcr(resourceWithAcr);
+  const accessControl = getDefaultAccessControlThing(resourceWithAcr, "defaultAccessControl");
+  const acrThing = getAccessControlResourceThing(resourceWithAcr);
+
+  if (acrThing === null || !linkExists(acrThing, ACP.accessControl, accessControl)) {
+    return DEFAULT_NO_ACCESS;
+  }
+
+  const defaultVcPolicyIri = `${getSourceIri(acr)}#${DEFAULT_VC_POLICY_NAME}`;
+  const vcPolicy = getThing(acr, defaultVcPolicyIri);
+
+  if (vcPolicy === null || !linkExists(accessControl, ACP.apply, vcPolicy)) {
+    return DEFAULT_NO_ACCESS;
+  }
+
+  const defaultVcMatcherIri = `${getSourceIri(acr)}#${DEFAULT_VC_MATCHER_NAME}`;
+  const vcMatcher = getThing(acr, defaultVcMatcherIri);
+
+  if (vcMatcher === null || !linkExists(vcPolicy, ACP.anyOf, vcMatcher)) {
+    return DEFAULT_NO_ACCESS;
+  }
+
+  return getModes(vcPolicy, ACP.allow);
 }
 /**
  * Copyright 2021 Inrupt Inc.
@@ -24467,7 +25021,7 @@ async function fetchAcr(resource, options) {
 
 
 function getReferencedPolicyUrlAll(withAcr) {
-  const policyUrls = getPolicyUrlAll(withAcr).map(normalizeServerSideIri).concat(getMemberPolicyUrlAll(withAcr).map(normalizeServerSideIri)).concat(getAcrPolicyUrlAll(withAcr).map(normalizeServerSideIri)).concat(getMemberAcrPolicyUrlAll(withAcr).map(normalizeServerSideIri));
+  const policyUrls = getPolicyUrlAll$1(withAcr).map(normalizeServerSideIri).concat(getMemberPolicyUrlAll$1(withAcr).map(normalizeServerSideIri)).concat(getAcrPolicyUrlAll$1(withAcr).map(normalizeServerSideIri)).concat(getMemberAcrPolicyUrlAll$1(withAcr).map(normalizeServerSideIri));
   const uniqueUrls = Array.from(new Set(policyUrls));
   return uniqueUrls;
 }
@@ -24486,6 +25040,32 @@ async function isAcpControlled(resource, options = internal_defaultFetchOptions)
   const config = Object.assign(Object.assign({}, internal_defaultFetchOptions), options);
   const resourceInfo = await getResourceInfo(urlString, config);
   return hasAccessibleAcr(await fetchAcr(resourceInfo, config));
+}
+/**
+ * ```{note} The Web Access Control specification is not yet finalised. As such, this
+ * function is still experimental and subject to change, even in a non-major release.
+ * ```
+ *
+ * Given a Resource, find out the URL of its governing Access Control Resource.
+ *
+ * @param resource Resource which should be governed by Access Policies.
+ * @returns The URL of the Access Control Resource, or undefined if not ACR is found.
+ * @since 1.15.0
+ */
+
+
+function getLinkedAcrUrl(resource) {
+  if (!hasServerResourceInfo(resource)) {
+    return undefined;
+  } // Two rels types are acceptable to indicate a link to an ACR.
+
+
+  const acrLinks = [acp.accessControl, "acl"].map(rel => {
+    if (Array.isArray(resource.internal_resourceInfo.linkedResources[rel]) && resource.internal_resourceInfo.linkedResources[rel].length === 1) {
+      return resource.internal_resourceInfo.linkedResources[rel][0];
+    }
+  });
+  return acrLinks.find(x => x !== undefined);
 }
 /**
  * Copyright 2021 Inrupt Inc.
@@ -25846,7 +26426,7 @@ function getResourcePolicy(resourceWithAcr, name) {
   url.hash = `#${name}`;
   const foundThing = getThing(acr, url.href);
 
-  if (!getPolicyUrlAll(resourceWithAcr).includes(url.href) || foundThing === null || !isPolicy(foundThing)) {
+  if (!getPolicyUrlAll$1(resourceWithAcr).includes(url.href) || foundThing === null || !isPolicy(foundThing)) {
     return null;
   }
 
@@ -25874,7 +26454,7 @@ function getResourceAcrPolicy(resourceWithAcr, name) {
   url.hash = `#${name}`;
   const foundThing = getThing(acr, url.href);
 
-  if (!getAcrPolicyUrlAll(resourceWithAcr).includes(url.href) || foundThing === null || !isPolicy(foundThing)) {
+  if (!getAcrPolicyUrlAll$1(resourceWithAcr).includes(url.href) || foundThing === null || !isPolicy(foundThing)) {
     return null;
   }
 
@@ -25895,7 +26475,7 @@ function getResourceAcrPolicy(resourceWithAcr, name) {
 
 function getResourcePolicyAll(resourceWithAcr) {
   const acr = internal_getAcr(resourceWithAcr);
-  const policyUrls = getPolicyUrlAll(resourceWithAcr);
+  const policyUrls = getPolicyUrlAll$1(resourceWithAcr);
   const foundThings = policyUrls.map(policyUrl => getThing(acr, policyUrl));
   const foundPolicies = foundThings.filter(thing => thing !== null && isPolicy(thing));
   return foundPolicies;
@@ -25915,7 +26495,7 @@ function getResourcePolicyAll(resourceWithAcr) {
 
 function getResourceAcrPolicyAll(resourceWithAcr) {
   const acr = internal_getAcr(resourceWithAcr);
-  const policyUrls = getAcrPolicyUrlAll(resourceWithAcr);
+  const policyUrls = getAcrPolicyUrlAll$1(resourceWithAcr);
   const foundThings = policyUrls.map(policyUrl => getThing(acr, policyUrl));
   const foundPolicies = foundThings.filter(thing => thing !== null && isPolicy(thing));
   return foundPolicies;
@@ -25972,7 +26552,7 @@ function removeResourcePolicy(resourceWithAcr, policy) {
 
   const updatedAcr = removeThing(acr, policyToRemove);
   const updatedResource = internal_setAcr(resourceWithAcr, updatedAcr);
-  return removePolicyUrl(updatedResource, policyUrlString);
+  return removePolicyUrl$1(updatedResource, policyUrlString);
 }
 /**
  * ```{note} There is no Access Control Policies specification yet. As such, this
@@ -26026,7 +26606,7 @@ function removeResourceAcrPolicy(resourceWithAcr, policy) {
 
   const updatedAcr = removeThing(acr, policyToRemove);
   const updatedResource = internal_setAcr(resourceWithAcr, updatedAcr);
-  return removeAcrPolicyUrl(updatedResource, policyUrlString);
+  return removeAcrPolicyUrl$1(updatedResource, policyUrlString);
 }
 /**
  * ```{note} There is no Access Control Policies specification yet. As such, this
@@ -26048,7 +26628,7 @@ function setResourcePolicy(resourceWithAcr, policy) {
   const updatedAcr = setThing(acr, policy);
   const updatedResource = internal_setAcr(resourceWithAcr, updatedAcr);
   const policyUrl = asUrl(policy, getSourceUrl(acr));
-  return addPolicyUrl(updatedResource, policyUrl);
+  return addPolicyUrl$1(updatedResource, policyUrl);
 }
 /**
  * ```{note} There is no Access Control Policies specification yet. As such, this
@@ -26071,7 +26651,7 @@ function setResourceAcrPolicy(resourceWithAcr, policy) {
   const updatedAcr = setThing(acr, policy);
   const updatedResource = internal_setAcr(resourceWithAcr, updatedAcr);
   const policyUrl = asUrl(policy, getSourceUrl(acr));
-  return addAcrPolicyUrl(updatedResource, policyUrl);
+  return addAcrPolicyUrl$1(updatedResource, policyUrl);
 }
 /**
  * Gets a human-readable representation of the given [[Policy]] to aid debugging.
@@ -26232,22 +26812,22 @@ const v2AcpFunctions = {
 };
 const v2ControlFunctions = {
   acrAsMarkdown,
-  addAcrPolicyUrl,
-  addMemberAcrPolicyUrl,
-  addMemberPolicyUrl,
-  addPolicyUrl,
-  getAcrPolicyUrlAll,
-  getMemberAcrPolicyUrlAll,
-  getMemberPolicyUrlAll,
-  getPolicyUrlAll,
+  addAcrPolicyUrl: addAcrPolicyUrl$1,
+  addMemberAcrPolicyUrl: addMemberAcrPolicyUrl$1,
+  addMemberPolicyUrl: addMemberPolicyUrl$1,
+  addPolicyUrl: addPolicyUrl$1,
+  getAcrPolicyUrlAll: getAcrPolicyUrlAll$1,
+  getMemberAcrPolicyUrlAll: getMemberAcrPolicyUrlAll$1,
+  getMemberPolicyUrlAll: getMemberPolicyUrlAll$1,
+  getPolicyUrlAll: getPolicyUrlAll$1,
   hasLinkedAcr,
-  removeAcrPolicyUrl,
+  removeAcrPolicyUrl: removeAcrPolicyUrl$1,
   removeAcrPolicyUrlAll,
-  removeMemberAcrPolicyUrl,
+  removeMemberAcrPolicyUrl: removeMemberAcrPolicyUrl$1,
   removeMemberAcrPolicyUrlAll,
-  removeMemberPolicyUrl,
+  removeMemberPolicyUrl: removeMemberPolicyUrl$1,
   removeMemberPolicyUrlAll,
-  removePolicyUrl,
+  removePolicyUrl: removePolicyUrl$1,
   removePolicyUrlAll
 };
 const v2PolicyFunctions = {
@@ -26416,13 +26996,13 @@ const v1MockFunctions = {
 };
 const v1ControlFunctions = {
   hasLinkedAcr,
-  addAcrPolicyUrl,
-  addMemberAcrPolicyUrl,
-  getAcrPolicyUrlAll,
-  getMemberAcrPolicyUrlAll,
-  removeAcrPolicyUrl,
+  addAcrPolicyUrl: addAcrPolicyUrl$1,
+  addMemberAcrPolicyUrl: addMemberAcrPolicyUrl$1,
+  getAcrPolicyUrlAll: getAcrPolicyUrlAll$1,
+  getMemberAcrPolicyUrlAll: getMemberAcrPolicyUrlAll$1,
+  removeAcrPolicyUrl: removeAcrPolicyUrl$1,
   removeAcrPolicyUrlAll,
-  removeMemberAcrPolicyUrl,
+  removeMemberAcrPolicyUrl: removeMemberAcrPolicyUrl$1,
   removeMemberAcrPolicyUrlAll
 };
 const deprecatedFunctions = {
@@ -26500,6 +27080,7 @@ function removeControl(withAccessControlResource, control) {
 const v3AcpFunctions = {
   getFileWithAccessDatasets,
   getFileWithAcr,
+  getLinkedAcrUrl,
   getReferencedPolicyUrlAll,
   getResourceInfoWithAccessDatasets,
   getResourceInfoWithAcr,
@@ -26511,22 +27092,22 @@ const v3AcpFunctions = {
 };
 const v3ControlFunctions = {
   acrAsMarkdown,
-  addAcrPolicyUrl,
-  addMemberAcrPolicyUrl,
-  addMemberPolicyUrl,
-  addPolicyUrl,
-  getAcrPolicyUrlAll,
-  getMemberAcrPolicyUrlAll,
-  getMemberPolicyUrlAll,
-  getPolicyUrlAll,
+  addAcrPolicyUrl: addAcrPolicyUrl$1,
+  addMemberAcrPolicyUrl: addMemberAcrPolicyUrl$1,
+  addMemberPolicyUrl: addMemberPolicyUrl$1,
+  addPolicyUrl: addPolicyUrl$1,
+  getAcrPolicyUrlAll: getAcrPolicyUrlAll$1,
+  getMemberAcrPolicyUrlAll: getMemberAcrPolicyUrlAll$1,
+  getMemberPolicyUrlAll: getMemberPolicyUrlAll$1,
+  getPolicyUrlAll: getPolicyUrlAll$1,
   hasLinkedAcr,
-  removeAcrPolicyUrl,
+  removeAcrPolicyUrl: removeAcrPolicyUrl$1,
   removeAcrPolicyUrlAll,
-  removeMemberAcrPolicyUrl,
+  removeMemberAcrPolicyUrl: removeMemberAcrPolicyUrl$1,
   removeMemberAcrPolicyUrlAll,
-  removeMemberPolicyUrl,
+  removeMemberPolicyUrl: removeMemberPolicyUrl$1,
   removeMemberPolicyUrlAll,
-  removePolicyUrl,
+  removePolicyUrl: removePolicyUrl$1,
   removePolicyUrlAll
 };
 const v3PolicyFunctions = {
@@ -26630,11 +27211,727 @@ const acp_v3 = Object.assign(Object.assign(Object.assign(Object.assign(Object.as
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  */
 
+/** @hidden */
+
+exports.acp_v3 = acp_v3;
+
+function setAccessControlResourceThing(resource, thing) {
+  return Object.assign(internal_cloneResource(resource), {
+    internal_acp: Object.assign(Object.assign({}, resource.internal_acp), {
+      acr: setThing(resource.internal_acp.acr, thing)
+    })
+  });
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+
+function getAccessControlTypeFromDefaultAccessControlName(name) {
+  if (name.includes("Member")) {
+    return ACP.memberAccessControl;
+  }
+
+  return ACP.accessControl;
+}
+/** @hidden */
+
+
+function setDefaultAccessControlThingIfNotExist(resource, name) {
+  const defaultAccessControlThingUrl = getDefaultAccessControlUrl(resource, name);
+  const acr = internal_getAcr(resource); // Get the Access Control Resource Thing or create it
+
+  let accessControlResourceThing = getAccessControlResourceThing(resource);
+
+  if (accessControlResourceThing === null || typeof accessControlResourceThing === "undefined") {
+    accessControlResourceThing = createThing({
+      url: getSourceUrl(acr)
+    });
+  } // Get the Default Access Control Thing or create it and return
+
+
+  const accessControlUrlAll = getIriAll(accessControlResourceThing, getAccessControlTypeFromDefaultAccessControlName(name));
+
+  if (!accessControlUrlAll.includes(defaultAccessControlThingUrl)) {
+    accessControlResourceThing = buildThing(accessControlResourceThing).addUrl(getAccessControlTypeFromDefaultAccessControlName(name), defaultAccessControlThingUrl).build();
+    return setAccessControlResourceThing(resource, accessControlResourceThing);
+  } // Return the original resource if the ACR and Default AC exist
+
+
+  return resource;
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * ```{note}
+ * The ACP specification is a draft. As such, this function is experimental and
+ * subject to change, even in a non-major release.
+ * See also: https://solid.github.io/authorization-panel/acp-specification/
+ * ```
+ *
+ * Add a policy applying to the ACR of the given resource.
+ *
+ * @param resourceWithAcr The resource for which to add the URL of a policy
+ * applying to its access control resource.
+ * @param policyUrl A Policy URL.
+ * @returns The resource with its ammended access control resource.
+ * @since 1.16.1
+ */
+
+
+function addAcrPolicyUrl(resourceWithAcr, policyUrl) {
+  const resourceWithAcrContainingDefaultAccessControl = setDefaultAccessControlThingIfNotExist(resourceWithAcr, DEFAULT_ACR_ACCESS_CONTROL);
+  const defaultAccessControlThing = getDefaultAccessControlThing(resourceWithAcrContainingDefaultAccessControl, DEFAULT_ACR_ACCESS_CONTROL);
+  return setAccessControlResourceThing(resourceWithAcrContainingDefaultAccessControl, buildThing(defaultAccessControlThing).addUrl(ACP.access, policyUrl).build());
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * ```{note}
+ * The ACP specification is a draft. As such, this function is experimental and
+ * subject to change, even in a non-major release.
+ * See also: https://solid.github.io/authorization-panel/acp-specification/
+ * ```
+ *
+ * Add a policy applying to the ACRs of the given resource's children.
+ *
+ * @param resourceWithAcr The resource for which to add the URL of a policy
+ * applying to its children's access control resources.
+ * @param policyUrl A Policy URL.
+ * @returns The resource with its ammended access control resource.
+ * @since 1.16.1
+ */
+
+
+function addMemberAcrPolicyUrl(resourceWithAcr, policyUrl) {
+  const resourceWithAcrContainingDefaultAccessControl = setDefaultAccessControlThingIfNotExist(resourceWithAcr, DEFAULT_MEMBER_ACR_ACCESS_CONTROL);
+  const defaultAccessControlThing = getDefaultAccessControlThing(resourceWithAcrContainingDefaultAccessControl, DEFAULT_MEMBER_ACR_ACCESS_CONTROL);
+  return setAccessControlResourceThing(resourceWithAcrContainingDefaultAccessControl, buildThing(defaultAccessControlThing).addUrl(ACP.access, policyUrl).build());
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * ```{note}
+ * The ACP specification is a draft. As such, this function is experimental and
+ * subject to change, even in a non-major release.
+ * See also: https://solid.github.io/authorization-panel/acp-specification/
+ * ```
+ *
+ * Add a policy applying to the given resource's children.
+ *
+ * @param resourceWithAcr The resource for which to add the URL of a policy
+ * applying to its children.
+ * @param policyUrl A Policy URL.
+ * @returns The resource with its ammended access control resource.
+ * @since 1.16.1
+ */
+
+
+function addMemberPolicyUrl(resourceWithAcr, policyUrl) {
+  const resourceWithAcrContainingDefaultMemberAccessControl = setDefaultAccessControlThingIfNotExist(resourceWithAcr, DEFAULT_MEMBER_ACCESS_CONTROL);
+  const defaultMemberAccessControlThing = getDefaultAccessControlThing(resourceWithAcrContainingDefaultMemberAccessControl, DEFAULT_MEMBER_ACCESS_CONTROL);
+  return setAccessControlResourceThing(resourceWithAcrContainingDefaultMemberAccessControl, buildThing(defaultMemberAccessControlThing).addUrl(ACP.apply, policyUrl).build());
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * ```{note}
+ * The ACP specification is a draft. As such, this function is experimental and
+ * subject to change, even in a non-major release.
+ * See also: https://solid.github.io/authorization-panel/acp-specification/
+ * ```
+ *
+ * Add a policy applying to the given resource.
+ *
+ * @param resourceWithAcr The resource for which to add the URL of a policy
+ * applying to it.
+ * @param policyUrl A Policy URL.
+ * @returns The resource with its ammended access control resource.
+ * @since 1.16.1
+ */
+
+
+function addPolicyUrl(resourceWithAcr, policyUrl) {
+  const resourceWithAcrContainingDefaultAccessControl = setDefaultAccessControlThingIfNotExist(resourceWithAcr, DEFAULT_ACCESS_CONTROL);
+  const defaultAccessControlThing = getDefaultAccessControlThing(resourceWithAcrContainingDefaultAccessControl, DEFAULT_ACCESS_CONTROL);
+  return setAccessControlResourceThing(resourceWithAcrContainingDefaultAccessControl, buildThing(defaultAccessControlThing).addUrl(ACP.apply, policyUrl).build());
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * ```{note}
+ * The ACP specification is a draft. As such, this function is experimental and
+ * subject to change, even in a non-major release.
+ * See also: https://solid.github.io/authorization-panel/acp-specification/
+ * ```
+ *
+ * Get the URL of all access controls linked to the given resource's ACR.
+ *
+ * @param resourceWithAcr The resource for which to retrieve URLs of access
+ * controls applying to it.
+ * @returns Access Control URL array
+ * @since 1.6.0
+ */
+
+
+function getAccessControlUrlAll(resourceWithAcr) {
+  const acrThing = getAccessControlResourceThing(resourceWithAcr);
+
+  if (acrThing === null) {
+    return [];
+  }
+
+  return getIriAll(acrThing, ACP.accessControl);
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/** @hidden */
+
+
+function getPolicyUrls(resource, accessControlUrls, type) {
+  const acr = internal_getAcr(resource);
+  return Array.from(new Set(accessControlUrls.map(accessControlUrl => {
+    const accessControlThing = getThing(acr, accessControlUrl); // istanbul ignore next
+
+    if (accessControlThing !== null) {
+      return getIriAll(accessControlThing, type);
+    } // istanbul ignore next
+
+
+    return [];
+  }).reduce((previousValue, currentValue) => previousValue.concat(currentValue), [])));
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * ```{note}
+ * The ACP specification is a draft. As such, this function is experimental and
+ * subject to change, even in a non-major release.
+ * See also: https://solid.github.io/authorization-panel/acp-specification/
+ * ```
+ *
+ * Get the URLs of policies applying to the ACR of the given resource.
+ *
+ * @param resourceWithAcr The resource for which to retrieve URLs of policies
+ * applying to its access control resource.
+ * @returns Policy URL array.
+ * @since 1.16.1
+ */
+
+
+function getAcrPolicyUrlAll(resourceWithAcr) {
+  return getPolicyUrls(resourceWithAcr, getAccessControlUrlAll(resourceWithAcr), ACP.access);
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * ```{note}
+ * The ACP specification is a draft. As such, this function is experimental and
+ * subject to change, even in a non-major release.
+ * See also: https://solid.github.io/authorization-panel/acp-specification/
+ * ```
+ *
+ * Get the URL of all member access controls linked to the given resource's ACR.
+ *
+ * @param resourceWithAcr The resource for which to retrieve URLs of access
+ * controls inherited by its children.
+ * @returns Access Control URL array
+ * @since 1.6.0
+ */
+
+
+function getMemberAccessControlUrlAll(resourceWithAcr) {
+  const acrThing = getAccessControlResourceThing(resourceWithAcr);
+
+  if (acrThing === null) {
+    return [];
+  }
+
+  return getIriAll(acrThing, ACP.memberAccessControl);
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * ```{note}
+ * The ACP specification is a draft. As such, this function is experimental and
+ * subject to change, even in a non-major release.
+ * See also: https://solid.github.io/authorization-panel/acp-specification/
+ * ```
+ *
+ * Get the URLs of policies applying to the ACRs of the given resource's
+ * children.
+ *
+ * @param resourceWithAcr The resource for which to retrieve URLs of policies
+ * applying to its children's access control resources.
+ * @returns Policy URL array.
+ * @since 1.16.1
+ */
+
+
+function getMemberAcrPolicyUrlAll(resourceWithAcr) {
+  return getPolicyUrls(resourceWithAcr, getMemberAccessControlUrlAll(resourceWithAcr), ACP.access);
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * ```{note}
+ * The ACP specification is a draft. As such, this function is experimental and
+ * subject to change, even in a non-major release.
+ * See also: https://solid.github.io/authorization-panel/acp-specification/
+ * ```
+ *
+ * Get the URLs of policies applying to the given resource's children.
+ *
+ * @param resourceWithAcr The resource for which to retrieve URLs policies
+ * applying to its children.
+ * @returns Policy URL array.
+ * @since 1.16.1
+ */
+
+
+function getMemberPolicyUrlAll(resourceWithAcr) {
+  return getPolicyUrls(resourceWithAcr, getMemberAccessControlUrlAll(resourceWithAcr), ACP.apply);
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * ```{note}
+ * The ACP specification is a draft. As such, this function is experimental and
+ * subject to change, even in a non-major release.
+ * See also: https://solid.github.io/authorization-panel/acp-specification/
+ * ```
+ *
+ * Get the URLs of policies applying to the given resource.
+ *
+ * @param resourceWithAcr The resource for which to retrieve URLs of policies
+ * applying to it.
+ * @returns Policy URL array.
+ * @since 1.16.1
+ */
+
+
+function getPolicyUrlAll(resourceWithAcr) {
+  return getPolicyUrls(resourceWithAcr, getAccessControlUrlAll(resourceWithAcr), ACP.apply);
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * ```{note}
+ * The ACP specification is a draft. As such, this function is experimental and
+ * subject to change, even in a non-major release.
+ * See also: https://solid.github.io/authorization-panel/acp-specification/
+ * ```
+ *
+ * Remove a policy applying to the ACR of the given resource.
+ *
+ * @param resourceWithAcr The resource for which to remove the URL of a policy
+ * applying to its access control resource.
+ * @param policyUrl A Policy URL.
+ * @returns The resource with its ammended access control resource.
+ * @since 1.16.1
+ */
+
+
+function removeAcrPolicyUrl(resourceWithAcr, policyUrl) {
+  const defaultAccessControlThing = getDefaultAccessControlThing(resourceWithAcr, DEFAULT_ACR_ACCESS_CONTROL);
+  return setAccessControlResourceThing(resourceWithAcr, removeIri(defaultAccessControlThing, ACP.access, policyUrl));
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * ```{note}
+ * The ACP specification is a draft. As such, this function is experimental and
+ * subject to change, even in a non-major release.
+ * See also: https://solid.github.io/authorization-panel/acp-specification/
+ * ```
+ *
+ * Remove a policy applying to the ACRs of the given resource's children.
+ *
+ * @param resourceWithAcr The resource for which to remove the URL of a policy
+ * applying to its children's access control resources.
+ * @param policyUrl A Policy URL.
+ * @returns The resource with its ammended access control resource.
+ * @since 1.16.1
+ */
+
+
+function removeMemberAcrPolicyUrl(resourceWithAcr, policyUrl) {
+  const defaultAccessControlThing = getDefaultAccessControlThing(resourceWithAcr, DEFAULT_MEMBER_ACR_ACCESS_CONTROL);
+  return setAccessControlResourceThing(resourceWithAcr, removeIri(defaultAccessControlThing, ACP.access, policyUrl));
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * ```{note}
+ * The ACP specification is a draft. As such, this function is experimental and
+ * subject to change, even in a non-major release.
+ * See also: https://solid.github.io/authorization-panel/acp-specification/
+ * ```
+ *
+ * Remove a policy applying to the given resource's children.
+ *
+ * @param resourceWithAcr The resource for which to remove the URL of a policy
+ * applying to its children.
+ * @param policyUrl A Policy URL.
+ * @returns The resource with its ammended access control resource.
+ * @since 1.16.1
+ */
+
+
+function removeMemberPolicyUrl(resourceWithAcr, policyUrl) {
+  const defaultAccessControlThing = getDefaultAccessControlThing(resourceWithAcr, DEFAULT_MEMBER_ACCESS_CONTROL);
+  return setAccessControlResourceThing(resourceWithAcr, removeIri(defaultAccessControlThing, ACP.apply, policyUrl));
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * ```{note}
+ * The ACP specification is a draft. As such, this function is experimental and
+ * subject to change, even in a non-major release.
+ * See also: https://solid.github.io/authorization-panel/acp-specification/
+ * ```
+ *
+ * Remove a policy applying to the given resource.
+ *
+ * @param resourceWithAcr The resource for which to remove the URL of a policy
+ * applying to it.
+ * @param policyUrl A Policy URL.
+ * @returns The resource with its ammended access control resource.
+ * @since 1.16.1
+ */
+
+
+function removePolicyUrl(resourceWithAcr, policyUrl) {
+  const defaultAccessControlThing = getDefaultAccessControlThing(resourceWithAcr, DEFAULT_ACCESS_CONTROL);
+  return setAccessControlResourceThing(resourceWithAcr, removeIri(defaultAccessControlThing, ACP.apply, policyUrl));
+}
+/**
+ * Copyright 2021 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 /**
  * @param thing the [[Thing]] to check to see if it's an ACP Matcher or not
  */
 
-exports.acp_v3 = acp_v3;
 
 function isMatcher(thing) {
   return getIriAll(thing, rdf.type).includes(acp.Matcher);
@@ -27546,7 +28843,9 @@ const v4AcpFunctions = {
   getSolidDatasetWithAcr,
   hasAccessibleAcr,
   saveAcrFor,
-  isAcpControlled
+  isAcpControlled,
+  getVcAccess,
+  setVcAccess
 };
 const v4ControlFunctions = {
   acrAsMarkdown,
@@ -28082,10 +29381,10 @@ function internal_setActorAccess$1(resource, acpData, actorRelation, actor, acce
 
 
   acrPoliciesToUnapply.forEach(previouslyApplicableAcrPolicy => {
-    updatedResource = removeAcrPolicyUrl(updatedResource, asIri(previouslyApplicableAcrPolicy));
+    updatedResource = removeAcrPolicyUrl$1(updatedResource, asIri(previouslyApplicableAcrPolicy));
   });
   policiesToUnapply.forEach(previouslyApplicablePolicy => {
-    updatedResource = removePolicyUrl(updatedResource, asIri(previouslyApplicablePolicy));
+    updatedResource = removePolicyUrl$1(updatedResource, asIri(previouslyApplicablePolicy));
   });
   return updatedResource;
 }
@@ -28257,8 +29556,8 @@ function isNotNull$1(value) {
 }
 
 async function internal_getPoliciesAndMatchers(resource, options = internal_defaultFetchOptions) {
-  const acrPolicyUrls = getAcrPolicyUrlAll(resource);
-  const policyUrls = getPolicyUrlAll(resource);
+  const acrPolicyUrls = getAcrPolicyUrlAll$1(resource);
+  const policyUrls = getPolicyUrlAll$1(resource);
   const allPolicyResourceUrls = getResourceUrls$1(acrPolicyUrls).concat(getResourceUrls$1(policyUrls));
   const policyResources = await getResources$1(allPolicyResourceUrls, options);
   const acrPolicies = getThingsFromResources$1(acrPolicyUrls, policyResources).filter(isNotNull$1);
@@ -29144,10 +30443,10 @@ function internal_setActorAccess(resource, acpData, actorRelation, actor, access
 
 
   acrPoliciesToUnapply.forEach(previouslyApplicableAcrPolicy => {
-    updatedResource = removeAcrPolicyUrl(updatedResource, asIri(previouslyApplicableAcrPolicy));
+    updatedResource = removeAcrPolicyUrl$1(updatedResource, asIri(previouslyApplicableAcrPolicy));
   });
   policiesToUnapply.forEach(previouslyApplicablePolicy => {
-    updatedResource = removePolicyUrl(updatedResource, asIri(previouslyApplicablePolicy));
+    updatedResource = removePolicyUrl$1(updatedResource, asIri(previouslyApplicablePolicy));
   });
   return updatedResource;
 }
@@ -29356,8 +30655,8 @@ function isNotNull(value) {
 }
 
 async function internal_getPoliciesAndRules(resource, options = internal_defaultFetchOptions) {
-  const acrPolicyUrls = getAcrPolicyUrlAll(resource);
-  const policyUrls = getPolicyUrlAll(resource);
+  const acrPolicyUrls = getAcrPolicyUrlAll$1(resource);
+  const policyUrls = getPolicyUrlAll$1(resource);
   const allPolicyResourceUrls = getResourceUrls(acrPolicyUrls).concat(getResourceUrls(policyUrls));
   const policyResources = await getResources(allPolicyResourceUrls, options);
   const acrPolicies = getThingsFromResources(acrPolicyUrls, policyResources).filter(isNotNull);
@@ -53996,6 +55295,9 @@ var _solidClientAuthnBrowser = require("@inrupt/solid-client-authn-browser");
 
 var _vocabCommonRdf = require("@inrupt/vocab-common-rdf");
 
+// import {
+//     setPublicAccess,
+// } from "@inrupt/solid-client/access/universal";
 //import fetch from 'unfetch';
 // If your Pod is *not* on `solidcommunity.net`, change this to your identity provider.
 const SOLID_IDENTITY_PROVIDER = "https://solidcommunity.net";
@@ -54032,11 +55334,10 @@ async function handleRedirectAfterLogin() {
 // If the function is called when not part of the login redirect, the function is a no-op.
 
 
-handleRedirectAfterLogin(); // 2. Write to profile
+handleRedirectAfterLogin(); // 2. Create new dataset with a file in it
 
 async function writeProfile() {
-  const name = document.getElementById("input_name").value;
-
+  // const name = document.getElementById("input_name").value;
   if (!session.info.isLoggedIn) {
     // You must be authenticated to write.
     document.getElementById("labelWriteStatus").textContent = `...you can't write [${name}] until you first login!`;
@@ -54052,26 +55353,16 @@ async function writeProfile() {
   profileDocumentUrl.hash = ""; // To write to a profile, you must be authenticated. That is the role of the fetch
   // parameter in the following call.
 
-  let myProfileDataset = await (0, _solidClient.getSolidDataset)(profileDocumentUrl.href, {
+  let healthRecordDataset = (0, _solidClient.createSolidDataset)();
+  const privateInfoDocument = (0, _solidClient.buildThing)((0, _solidClient.createThing)({
+    name: "some_private_file.txt"
+  })).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.name, "Some text that should be privately available").addUrl(_vocabCommonRdf.RDF.type, "https://testuser1.solidcommunity.net/private/somePrivateFile.txt").build();
+  healthRecordDataset = (0, _solidClient.setThing)(healthRecordDataset, privateInfoDocument); //Insert new doc into new dataset    
+
+  const savedPrivateInfoDataset = await (0, _solidClient.saveSolidDatasetAt)("https://testuser1.solidcommunity.net/privateInfoDataset", healthRecordDataset, {
     fetch: session.fetch
-  }); // The profile data is a "Thing" in the profile dataset.
-
-  let profile = (0, _solidClient.getThing)(myProfileDataset, webID); // Using the name provided in text field, update the name in your profile.
-  // VCARD.fn object is a convenience object that includes the identifier string "http://www.w3.org/2006/vcard/ns#fn".
-  // As an alternative, you can pass in the "http://www.w3.org/2006/vcard/ns#fn" string instead of VCARD.fn.
-
-  profile = (0, _solidClient.setStringNoLocale)(profile, _vocabCommonRdf.VCARD.fn, name); // Write back the profile to the dataset.
-
-  myProfileDataset = (0, _solidClient.setThing)(myProfileDataset, profile); // Write back the dataset to your Pod.
-
-  await (0, _solidClient.saveSolidDatasetAt)(profileDocumentUrl.href, myProfileDataset, {
-    fetch: session.fetch
-  }); // Update the page with the retrieved values.
-
-  document.getElementById("labelWriteStatus").textContent = `Wrote [${name}] as name successfully!`;
-  document.getElementById("labelWriteStatus").setAttribute("role", "alert");
-  document.getElementById("labelFN").textContent = `...click the 'Read Profile' button to to see what the name might be now...?!`;
-} // 3. Read profile
+  });
+} // 3. Create ACL for created Dataset
 
 
 async function readProfile() {
@@ -54090,31 +55381,95 @@ async function readProfile() {
     return false;
   }
 
-  const profileDocumentUrl = new URL(webID);
-  console.log(profileDocumentUrl);
-  profileDocumentUrl.hash = ""; // Profile is public data; i.e., you do not need to be logged in to read the data.
-  // For illustrative purposes, shows both an authenticated and non-authenticated reads.
+  const myDatasetWithAcl = await (0, _solidClient.getSolidDatasetWithAcl)("https://testuser1.solidcommunity.net/privateInfoDataset", {
+    fetch: session.fetch
+  });
+  let resourceAcl;
 
-  let myDataset;
-
-  try {
-    if (session.info.isLoggedIn) {
-      myDataset = await (0, _solidClient.getSolidDataset)(profileDocumentUrl.href, {
-        fetch: session.fetch
-      });
-    } else {
-      myDataset = await (0, _solidClient.getSolidDataset)(profileDocumentUrl.href);
+  if (!(0, _solidClient.hasResourceAcl)(myDatasetWithAcl, {
+    fetch: session.fetch
+  })) {
+    if (!(0, _solidClient.hasAccessibleAcl)(myDatasetWithAcl, {
+      fetch: session.fetch
+    })) {
+      throw new Error("The current user does not have permission to change access rights to this Resource.");
     }
-  } catch (error) {
-    document.getElementById("labelFN").textContent = `Entered value [${webID}] does not appear to be a WebID. Error: [${error}]`;
+
+    if (!(0, _solidClient.hasFallbackAcl)(myDatasetWithAcl, {
+      fetch: session.fetch
+    })) {
+      throw new Error("The current user does not have permission to see who currently has access to this Resource."); // Alternatively, initialise a new empty ACL as follows,
+      // but be aware that if you do not give someone Control access,
+      // **nobody will ever be able to change Access permissions in the future**:
+      // resourceAcl = createAcl(myDatasetWithAcl);
+    }
+
+    resourceAcl = (0, _solidClient.createAclFromFallbackAcl)(myDatasetWithAcl, {
+      fetch: session.fetch
+    });
+  } else {
+    resourceAcl = (0, _solidClient.getResourceAcl)(myDatasetWithAcl, {
+      fetch: session.fetch
+    });
+  } // Give someone Control access to the given Resource:
+
+
+  const updatedAcl = (0, _solidClient.setAgentResourceAccess)(resourceAcl, "https://testuser1.solidcommunity.net/profile/card#me", {
+    read: false,
+    append: false,
+    write: false,
+    control: true
+  }, {
+    fetch: session.fetch
+  }); // Now save the ACL:
+
+  await (0, _solidClient.saveAclFor)(myDatasetWithAcl, updatedAcl, {
+    fetch: session.fetch
+  });
+  const formattedName = (0, _solidClient.getStringNoLocale)(profile, _vocabCommonRdf.VCARD.fn) + " " + publicAccess; // Update the page with the retrieved values.
+
+  document.getElementById("labelFN").textContent = `[${formattedName}]`;
+} // 3. Read agent access
+
+
+async function readAgentAccess() {
+  const webID = document.getElementById("webID").value;
+  console.log(webID);
+
+  if (webID === NOT_ENTERED_WEBID) {
+    document.getElementById("labelFN").textContent = `Login first, or enter a WebID (any WebID!) to read from its profile`;
     return false;
   }
 
-  const profile = (0, _solidClient.getThing)(myDataset, webID); // Get the formatted name (fn) using the property identifier "http://www.w3.org/2006/vcard/ns#fn".
-  // VCARD.fn object is a convenience object that includes the identifier string "http://www.w3.org/2006/vcard/ns#fn".
-  // As an alternative, you can pass in the "http://www.w3.org/2006/vcard/ns#fn" string instead of VCARD.fn.
+  try {
+    new URL(webID);
+  } catch (_) {
+    document.getElementById("labelFN").textContent = `Provided WebID [${webID}] is not a valid URL - please try again`;
+    return false;
+  }
 
-  const formattedName = (0, _solidClient.getStringNoLocale)(profile, _vocabCommonRdf.VCARD.fn); // Update the page with the retrieved values.
+  (0, _solidClient.getAgentAccess)("https://testuser1.solidcommunity.net/privateInfoDataset", // resource  
+  "https://testuser1.solidcommunity.net/profile/card#me", // agent
+  {
+    fetch: session.fetch
+  } // fetch function from authenticated session
+  ).then(access => {
+    logAccessInfo("https://testuser1.solidcommunity.net/profile/card#me", access, "https://testuser1.solidcommunity.net/private/somePrivateFile.txt");
+  });
+
+  function logAccessInfo(agent, access, resource) {
+    if (access === null) {
+      console.log("Could not load access details for this Resource.");
+    } else {
+      console.log(`${agent}'s Access:: `, JSON.stringify(access));
+      console.log("...", agent, access.read ? 'CAN' : 'CANNOT', "read the Resource", resource);
+      console.log("...", agent, access.append ? 'CAN' : 'CANNOT', "add data to the Resource", resource);
+      console.log("...", agent, access.write ? 'CAN' : 'CANNOT', "change data in the Resource", resource);
+      console.log("...", agent, access.controlRead ? 'CAN' : 'CANNOT', "see access to the Resource", resource);
+      console.log("...", agent, access.controlWrite ? 'CAN' : 'CANNOT', "change access to the Resource", resource);
+    }
+  } // Update the page with the retrieved values.
+
 
   document.getElementById("labelFN").textContent = `[${formattedName}]`;
 }
@@ -54236,6 +55591,10 @@ readForm.addEventListener("submit", event => {
   event.preventDefault();
   readProfile();
 });
+readAgentAccessForm.addEventListener("submit", event => {
+  event.preventDefault();
+  readAgentAccess();
+});
 readDummyForm.addEventListener("submit", event => {
   event.preventDefault();
   readDummyFile();
@@ -54272,7 +55631,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "53135" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50508" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

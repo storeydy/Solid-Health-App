@@ -46,7 +46,7 @@
        <div class="row">
          <form id="readForm">
            <label id="readlabel" for="webID"
-             >3. Read back name (anyone's!) from their WebID:
+             >3. Create ACL for dataset that has been created:
            </label>
            <input
              type="url"
@@ -65,6 +65,30 @@
          <dd id="labelFN">...not read yet...</dd>
        </dl>
      </div>
+
+     <div id="readAgent" class="panel">
+      <div class="row">
+        <form id="readAgentAccessForm">
+          <label id="readlabel" for="webID"
+            >3. Read agent access of dataset that has been created:
+          </label>
+          <input
+            type="url"
+            id="webID"
+            name="webID"
+            size="50"
+            placeholder="...not logged in yet - but enter any WebID to read from its profile..."
+          />
+          <button type="submit" name="btnRead" id="btnRead">
+            Read Profile
+          </button>
+        </form>
+      </div>
+      <dl class="display">
+        <dt>Formatted Name (FN) read from Pod:&nbsp</dt>
+        <dd id="labelFN">...not read yet...</dd>
+      </dl>
+    </div>
 
      <div id="read" class="panel">
         <div class="row">
