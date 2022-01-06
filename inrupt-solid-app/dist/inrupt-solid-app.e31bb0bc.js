@@ -55359,7 +55359,7 @@ async function writeProfile() {
   })).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.name, "Some text that should be privately available").addUrl(_vocabCommonRdf.RDF.type, "https://testuser1.solidcommunity.net/private/somePrivateFile.txt").build();
   healthRecordDataset = (0, _solidClient.setThing)(healthRecordDataset, privateInfoDocument); //Insert new doc into new dataset    
 
-  const savedPrivateInfoDataset = await (0, _solidClient.saveSolidDatasetAt)("https://testuser1.solidcommunity.net/privateInfoDataset", healthRecordDataset, {
+  const savedPrivateInfoDataset = await (0, _solidClient.saveSolidDatasetAt)("https://testuser1.solidcommunity.net/privateInfoDataset2", healthRecordDataset, {
     fetch: session.fetch
   });
 } // 3. Create ACL for created Dataset
@@ -55379,56 +55379,53 @@ async function readProfile() {
   } catch (_) {
     document.getElementById("labelFN").textContent = `Provided WebID [${webID}] is not a valid URL - please try again`;
     return false;
-  }
+  } // ANSWER CAME FROM : https://forum.solidproject.org/t/solved-solid-client-create-acl-for-container-makes-agent-lose-control/4029/3
 
-  const myDatasetWithAcl = await (0, _solidClient.getSolidDatasetWithAcl)("https://testuser1.solidcommunity.net/privateInfoDataset", {
+
+  const myDatasetWithAcl = await (0, _solidClient.getSolidDatasetWithAcl)("https://testuser1.solidcommunity.net/privateInfoDataset2", {
     fetch: session.fetch
   });
-  let resourceAcl;
-
-  if (!(0, _solidClient.hasResourceAcl)(myDatasetWithAcl, {
-    fetch: session.fetch
-  })) {
-    if (!(0, _solidClient.hasAccessibleAcl)(myDatasetWithAcl, {
-      fetch: session.fetch
-    })) {
-      throw new Error("The current user does not have permission to change access rights to this Resource.");
-    }
-
-    if (!(0, _solidClient.hasFallbackAcl)(myDatasetWithAcl, {
-      fetch: session.fetch
-    })) {
-      throw new Error("The current user does not have permission to see who currently has access to this Resource."); // Alternatively, initialise a new empty ACL as follows,
-      // but be aware that if you do not give someone Control access,
-      // **nobody will ever be able to change Access permissions in the future**:
-      // resourceAcl = createAcl(myDatasetWithAcl);
-    }
-
-    resourceAcl = (0, _solidClient.createAclFromFallbackAcl)(myDatasetWithAcl, {
-      fetch: session.fetch
-    });
-  } else {
-    resourceAcl = (0, _solidClient.getResourceAcl)(myDatasetWithAcl, {
-      fetch: session.fetch
-    });
-  } // Give someone Control access to the given Resource:
-
-
-  const updatedAcl = (0, _solidClient.setAgentResourceAccess)(resourceAcl, "https://testuser1.solidcommunity.net/profile/card#me", {
-    read: false,
-    append: false,
-    write: false,
+  const myDatasetsAcl = (0, _solidClient.createAcl)(myDatasetWithAcl);
+  console.log(myDatasetsAcl);
+  let updatedAcl = (0, _solidClient.setAgentResourceAccess)(myDatasetsAcl, "https://testuser1.solidcommunity.net/profile/card#me", {
+    read: true,
+    append: true,
+    write: true,
     control: true
-  }, {
-    fetch: session.fetch
-  }); // Now save the ACL:
-
+  });
+  updatedAcl = (0, _solidClient.setAgentDefaultAccess)(updatedAcl, "https://testuser1.solidcommunity.net/profile/card#me", {
+    read: true,
+    append: true,
+    write: true,
+    control: true
+  });
   await (0, _solidClient.saveAclFor)(myDatasetWithAcl, updatedAcl, {
     fetch: session.fetch
   });
-  const formattedName = (0, _solidClient.getStringNoLocale)(profile, _vocabCommonRdf.VCARD.fn) + " " + publicAccess; // Update the page with the retrieved values.
-
-  document.getElementById("labelFN").textContent = `[${formattedName}]`;
+  const myUpdateDatasetWithAcl = await (0, _solidClient.getSolidDatasetWithAcl)("https://testuser1.solidcommunity.net/privateInfoDataset2", {
+    fetch: session.fetch
+  });
+  const agentAccess = (0, _solidClient.getAgentAccess)(myUpdateDatasetWithAcl, "https://testuser1.solidcommunity.net/profile/card#me");
+  console.log(agentAccess); // await access.setAgentAccess(
+  //     "https://testuser1.solidcommunity.net/privateInfoDataset2",         // Resource
+  //     "https://testuser1.solidcommunity.net/profile/card#me",    // Agent
+  //     { read: true, write: true, },          // Access object
+  //     { fetch: session.fetch }                         // fetch function from authenticated session
+  // ).then(newAccess => {
+  //     logAccessInfo("https://testuser1.solidcommunity.net/profile/card#me", newAccess, "https://testuser1.solidcommunity.net/privateInfoDataset2")
+  // });
+  // function logAccessInfo(agent, access, resource) {
+  //     if (access === null) {
+  //         console.log("Could not load access details for this Resource.");
+  //     } else {
+  //         console.log(`${agent}'s Access:: `, JSON.stringify(access));
+  //         console.log("...", agent, (access.read ? 'CAN' : 'CANNOT'), "read the Resource", resource);
+  //         console.log("...", agent, (access.append ? 'CAN' : 'CANNOT'), "add data to the Resource", resource);
+  //         console.log("...", agent, (access.write ? 'CAN' : 'CANNOT'), "change data in the Resource", resource);
+  //         console.log("...", agent, (access.controlRead ? 'CAN' : 'CANNOT'), "see access to the Resource", resource);
+  //         console.log("...", agent, (access.controlWrite ? 'CAN' : 'CANNOT'), "change access to the Resource", resource);
+  //     }
+  // }
 } // 3. Read agent access
 
 
@@ -55448,13 +55445,29 @@ async function readAgentAccess() {
     return false;
   }
 
-  (0, _solidClient.getAgentAccess)("https://testuser1.solidcommunity.net/privateInfoDataset", // resource  
+  const myDatasetWithAcl = await (0, _solidClient.getSolidDatasetWithAcl)("https://testuser1.solidcommunity.net/privateInfoDataset2", {
+    fetch: session.fetch
+  });
+  console.log(myDatasetWithAcl); // const myDatasetsPublicAccess = await access.getPublicAccess("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch }).then(access => {
+  //     if (access === null) {
+  //         console.log("Could not load access details for this Resource.");
+  //     } else {
+  //         console.log("Returned Access:: ", JSON.stringify(access));
+  //         console.log("Everyone", (access.read ? 'CAN' : 'CANNOT'), "read the Resource.");
+  //         console.log("Everyone", (access.append ? 'CAN' : 'CANNOT'), "add data to the Resource.");
+  //         console.log("Everyone", (access.write ? 'CAN' : 'CANNOT'), "change data in the Resource.");
+  //         console.log("Everyone", (access.controlRead ? 'CAN' : 'CANNOT'), "see access to the Resource.");
+  //         console.log("Everyone", (access.controlWrite ? 'CAN' : 'CANNOT'), "change access to the Resource.");
+  //     }
+  // });
+
+  const myDatasetsAgentAccess = await _solidClient.access.getAgentAccess("https://testuser1.solidcommunity.net/privateInfoDataset2", // resource  
   "https://testuser1.solidcommunity.net/profile/card#me", // agent
   {
     fetch: session.fetch
   } // fetch function from authenticated session
   ).then(access => {
-    logAccessInfo("https://testuser1.solidcommunity.net/profile/card#me", access, "https://testuser1.solidcommunity.net/private/somePrivateFile.txt");
+    logAccessInfo("https://testuser1.solidcommunity.net/profile/card#me", access, "https://testuser1.solidcommunity.net/privateInfoDataset2");
   });
 
   function logAccessInfo(agent, access, resource) {
@@ -55524,6 +55537,17 @@ async function readDummyFile() {
   };
 
   fileReader.readAsText(testDataFile);
+}
+
+async function grantAccess() {
+  const webID = document.getElementById("granteeID").value;
+  console.log(webID); //const myDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch })
+  //const myDatasetsAcl = createAcl(myDatasetWithAcl)
+
+  const myDatasetsAcl = (0, _solidClient.getResourceAcl)("https://testuser1.solidcommunity.net/privateInfoDataset2.acl", {
+    fetch: session.fetch
+  });
+  console.log(myDatasetsAcl);
 }
 
 async function readPrivateFile() {
@@ -55598,6 +55622,10 @@ readAgentAccessForm.addEventListener("submit", event => {
 readDummyForm.addEventListener("submit", event => {
   event.preventDefault();
   readDummyFile();
+});
+giveAccessForm.addEventListener("submit", event => {
+  event.preventDefault();
+  grantAccess();
 });
 readPrivateForm.addEventListener("submit", event => {
   event.preventDefault();

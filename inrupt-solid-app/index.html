@@ -107,6 +107,30 @@
         </dl>
       </div>
 
+      <div id="giveAccess" class="panel">
+        <div class="row">
+          <form id="giveAccessForm">
+            <label id="giveAccesslabel" for="webID"
+              >5. Grant access to user for created dataset
+            </label>
+            <input
+              type="url"
+              id="granteeID"
+              name="webID"
+              size="50"
+              placeholder="Enter any WebID to grant access to the created dataset"
+            />
+            <button type="submit" name="btnRead" id="btnRead">
+              Grant Access
+            </button>
+          </form>
+        </div>
+        <!-- <dl class="display">
+          <dt>Formatted Name (FN) read from Pod:&nbsp</dt>
+          <dd id="labelFN">...not read yet...</dd>
+        </dl> -->
+      </div>
+
       <div id="read" class="panel">
         <div class="row">
           <form id="readPrivateForm">
