@@ -147,18 +147,22 @@ async function readProfile() {
     let updatedAcl = setAgentResourceAccess(
         myDatasetsAcl,
         "https://testuser1.solidcommunity.net/profile/card#me",
-        { read: true, append: true, write: true, control: true }
+        { read: true, append: false, write: true, control: true }
     )
     updatedAcl = setAgentDefaultAccess(
         updatedAcl,
         "https://testuser1.solidcommunity.net/profile/card#me",
         { read: true, append: true, write: true, control: true }
     )
-    await saveAclFor(myDatasetWithAcl, updatedAcl, { fetch: session.fetch })
+    console.log(updatedAcl)
+    // await saveAclFor(myDatasetWithAcl, updatedAcl, { fetch: session.fetch })
 
-    const myUpdateDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch })
-    const agentAccess = getAgentAccess(myUpdateDatasetWithAcl, "https://testuser1.solidcommunity.net/profile/card#me")
-    console.log(agentAccess)
+    // const myUpdateDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch })
+    // const agentAccess = getAgentAccess(myUpdateDatasetWithAcl, "https://testuser1.solidcommunity.net/profile/card#me")
+    // console.log(agentAccess)
+
+
+
     // await access.setAgentAccess(
     //     "https://testuser1.solidcommunity.net/privateInfoDataset2",         // Resource
     //     "https://testuser1.solidcommunity.net/profile/card#me",    // Agent
@@ -224,28 +228,29 @@ async function readAgentAccess() {
 
     const myDatasetsAgentAccess = await access.getAgentAccess(
         "https://testuser1.solidcommunity.net/privateInfoDataset2",       // resource  
-        "https://testuser1.solidcommunity.net/profile/card#me",  // agent
+        "https://testuser2.solidcommunity.net/profile/card#me",  // agent
         { fetch: session.fetch }                      // fetch function from authenticated session
     ).then(access => {
         logAccessInfo("https://testuser1.solidcommunity.net/profile/card#me", access, "https://testuser1.solidcommunity.net/privateInfoDataset2");
     });
 
-    function logAccessInfo(agent, access, resource) {
-        if (access === null) {
-            console.log("Could not load access details for this Resource.");
-        } else {
-            console.log(`${agent}'s Access:: `, JSON.stringify(access));
-            console.log("...", agent, (access.read ? 'CAN' : 'CANNOT'), "read the Resource", resource);
-            console.log("...", agent, (access.append ? 'CAN' : 'CANNOT'), "add data to the Resource", resource);
-            console.log("...", agent, (access.write ? 'CAN' : 'CANNOT'), "change data in the Resource", resource);
-            console.log("...", agent, (access.controlRead ? 'CAN' : 'CANNOT'), "see access to the Resource", resource);
-            console.log("...", agent, (access.controlWrite ? 'CAN' : 'CANNOT'), "change access to the Resource", resource);
-        }
-    }
 
 
     // Update the page with the retrieved values.
     document.getElementById("labelFN").textContent = `[${formattedName}]`;
+}
+
+function logAccessInfo(agent, access, resource) {
+    if (access === null) {
+        console.log("Could not load access details for this Resource.");
+    } else {
+        console.log(`${agent}'s Access:: `, JSON.stringify(access));
+        console.log("...", agent, (access.read ? 'CAN' : 'CANNOT'), "read the Resource", resource);
+        console.log("...", agent, (access.append ? 'CAN' : 'CANNOT'), "add data to the Resource", resource);
+        console.log("...", agent, (access.write ? 'CAN' : 'CANNOT'), "change data in the Resource", resource);
+        console.log("...", agent, (access.controlRead ? 'CAN' : 'CANNOT'), "see access to the Resource", resource);
+        console.log("...", agent, (access.controlWrite ? 'CAN' : 'CANNOT'), "change access to the Resource", resource);
+    }
 }
 
 async function readDummyFile() {
@@ -306,10 +311,16 @@ async function grantAccess(){
     const webID = document.getElementById("granteeID").value;
     console.log(webID)
 
-    //const myDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch })
-    //const myDatasetsAcl = createAcl(myDatasetWithAcl)
-    const myDatasetsAcl = getResourceAcl("https://testuser1.solidcommunity.net/privateInfoDataset2.acl", { fetch: session.fetch })
+    const myDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch })
+    const myDatasetsAcl = createAcl(myDatasetWithAcl)
+    //const myDatasetsAcl = getResourceAcl("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch })
     console.log(myDatasetsAcl)
+    let updatedAcl = setAgentResourceAccess(
+        myDatasetsAcl,
+        webID,
+        { read: true, append: false, write: false, control: false }
+    )
+    await saveAclFor(myDatasetWithAcl, updatedAcl, { fetch: session.fetch})
 }
 
 async function readPrivateFile() {
