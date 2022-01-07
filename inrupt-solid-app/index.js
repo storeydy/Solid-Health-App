@@ -34,7 +34,7 @@ import {
 
 import { Session } from "@inrupt/solid-client-authn-browser";
 import { SCHEMA_INRUPT, VCARD, RDF } from "@inrupt/vocab-common-rdf";
-//import fetch from 'unfetch';
+import fetch from 'unfetch';
 
 // If your Pod is *not* on `solidcommunity.net`, change this to your identity provider.
 const SOLID_IDENTITY_PROVIDER = "https://solidcommunity.net";
@@ -119,7 +119,7 @@ async function writeProfile() {
 }
 
 // 3. Create ACL for created Dataset
-async function readProfile() {
+async function createAclForDataset() {
     const webID = document.getElementById("webID").value;
     console.log(webID);
 
@@ -160,31 +160,6 @@ async function readProfile() {
     // const myUpdateDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch })
     // const agentAccess = getAgentAccess(myUpdateDatasetWithAcl, "https://testuser1.solidcommunity.net/profile/card#me")
     // console.log(agentAccess)
-
-
-
-    // await access.setAgentAccess(
-    //     "https://testuser1.solidcommunity.net/privateInfoDataset2",         // Resource
-    //     "https://testuser1.solidcommunity.net/profile/card#me",    // Agent
-    //     { read: true, write: true, },          // Access object
-    //     { fetch: session.fetch }                         // fetch function from authenticated session
-    // ).then(newAccess => {
-    //     logAccessInfo("https://testuser1.solidcommunity.net/profile/card#me", newAccess, "https://testuser1.solidcommunity.net/privateInfoDataset2")
-    // });
-
-    // function logAccessInfo(agent, access, resource) {
-    //     if (access === null) {
-    //         console.log("Could not load access details for this Resource.");
-    //     } else {
-    //         console.log(`${agent}'s Access:: `, JSON.stringify(access));
-    //         console.log("...", agent, (access.read ? 'CAN' : 'CANNOT'), "read the Resource", resource);
-    //         console.log("...", agent, (access.append ? 'CAN' : 'CANNOT'), "add data to the Resource", resource);
-    //         console.log("...", agent, (access.write ? 'CAN' : 'CANNOT'), "change data in the Resource", resource);
-    //         console.log("...", agent, (access.controlRead ? 'CAN' : 'CANNOT'), "see access to the Resource", resource);
-    //         console.log("...", agent, (access.controlWrite ? 'CAN' : 'CANNOT'), "change access to the Resource", resource);
-    //     }
-    // }
-
 }
 
 // 3. Read agent access
@@ -212,46 +187,18 @@ async function readAgentAccess() {
 
     console.log(myDatasetWithAcl)
 
-    // const myDatasetsPublicAccess = await access.getPublicAccess("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch }).then(access => {
-    //     if (access === null) {
-    //         console.log("Could not load access details for this Resource.");
-    //     } else {
-    //         console.log("Returned Access:: ", JSON.stringify(access));
-    //         console.log("Everyone", (access.read ? 'CAN' : 'CANNOT'), "read the Resource.");
-    //         console.log("Everyone", (access.append ? 'CAN' : 'CANNOT'), "add data to the Resource.");
-    //         console.log("Everyone", (access.write ? 'CAN' : 'CANNOT'), "change data in the Resource.");
-    //         console.log("Everyone", (access.controlRead ? 'CAN' : 'CANNOT'), "see access to the Resource.");
-    //         console.log("Everyone", (access.controlWrite ? 'CAN' : 'CANNOT'), "change access to the Resource.");
-    //     }
-    // });
-
-
     const myDatasetsAgentAccess = await access.getAgentAccess(
         "https://testuser1.solidcommunity.net/privateInfoDataset2",       // resource  
-        "https://testuser2.solidcommunity.net/profile/card#me",  // agent
+        "https://testuser1.solidcommunity.net/profile/card#me",  // agent
         { fetch: session.fetch }                      // fetch function from authenticated session
     ).then(access => {
         logAccessInfo("https://testuser1.solidcommunity.net/profile/card#me", access, "https://testuser1.solidcommunity.net/privateInfoDataset2");
     });
 
-
-
     // Update the page with the retrieved values.
-    document.getElementById("labelFN").textContent = `[${formattedName}]`;
+    //document.getElementById("labelFN").textContent = `[${formattedName}]`;
 }
 
-function logAccessInfo(agent, access, resource) {
-    if (access === null) {
-        console.log("Could not load access details for this Resource.");
-    } else {
-        console.log(`${agent}'s Access:: `, JSON.stringify(access));
-        console.log("...", agent, (access.read ? 'CAN' : 'CANNOT'), "read the Resource", resource);
-        console.log("...", agent, (access.append ? 'CAN' : 'CANNOT'), "add data to the Resource", resource);
-        console.log("...", agent, (access.write ? 'CAN' : 'CANNOT'), "change data in the Resource", resource);
-        console.log("...", agent, (access.controlRead ? 'CAN' : 'CANNOT'), "see access to the Resource", resource);
-        console.log("...", agent, (access.controlWrite ? 'CAN' : 'CANNOT'), "change access to the Resource", resource);
-    }
-}
 
 async function readDummyFile() {
     const webID = document.getElementById("webID").value;
@@ -382,6 +329,20 @@ async function readPrivateFile() {
 }
 
 
+function logAccessInfo(agent, access, resource) {
+    if (access === null) {
+        console.log("Could not load access details for this Resource.");
+    } else {
+        console.log(`${agent}'s Access:: `, JSON.stringify(access));
+        console.log("...", agent, (access.read ? 'CAN' : 'CANNOT'), "read the Resource", resource);
+        console.log("...", agent, (access.append ? 'CAN' : 'CANNOT'), "add data to the Resource", resource);
+        console.log("...", agent, (access.write ? 'CAN' : 'CANNOT'), "change data in the Resource", resource);
+        console.log("...", agent, (access.controlRead ? 'CAN' : 'CANNOT'), "see access to the Resource", resource);
+        console.log("...", agent, (access.controlWrite ? 'CAN' : 'CANNOT'), "change access to the Resource", resource);
+    }
+}
+
+
 
 buttonLogin.onclick = function () {
     login();
@@ -392,9 +353,9 @@ writeForm.addEventListener("submit", (event) => {
     writeProfile();
 });
 
-readForm.addEventListener("submit", (event) => {
+createAclForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    readProfile();
+    createAclForDataset();
 });
 
 readAgentAccessForm.addEventListener("submit", (event) => {

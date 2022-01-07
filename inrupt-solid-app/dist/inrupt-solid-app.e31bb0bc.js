@@ -55286,6 +55286,62 @@ var XSD = {
   gMonth: _NS("gMonth")
 };
 exports.XSD = XSD;
+},{}],"node_modules/unfetch/dist/unfetch.module.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.default = _default;
+
+function _default(e, n) {
+  return n = n || {}, new Promise(function (t, r) {
+    var s = new XMLHttpRequest(),
+        o = [],
+        u = [],
+        i = {},
+        a = function () {
+      return {
+        ok: 2 == (s.status / 100 | 0),
+        statusText: s.statusText,
+        status: s.status,
+        url: s.responseURL,
+        text: function () {
+          return Promise.resolve(s.responseText);
+        },
+        json: function () {
+          return Promise.resolve(s.responseText).then(JSON.parse);
+        },
+        blob: function () {
+          return Promise.resolve(new Blob([s.response]));
+        },
+        clone: a,
+        headers: {
+          keys: function () {
+            return o;
+          },
+          entries: function () {
+            return u;
+          },
+          get: function (e) {
+            return i[e.toLowerCase()];
+          },
+          has: function (e) {
+            return e.toLowerCase() in i;
+          }
+        }
+      };
+    };
+
+    for (var l in s.open(n.method || "get", e, !0), s.onload = function () {
+      s.getAllResponseHeaders().replace(/^(.*?):[^\S\n]*([\s\S]*?)$/gm, function (e, n, t) {
+        o.push(n = n.toLowerCase()), u.push([n, t]), i[n] = i[n] ? i[n] + "," + t : t;
+      }), t(a());
+    }, s.onerror = r, s.withCredentials = "include" == n.credentials, n.headers) s.setRequestHeader(l, n.headers[l]);
+
+    s.send(n.body || null);
+  });
+}
 },{}],"index.js":[function(require,module,exports) {
 "use strict";
 
@@ -55295,10 +55351,13 @@ var _solidClientAuthnBrowser = require("@inrupt/solid-client-authn-browser");
 
 var _vocabCommonRdf = require("@inrupt/vocab-common-rdf");
 
+var _unfetch = _interopRequireDefault(require("unfetch"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 // import {
 //     setPublicAccess,
 // } from "@inrupt/solid-client/access/universal";
-//import fetch from 'unfetch';
 // If your Pod is *not* on `solidcommunity.net`, change this to your identity provider.
 const SOLID_IDENTITY_PROVIDER = "https://solidcommunity.net";
 document.getElementById("solid_identity_provider").innerHTML = `[<a target="_blank" href="${SOLID_IDENTITY_PROVIDER}">${SOLID_IDENTITY_PROVIDER}</a>]`;
@@ -55365,7 +55424,7 @@ async function writeProfile() {
 } // 3. Create ACL for created Dataset
 
 
-async function readProfile() {
+async function createAclForDataset() {
   const webID = document.getElementById("webID").value;
   console.log(webID);
 
@@ -55403,26 +55462,6 @@ async function readProfile() {
   // const myUpdateDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch })
   // const agentAccess = getAgentAccess(myUpdateDatasetWithAcl, "https://testuser1.solidcommunity.net/profile/card#me")
   // console.log(agentAccess)
-  // await access.setAgentAccess(
-  //     "https://testuser1.solidcommunity.net/privateInfoDataset2",         // Resource
-  //     "https://testuser1.solidcommunity.net/profile/card#me",    // Agent
-  //     { read: true, write: true, },          // Access object
-  //     { fetch: session.fetch }                         // fetch function from authenticated session
-  // ).then(newAccess => {
-  //     logAccessInfo("https://testuser1.solidcommunity.net/profile/card#me", newAccess, "https://testuser1.solidcommunity.net/privateInfoDataset2")
-  // });
-  // function logAccessInfo(agent, access, resource) {
-  //     if (access === null) {
-  //         console.log("Could not load access details for this Resource.");
-  //     } else {
-  //         console.log(`${agent}'s Access:: `, JSON.stringify(access));
-  //         console.log("...", agent, (access.read ? 'CAN' : 'CANNOT'), "read the Resource", resource);
-  //         console.log("...", agent, (access.append ? 'CAN' : 'CANNOT'), "add data to the Resource", resource);
-  //         console.log("...", agent, (access.write ? 'CAN' : 'CANNOT'), "change data in the Resource", resource);
-  //         console.log("...", agent, (access.controlRead ? 'CAN' : 'CANNOT'), "see access to the Resource", resource);
-  //         console.log("...", agent, (access.controlWrite ? 'CAN' : 'CANNOT'), "change access to the Resource", resource);
-  //     }
-  // }
 } // 3. Read agent access
 
 
@@ -55445,42 +55484,16 @@ async function readAgentAccess() {
   const myDatasetWithAcl = await (0, _solidClient.getSolidDatasetWithAcl)("https://testuser1.solidcommunity.net/privateInfoDataset2", {
     fetch: session.fetch
   });
-  console.log(myDatasetWithAcl); // const myDatasetsPublicAccess = await access.getPublicAccess("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch }).then(access => {
-  //     if (access === null) {
-  //         console.log("Could not load access details for this Resource.");
-  //     } else {
-  //         console.log("Returned Access:: ", JSON.stringify(access));
-  //         console.log("Everyone", (access.read ? 'CAN' : 'CANNOT'), "read the Resource.");
-  //         console.log("Everyone", (access.append ? 'CAN' : 'CANNOT'), "add data to the Resource.");
-  //         console.log("Everyone", (access.write ? 'CAN' : 'CANNOT'), "change data in the Resource.");
-  //         console.log("Everyone", (access.controlRead ? 'CAN' : 'CANNOT'), "see access to the Resource.");
-  //         console.log("Everyone", (access.controlWrite ? 'CAN' : 'CANNOT'), "change access to the Resource.");
-  //     }
-  // });
-
+  console.log(myDatasetWithAcl);
   const myDatasetsAgentAccess = await _solidClient.access.getAgentAccess("https://testuser1.solidcommunity.net/privateInfoDataset2", // resource  
-  "https://testuser2.solidcommunity.net/profile/card#me", // agent
+  "https://testuser1.solidcommunity.net/profile/card#me", // agent
   {
     fetch: session.fetch
   } // fetch function from authenticated session
   ).then(access => {
     logAccessInfo("https://testuser1.solidcommunity.net/profile/card#me", access, "https://testuser1.solidcommunity.net/privateInfoDataset2");
   }); // Update the page with the retrieved values.
-
-  document.getElementById("labelFN").textContent = `[${formattedName}]`;
-}
-
-function logAccessInfo(agent, access, resource) {
-  if (access === null) {
-    console.log("Could not load access details for this Resource.");
-  } else {
-    console.log(`${agent}'s Access:: `, JSON.stringify(access));
-    console.log("...", agent, access.read ? 'CAN' : 'CANNOT', "read the Resource", resource);
-    console.log("...", agent, access.append ? 'CAN' : 'CANNOT', "add data to the Resource", resource);
-    console.log("...", agent, access.write ? 'CAN' : 'CANNOT', "change data in the Resource", resource);
-    console.log("...", agent, access.controlRead ? 'CAN' : 'CANNOT', "see access to the Resource", resource);
-    console.log("...", agent, access.controlWrite ? 'CAN' : 'CANNOT', "change access to the Resource", resource);
-  }
+  //document.getElementById("labelFN").textContent = `[${formattedName}]`;
 }
 
 async function readDummyFile() {
@@ -55608,6 +55621,19 @@ async function readPrivateFile() {
   fileReader.readAsText(testDataFile);
 }
 
+function logAccessInfo(agent, access, resource) {
+  if (access === null) {
+    console.log("Could not load access details for this Resource.");
+  } else {
+    console.log(`${agent}'s Access:: `, JSON.stringify(access));
+    console.log("...", agent, access.read ? 'CAN' : 'CANNOT', "read the Resource", resource);
+    console.log("...", agent, access.append ? 'CAN' : 'CANNOT', "add data to the Resource", resource);
+    console.log("...", agent, access.write ? 'CAN' : 'CANNOT', "change data in the Resource", resource);
+    console.log("...", agent, access.controlRead ? 'CAN' : 'CANNOT', "see access to the Resource", resource);
+    console.log("...", agent, access.controlWrite ? 'CAN' : 'CANNOT', "change access to the Resource", resource);
+  }
+}
+
 buttonLogin.onclick = function () {
   login();
 };
@@ -55616,9 +55642,9 @@ writeForm.addEventListener("submit", event => {
   event.preventDefault();
   writeProfile();
 });
-readForm.addEventListener("submit", event => {
+createAclForm.addEventListener("submit", event => {
   event.preventDefault();
-  readProfile();
+  createAclForDataset();
 });
 readAgentAccessForm.addEventListener("submit", event => {
   event.preventDefault();
@@ -55636,7 +55662,7 @@ readPrivateForm.addEventListener("submit", event => {
   event.preventDefault();
   readPrivateFile();
 });
-},{"@inrupt/solid-client":"node_modules/@inrupt/solid-client/dist/index.es.js","@inrupt/solid-client-authn-browser":"node_modules/@inrupt/solid-client-authn-browser/dist/index.js","@inrupt/vocab-common-rdf":"node_modules/@inrupt/vocab-common-rdf/dist/index.es.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"@inrupt/solid-client":"node_modules/@inrupt/solid-client/dist/index.es.js","@inrupt/solid-client-authn-browser":"node_modules/@inrupt/solid-client-authn-browser/dist/index.js","@inrupt/vocab-common-rdf":"node_modules/@inrupt/vocab-common-rdf/dist/index.es.js","unfetch":"node_modules/unfetch/dist/unfetch.module.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -55664,7 +55690,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50508" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "60211" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

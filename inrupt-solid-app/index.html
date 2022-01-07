@@ -42,21 +42,14 @@
        </dl>
      </div>
 
-     <div id="read" class="panel">
+     <div id="createAcl" class="panel">
        <div class="row">
-         <form id="readForm">
-           <label id="readlabel" for="webID"
+         <form id="createAclForm">
+           <label id="createAclLabel" for="webID"
              >3. Create ACL for dataset that has been created:
            </label>
-           <input
-             type="url"
-             id="webID"
-             name="webID"
-             size="50"
-             placeholder="...not logged in yet - but enter any WebID to read from its profile..."
-           />
-           <button type="submit" name="btnRead" id="btnRead">
-             Read Profile
+           <button type="submit" name="btnCreateAcl" id="btnCreateAcl">
+             Create ACL
            </button>
          </form>
        </div>
@@ -70,7 +63,7 @@
       <div class="row">
         <form id="readAgentAccessForm">
           <label id="readlabel" for="webID"
-            >3. Read agent access of dataset that has been created:
+            >4. Read agent access of dataset that has been created:
           </label>
           <input
             type="url"
