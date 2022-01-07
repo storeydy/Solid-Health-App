@@ -28,7 +28,9 @@ import {
     getResourceAcl,
     setAgentResourceAccess,
     saveAclFor,
-    access
+    access,
+    deleteFile,
+    deleteSolidDataset
 } from "@inrupt/solid-client";
 
 
@@ -106,13 +108,13 @@ async function writeProfile() {
     let healthRecordDataset = createSolidDataset();
     const privateInfoDocument = buildThing(createThing({ name: "some_private_file.txt" }))
         .addStringNoLocale(SCHEMA_INRUPT.name, "Some text that should be privately available")
-        .addUrl(RDF.type, "https://testuser1.solidcommunity.net/private/somePrivateFile.txt")
+        .addUrl(RDF.type, "https://schema.org/TextDigitalDocument")
         .build();
 
     healthRecordDataset = setThing(healthRecordDataset, privateInfoDocument);  //Insert new doc into new dataset    
 
     const savedPrivateInfoDataset = await saveSolidDatasetAt(
-        "https://testuser1.solidcommunity.net/privateInfoDataset2",
+        "https://testuser1.solidcommunity.net/healthDataDataset",
         healthRecordDataset,
         { fetch: session.fetch }
     )
@@ -141,13 +143,13 @@ async function createAclForDataset() {
 
 
     // ANSWER CAME FROM : https://forum.solidproject.org/t/solved-solid-client-create-acl-for-container-makes-agent-lose-control/4029/3
-    const myDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch })
+    const myDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/healthDataDataset", { fetch: session.fetch })
     const myDatasetsAcl = createAcl(myDatasetWithAcl)
     console.log(myDatasetsAcl)
     let updatedAcl = setAgentResourceAccess(
         myDatasetsAcl,
         "https://testuser1.solidcommunity.net/profile/card#me",
-        { read: true, append: false, write: true, control: true }
+        { read: true, append: true, write: true, control: true }
     )
     updatedAcl = setAgentDefaultAccess(
         updatedAcl,
@@ -155,8 +157,12 @@ async function createAclForDataset() {
         { read: true, append: true, write: true, control: true }
     )
     console.log(updatedAcl)
-    // await saveAclFor(myDatasetWithAcl, updatedAcl, { fetch: session.fetch })
-
+    try{
+    await saveAclFor(myDatasetWithAcl, updatedAcl, { fetch: session.fetch })
+    }
+    catch(err){
+        console.log(err)
+    }
     // const myUpdateDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch })
     // const agentAccess = getAgentAccess(myUpdateDatasetWithAcl, "https://testuser1.solidcommunity.net/profile/card#me")
     // console.log(agentAccess)
@@ -183,16 +189,16 @@ async function readAgentAccess() {
         return false;
     }
 
-    const myDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch });
+    const myDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/healthDataDataset", { fetch: session.fetch });
 
     console.log(myDatasetWithAcl)
 
     const myDatasetsAgentAccess = await access.getAgentAccess(
-        "https://testuser1.solidcommunity.net/privateInfoDataset2",       // resource  
+        "https://testuser1.solidcommunity.net/healthDataDataset",       // resource  
         "https://testuser1.solidcommunity.net/profile/card#me",  // agent
         { fetch: session.fetch }                      // fetch function from authenticated session
     ).then(access => {
-        logAccessInfo("https://testuser1.solidcommunity.net/profile/card#me", access, "https://testuser1.solidcommunity.net/privateInfoDataset2");
+        logAccessInfo("https://testuser1.solidcommunity.net/profile/card#me", access, "https://testuser1.solidcommunity.net/healthDataDataset");
     });
 
     // Update the page with the retrieved values.
@@ -221,10 +227,11 @@ async function readDummyFile() {
     let myDataset;
     try {
         if (session.info.isLoggedIn) {
-            myDataset = await getSolidDataset(profileDocumentUrl.href, { fetch: session.fetch });
+            //myDataset = await getSolidDataset(profileDocumentUrl.href, { fetch: session.fetch });
             //myDataset = await getSolidDataset()
+            myDataset = await getSolidDataset("https://testuser1.solidcommunity.net/healthDataDataset", { fetch: session.fetch });
         } else {
-            myDataset = await getSolidDataset(profileDocumentUrl.href);
+            myDataset = await getSolidDataset("https://testuser1.solidcommunity.net/healthDataDataset");
         }
     } catch (error) {
         document.getElementById(
@@ -254,7 +261,7 @@ async function readDummyFile() {
     fileReader.readAsText(testDataFile);
 }
 
-async function grantAccess(){
+async function grantAccess() {
     const webID = document.getElementById("granteeID").value;
     console.log(webID)
 
@@ -267,7 +274,7 @@ async function grantAccess(){
         webID,
         { read: true, append: false, write: false, control: false }
     )
-    await saveAclFor(myDatasetWithAcl, updatedAcl, { fetch: session.fetch})
+    await saveAclFor(myDatasetWithAcl, updatedAcl, { fetch: session.fetch })
 }
 
 async function readPrivateFile() {
@@ -328,6 +335,58 @@ async function readPrivateFile() {
 
 }
 
+async function uploadFile() {
+    const fileName = document.getElementById("fileName").value;
+    //console.log(fileName);
+    const fileContent = document.getElementById("fileContent").value;
+
+    console.log("fileName: ", fileName);
+    console.log("fileContent: ", fileContent);
+
+    let myDataset = await getSolidDataset("https://testuser1.solidcommunity.net/healthDataDataset", { fetch: session.fetch });
+
+    //let healthRecordDataset = createSolidDataset();
+    const newDocument = buildThing(createThing({ name: fileName + ".txt" }))
+        .addStringNoLocale(SCHEMA_INRUPT.name, fileName + ".txt")
+        .addStringNoLocale(SCHEMA_INRUPT.text, fileContent)
+        .addUrl(RDF.type, "https://schema.org/TextDigitalDocument")
+        .build();
+
+    myDataset = setThing(myDataset, newDocument);  //Insert new doc into dataset    
+
+    const savedPrivateInfoDataset = await saveSolidDatasetAt(
+        "https://testuser1.solidcommunity.net/healthDataDataset",
+        myDataset,
+        { fetch: session.fetch }
+    )
+
+    document.getElementById("uploadLabel").textContent = "Wrote file successfully";
+}
+
+async function deleteFileFromUrl(){
+    const fileUrl = document.getElementById("fileUrl");
+    try{
+    await deleteFile( fileUrl, {fetch: session.fetch});
+        document.getElementById("deleteLabel").textContent = "Deleted file successfully";
+        console.log("Deleted file")
+    }
+    catch(err){
+        document.getElementById("deleteLabel").textContent = "Failed to delete file successfully";
+        console.log(err)
+    }
+}
+
+async function deleteDataset(){
+    try {
+        await deleteSolidDataset(
+            "https://testuser1.solidcommunity.net/privateInfoDataset", { fetch : session.fetch}
+        );
+        console.log("deleted dataset")
+    }
+    catch(err){
+        console.log(err)
+    }
+}
 
 function logAccessInfo(agent, access, resource) {
     if (access === null) {
@@ -377,3 +436,14 @@ readPrivateForm.addEventListener("submit", (event) => {
     event.preventDefault();
     readPrivateFile();
 });
+
+uploadFileForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    uploadFile();
+});
+
+deleteFileForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    deleteFileFromUrl();
+    //deleteDataset();
+})

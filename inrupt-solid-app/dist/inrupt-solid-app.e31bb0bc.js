@@ -55415,10 +55415,10 @@ async function writeProfile() {
   let healthRecordDataset = (0, _solidClient.createSolidDataset)();
   const privateInfoDocument = (0, _solidClient.buildThing)((0, _solidClient.createThing)({
     name: "some_private_file.txt"
-  })).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.name, "Some text that should be privately available").addUrl(_vocabCommonRdf.RDF.type, "https://testuser1.solidcommunity.net/private/somePrivateFile.txt").build();
+  })).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.name, "Some text that should be privately available").addUrl(_vocabCommonRdf.RDF.type, "https://schema.org/TextDigitalDocument").build();
   healthRecordDataset = (0, _solidClient.setThing)(healthRecordDataset, privateInfoDocument); //Insert new doc into new dataset    
 
-  const savedPrivateInfoDataset = await (0, _solidClient.saveSolidDatasetAt)("https://testuser1.solidcommunity.net/privateInfoDataset2", healthRecordDataset, {
+  const savedPrivateInfoDataset = await (0, _solidClient.saveSolidDatasetAt)("https://testuser1.solidcommunity.net/healthDataDataset", healthRecordDataset, {
     fetch: session.fetch
   });
 } // 3. Create ACL for created Dataset
@@ -55441,14 +55441,14 @@ async function createAclForDataset() {
   } // ANSWER CAME FROM : https://forum.solidproject.org/t/solved-solid-client-create-acl-for-container-makes-agent-lose-control/4029/3
 
 
-  const myDatasetWithAcl = await (0, _solidClient.getSolidDatasetWithAcl)("https://testuser1.solidcommunity.net/privateInfoDataset2", {
+  const myDatasetWithAcl = await (0, _solidClient.getSolidDatasetWithAcl)("https://testuser1.solidcommunity.net/healthDataDataset", {
     fetch: session.fetch
   });
   const myDatasetsAcl = (0, _solidClient.createAcl)(myDatasetWithAcl);
   console.log(myDatasetsAcl);
   let updatedAcl = (0, _solidClient.setAgentResourceAccess)(myDatasetsAcl, "https://testuser1.solidcommunity.net/profile/card#me", {
     read: true,
-    append: false,
+    append: true,
     write: true,
     control: true
   });
@@ -55458,10 +55458,18 @@ async function createAclForDataset() {
     write: true,
     control: true
   });
-  console.log(updatedAcl); // await saveAclFor(myDatasetWithAcl, updatedAcl, { fetch: session.fetch })
-  // const myUpdateDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch })
+  console.log(updatedAcl);
+
+  try {
+    await (0, _solidClient.saveAclFor)(myDatasetWithAcl, updatedAcl, {
+      fetch: session.fetch
+    });
+  } catch (err) {
+    console.log(err);
+  } // const myUpdateDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch })
   // const agentAccess = getAgentAccess(myUpdateDatasetWithAcl, "https://testuser1.solidcommunity.net/profile/card#me")
   // console.log(agentAccess)
+
 } // 3. Read agent access
 
 
@@ -55481,17 +55489,17 @@ async function readAgentAccess() {
     return false;
   }
 
-  const myDatasetWithAcl = await (0, _solidClient.getSolidDatasetWithAcl)("https://testuser1.solidcommunity.net/privateInfoDataset2", {
+  const myDatasetWithAcl = await (0, _solidClient.getSolidDatasetWithAcl)("https://testuser1.solidcommunity.net/healthDataDataset", {
     fetch: session.fetch
   });
   console.log(myDatasetWithAcl);
-  const myDatasetsAgentAccess = await _solidClient.access.getAgentAccess("https://testuser1.solidcommunity.net/privateInfoDataset2", // resource  
+  const myDatasetsAgentAccess = await _solidClient.access.getAgentAccess("https://testuser1.solidcommunity.net/healthDataDataset", // resource  
   "https://testuser1.solidcommunity.net/profile/card#me", // agent
   {
     fetch: session.fetch
   } // fetch function from authenticated session
   ).then(access => {
-    logAccessInfo("https://testuser1.solidcommunity.net/profile/card#me", access, "https://testuser1.solidcommunity.net/privateInfoDataset2");
+    logAccessInfo("https://testuser1.solidcommunity.net/profile/card#me", access, "https://testuser1.solidcommunity.net/healthDataDataset");
   }); // Update the page with the retrieved values.
   //document.getElementById("labelFN").textContent = `[${formattedName}]`;
 }
@@ -55514,11 +55522,13 @@ async function readDummyFile() {
 
   try {
     if (session.info.isLoggedIn) {
-      myDataset = await (0, _solidClient.getSolidDataset)(profileDocumentUrl.href, {
+      //myDataset = await getSolidDataset(profileDocumentUrl.href, { fetch: session.fetch });
+      //myDataset = await getSolidDataset()
+      myDataset = await (0, _solidClient.getSolidDataset)("https://testuser1.solidcommunity.net/healthDataDataset", {
         fetch: session.fetch
-      }); //myDataset = await getSolidDataset()
+      });
     } else {
-      myDataset = await (0, _solidClient.getSolidDataset)(profileDocumentUrl.href);
+      myDataset = await (0, _solidClient.getSolidDataset)("https://testuser1.solidcommunity.net/healthDataDataset");
     }
   } catch (error) {
     document.getElementById("labelFN").textContent = `Entered value [${webID}] does not appear to be a WebID. Error: [${error}]`;
@@ -55621,6 +55631,53 @@ async function readPrivateFile() {
   fileReader.readAsText(testDataFile);
 }
 
+async function uploadFile() {
+  const fileName = document.getElementById("fileName").value; //console.log(fileName);
+
+  const fileContent = document.getElementById("fileContent").value;
+  console.log("fileName: ", fileName);
+  console.log("fileContent: ", fileContent);
+  let myDataset = await (0, _solidClient.getSolidDataset)("https://testuser1.solidcommunity.net/healthDataDataset", {
+    fetch: session.fetch
+  }); //let healthRecordDataset = createSolidDataset();
+
+  const newDocument = (0, _solidClient.buildThing)((0, _solidClient.createThing)({
+    name: fileName + ".txt"
+  })).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.name, fileName + ".txt").addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.text, fileContent).addUrl(_vocabCommonRdf.RDF.type, "https://schema.org/TextDigitalDocument").build();
+  myDataset = (0, _solidClient.setThing)(myDataset, newDocument); //Insert new doc into dataset    
+
+  const savedPrivateInfoDataset = await (0, _solidClient.saveSolidDatasetAt)("https://testuser1.solidcommunity.net/healthDataDataset", myDataset, {
+    fetch: session.fetch
+  });
+  document.getElementById("uploadLabel").textContent = "Wrote file successfully";
+}
+
+async function deleteFileFromUrl() {
+  const fileUrl = document.getElementById("fileUrl");
+
+  try {
+    await (0, _solidClient.deleteFile)(fileUrl, {
+      fetch: session.fetch
+    });
+    document.getElementById("deleteLabel").textContent = "Deleted file successfully";
+    console.log("Deleted file");
+  } catch (err) {
+    document.getElementById("deleteLabel").textContent = "Failed to delete file successfully";
+    console.log(err);
+  }
+}
+
+async function deleteDataset() {
+  try {
+    await (0, _solidClient.deleteSolidDataset)("https://testuser1.solidcommunity.net/privateInfoDataset", {
+      fetch: session.fetch
+    });
+    console.log("deleted dataset");
+  } catch (err) {
+    console.log(err);
+  }
+}
+
 function logAccessInfo(agent, access, resource) {
   if (access === null) {
     console.log("Could not load access details for this Resource.");
@@ -55661,6 +55718,14 @@ giveAccessForm.addEventListener("submit", event => {
 readPrivateForm.addEventListener("submit", event => {
   event.preventDefault();
   readPrivateFile();
+});
+uploadFileForm.addEventListener("submit", event => {
+  event.preventDefault();
+  uploadFile();
+});
+deleteFileForm.addEventListener("submit", event => {
+  event.preventDefault();
+  deleteFileFromUrl(); //deleteDataset();
 });
 },{"@inrupt/solid-client":"node_modules/@inrupt/solid-client/dist/index.es.js","@inrupt/solid-client-authn-browser":"node_modules/@inrupt/solid-client-authn-browser/dist/index.js","@inrupt/vocab-common-rdf":"node_modules/@inrupt/vocab-common-rdf/dist/index.es.js","unfetch":"node_modules/unfetch/dist/unfetch.module.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
