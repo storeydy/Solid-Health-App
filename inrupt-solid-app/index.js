@@ -30,13 +30,15 @@ import {
     saveAclFor,
     access,
     deleteFile,
-    deleteSolidDataset
+    deleteSolidDataset,
+    overwriteFile,
+    removeThing
 } from "@inrupt/solid-client";
 
 
-import { Session } from "@inrupt/solid-client-authn-browser";
+import { Session, getDefaultSession, fetch } from "@inrupt/solid-client-authn-browser";
 import { SCHEMA_INRUPT, VCARD, RDF } from "@inrupt/vocab-common-rdf";
-import fetch from 'unfetch';
+//import fetch from 'unfetch';
 
 // If your Pod is *not* on `solidcommunity.net`, change this to your identity provider.
 const SOLID_IDENTITY_PROVIDER = "https://solidcommunity.net";
@@ -157,10 +159,10 @@ async function createAclForDataset() {
         { read: true, append: true, write: true, control: true }
     )
     console.log(updatedAcl)
-    try{
-    await saveAclFor(myDatasetWithAcl, updatedAcl, { fetch: session.fetch })
+    try {
+        await saveAclFor(myDatasetWithAcl, updatedAcl, { fetch: session.fetch })
     }
-    catch(err){
+    catch (err) {
         console.log(err)
     }
     // const myUpdateDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch })
@@ -363,27 +365,49 @@ async function uploadFile() {
     document.getElementById("uploadLabel").textContent = "Wrote file successfully";
 }
 
-async function deleteFileFromUrl(){
-    const fileUrl = document.getElementById("fileUrl");
-    try{
-    await deleteFile( fileUrl, {fetch: session.fetch});
-        document.getElementById("deleteLabel").textContent = "Deleted file successfully";
-        console.log("Deleted file")
+async function deleteFileFromUrl() {
+    const fileUrl = document.getElementById("fileUrl").value;
+    console.log(fileUrl)
+
+    let myDataset = await getSolidDataset(
+        "https://testuser1.solidcommunity.net/healthDataDataset",
+        { fetch: session.fetch }          // fetch from authenticated session
+    );
+    try {
+        const thingToDelete = getThing(myDataset, fileUrl, { fetch: session.fetch })
     }
-    catch(err){
-        document.getElementById("deleteLabel").textContent = "Failed to delete file successfully";
-        console.log(err)
+    catch (err) {
+        console.log("File url did not exist in solid dataset or invalid permission to read file. Exception generated: ", err)
     }
+
+    try {
+        myDataset = removeThing(myDataset, thingToDelete);  //Insert new doc into new dataset    
+    }
+    catch (err) {
+        console.log("Error deleting file from dataset. Exception generated: ", err)
+    }
+
+    try {
+        const savedPrivateInfoDataset = await saveSolidDatasetAt(
+            "https://testuser1.solidcommunity.net/healthDataDataset",
+            myDataset,
+            { fetch: session.fetch }
+        )
+    }
+    catch (err) {
+        console.log("Error saving changes to dataset after delete. Exception generated: ", err);
+    }
+
 }
 
-async function deleteDataset(){
+async function deleteDataset() {
     try {
         await deleteSolidDataset(
-            "https://testuser1.solidcommunity.net/privateInfoDataset", { fetch : session.fetch}
+            "https://testuser1.solidcommunity.net/privateInfoDataset", { fetch: session.fetch }
         );
         console.log("deleted dataset")
     }
-    catch(err){
+    catch (err) {
         console.log(err)
     }
 }

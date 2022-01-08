@@ -55286,62 +55286,6 @@ var XSD = {
   gMonth: _NS("gMonth")
 };
 exports.XSD = XSD;
-},{}],"node_modules/unfetch/dist/unfetch.module.js":[function(require,module,exports) {
-"use strict";
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.default = _default;
-
-function _default(e, n) {
-  return n = n || {}, new Promise(function (t, r) {
-    var s = new XMLHttpRequest(),
-        o = [],
-        u = [],
-        i = {},
-        a = function () {
-      return {
-        ok: 2 == (s.status / 100 | 0),
-        statusText: s.statusText,
-        status: s.status,
-        url: s.responseURL,
-        text: function () {
-          return Promise.resolve(s.responseText);
-        },
-        json: function () {
-          return Promise.resolve(s.responseText).then(JSON.parse);
-        },
-        blob: function () {
-          return Promise.resolve(new Blob([s.response]));
-        },
-        clone: a,
-        headers: {
-          keys: function () {
-            return o;
-          },
-          entries: function () {
-            return u;
-          },
-          get: function (e) {
-            return i[e.toLowerCase()];
-          },
-          has: function (e) {
-            return e.toLowerCase() in i;
-          }
-        }
-      };
-    };
-
-    for (var l in s.open(n.method || "get", e, !0), s.onload = function () {
-      s.getAllResponseHeaders().replace(/^(.*?):[^\S\n]*([\s\S]*?)$/gm, function (e, n, t) {
-        o.push(n = n.toLowerCase()), u.push([n, t]), i[n] = i[n] ? i[n] + "," + t : t;
-      }), t(a());
-    }, s.onerror = r, s.withCredentials = "include" == n.credentials, n.headers) s.setRequestHeader(l, n.headers[l]);
-
-    s.send(n.body || null);
-  });
-}
 },{}],"index.js":[function(require,module,exports) {
 "use strict";
 
@@ -55351,13 +55295,10 @@ var _solidClientAuthnBrowser = require("@inrupt/solid-client-authn-browser");
 
 var _vocabCommonRdf = require("@inrupt/vocab-common-rdf");
 
-var _unfetch = _interopRequireDefault(require("unfetch"));
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
 // import {
 //     setPublicAccess,
 // } from "@inrupt/solid-client/access/universal";
+//import fetch from 'unfetch';
 // If your Pod is *not* on `solidcommunity.net`, change this to your identity provider.
 const SOLID_IDENTITY_PROVIDER = "https://solidcommunity.net";
 document.getElementById("solid_identity_provider").innerHTML = `[<a target="_blank" href="${SOLID_IDENTITY_PROVIDER}">${SOLID_IDENTITY_PROVIDER}</a>]`;
@@ -55653,17 +55594,33 @@ async function uploadFile() {
 }
 
 async function deleteFileFromUrl() {
-  const fileUrl = document.getElementById("fileUrl");
+  const fileUrl = document.getElementById("fileUrl").value;
+  console.log(fileUrl);
+  let myDataset = await (0, _solidClient.getSolidDataset)("https://testuser1.solidcommunity.net/healthDataDataset", {
+    fetch: session.fetch
+  } // fetch from authenticated session
+  );
 
   try {
-    await (0, _solidClient.deleteFile)(fileUrl, {
+    const thingToDelete = (0, _solidClient.getThing)(myDataset, fileUrl, {
       fetch: session.fetch
     });
-    document.getElementById("deleteLabel").textContent = "Deleted file successfully";
-    console.log("Deleted file");
   } catch (err) {
-    document.getElementById("deleteLabel").textContent = "Failed to delete file successfully";
-    console.log(err);
+    console.log("File url did not exist in solid dataset or invalid permission to read file. Exception generated: ", err);
+  }
+
+  try {
+    myDataset = (0, _solidClient.removeThing)(myDataset, thingToDelete); //Insert new doc into new dataset    
+  } catch (err) {
+    console.log("Error deleting file from dataset. Exception generated: ", err);
+  }
+
+  try {
+    const savedPrivateInfoDataset = await (0, _solidClient.saveSolidDatasetAt)("https://testuser1.solidcommunity.net/healthDataDataset", myDataset, {
+      fetch: session.fetch
+    });
+  } catch (err) {
+    console.log("Error saving changes to dataset after delete. Exception generated: ", err);
   }
 }
 
@@ -55727,7 +55684,7 @@ deleteFileForm.addEventListener("submit", event => {
   event.preventDefault();
   deleteFileFromUrl(); //deleteDataset();
 });
-},{"@inrupt/solid-client":"node_modules/@inrupt/solid-client/dist/index.es.js","@inrupt/solid-client-authn-browser":"node_modules/@inrupt/solid-client-authn-browser/dist/index.js","@inrupt/vocab-common-rdf":"node_modules/@inrupt/vocab-common-rdf/dist/index.es.js","unfetch":"node_modules/unfetch/dist/unfetch.module.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"@inrupt/solid-client":"node_modules/@inrupt/solid-client/dist/index.es.js","@inrupt/solid-client-authn-browser":"node_modules/@inrupt/solid-client-authn-browser/dist/index.js","@inrupt/vocab-common-rdf":"node_modules/@inrupt/vocab-common-rdf/dist/index.es.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
