@@ -27,7 +27,6 @@
     <div class="row">
       <form id="writeForm">
         <label id="writelabel" for="name">2. Create a new Solid Dataset: </label>
-
         <button type="submit">
           Create Dataset
         </button>
@@ -52,7 +51,7 @@
     </div>
     <dl class="display">
       <dt>Formatted Name (FN) read from Pod:&nbsp</dt>
-      <dd id="labelFN">...not read yet...</dd>
+      <dd id="webID">...not read yet...</dd>
     </dl>
   </div>
 
@@ -61,7 +60,7 @@
       <form id="readAgentAccessForm">
         <label id="readlabel" for="webID">4. Read agent access of dataset that has been created:
         </label>
-        <input type="url" id="webID" name="webID" size="50" placeholder="...not logged in yet - but enter any WebID to read from its profile...">
+        <input type="url" id="agentID" name="agentID" size="50" placeholder="Enter a webID to see the access that webID has">
         <button type="submit" name="btnRead" id="btnRead">
           Read Profile
         </button>
@@ -75,11 +74,11 @@
 
   <div id="read" class="panel">
     <div class="row">
-      <form id="readDummyForm">
-        <label id="readlabel" for="webID">4. Read back dummy text file
+      <form id="readDatasetForm">
+        <label id="readlabel">4. Read back content of dataset
         </label>
-        <button type="submit" name="btnReadDummyFile" id="btnReadDummyFile">
-          Get dummy file
+        <button type="submit" name="btnReadDataset" id="btnReadDataset">
+          Get dataset contents
         </button>
       </form>
     </div>
@@ -95,11 +94,25 @@
         <label id="giveAccesslabel" for="webID">5. Grant access to user for created dataset
         </label>
         <input type="url" id="granteeID" name="webID" size="50" placeholder="Enter any WebID to grant access to the created dataset">
+        <br>
+        <input type="checkbox" id="readAccessBox">
+        <label for="readAccessBox"> Read </label>
+        <input type="checkbox" id="writeAccessBox">
+        <label for="writeAccessBox"> Write </label>
+        <input type="checkbox" id="appendAccessBox">
+        <label for="appendAccessBox"> Append </label>
+        <input type="checkbox" id="controlAccessBox">
+        <label for="controlAccessBox"> Control </label>
+        <br>
         <button type="submit" name="btnRead" id="btnRead">
           Grant Access
         </button>
       </form>
     </div>
+    <dl class="display">
+      <dt>Writing access status: </dt>
+      <dd id="accessStatusLabel">...not written yet...</dd>
+    </dl>
     <!-- <dl class="display">
           <dt>Formatted Name (FN) read from Pod:&nbsp</dt>
           <dd id="labelFN">...not read yet...</dd>
@@ -160,6 +173,8 @@
       <dd id="deleteLabel">...not deleted yet...</dd>
     </dl>
   </div>
+
+  <button id="deleteDatasetButton" onclick="deleteDataset()"> Delete dataset</button>
 </body>
 
 </html>

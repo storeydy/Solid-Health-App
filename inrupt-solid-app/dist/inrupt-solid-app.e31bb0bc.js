@@ -55327,7 +55327,7 @@ async function handleRedirectAfterLogin() {
     // Update the page with the status.
     document.getElementById("labelStatus").innerHTML = `Your session is logged in with the WebID [<a target="_blank" href="${session.info.webId}">${session.info.webId}</a>].`;
     document.getElementById("labelStatus").setAttribute("role", "alert");
-    document.getElementById("webID").value = session.info.webId;
+    document.getElementById("webID").value = session.info.webId; //deleteDataset();
   }
 } // The example has the login redirect back to the index.html.
 // This calls the function to process login information.
@@ -55337,29 +55337,22 @@ async function handleRedirectAfterLogin() {
 handleRedirectAfterLogin(); // 2. Create new dataset with a file in it
 
 async function writeProfile() {
-  // const name = document.getElementById("input_name").value;
   if (!session.info.isLoggedIn) {
-    // You must be authenticated to write.
     document.getElementById("labelWriteStatus").textContent = `...you can't write [${name}] until you first login!`;
     document.getElementById("labelWriteStatus").setAttribute("role", "alert");
     return;
   }
 
-  const webID = session.info.webId; // The WebID can contain a hash fragment (e.g. `#me`) to refer to profile data
-  // in the profile dataset. If we strip the hash, we get the URL of the full
-  // dataset.
-
+  const webID = session.info.webId;
   const profileDocumentUrl = new URL(webID);
-  profileDocumentUrl.hash = ""; // To write to a profile, you must be authenticated. That is the role of the fetch
-  // parameter in the following call.
-
+  profileDocumentUrl.hash = "";
   let healthRecordDataset = (0, _solidClient.createSolidDataset)();
   const privateInfoDocument = (0, _solidClient.buildThing)((0, _solidClient.createThing)({
     name: "some_private_file.txt"
-  })).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.name, "Some text that should be privately available").addUrl(_vocabCommonRdf.RDF.type, "https://schema.org/TextDigitalDocument").build();
+  })).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.text, "Some text that should be privately available").addUrl(_vocabCommonRdf.RDF.type, "https://schema.org/TextDigitalDocument").build();
   healthRecordDataset = (0, _solidClient.setThing)(healthRecordDataset, privateInfoDocument); //Insert new doc into new dataset    
 
-  const savedPrivateInfoDataset = await (0, _solidClient.saveSolidDatasetAt)("https://testuser1.solidcommunity.net/healthDataDataset", healthRecordDataset, {
+  const savedPrivateInfoDataset = await (0, _solidClient.saveSolidDatasetAt)("https://testuser1.solidcommunity.net/healthDataDataset1", healthRecordDataset, {
     fetch: session.fetch
   });
 } // 3. Create ACL for created Dataset
@@ -55382,7 +55375,7 @@ async function createAclForDataset() {
   } // ANSWER CAME FROM : https://forum.solidproject.org/t/solved-solid-client-create-acl-for-container-makes-agent-lose-control/4029/3
 
 
-  const myDatasetWithAcl = await (0, _solidClient.getSolidDatasetWithAcl)("https://testuser1.solidcommunity.net/healthDataDataset", {
+  const myDatasetWithAcl = await (0, _solidClient.getSolidDatasetWithAcl)("https://testuser1.solidcommunity.net/healthDataDataset1", {
     fetch: session.fetch
   });
   const myDatasetsAcl = (0, _solidClient.createAcl)(myDatasetWithAcl);
@@ -55407,45 +55400,28 @@ async function createAclForDataset() {
     });
   } catch (err) {
     console.log(err);
-  } // const myUpdateDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch })
-  // const agentAccess = getAgentAccess(myUpdateDatasetWithAcl, "https://testuser1.solidcommunity.net/profile/card#me")
-  // console.log(agentAccess)
-
+  }
 } // 3. Read agent access
 
 
 async function readAgentAccess() {
-  const webID = document.getElementById("webID").value;
-  console.log(webID);
-
-  if (webID === NOT_ENTERED_WEBID) {
-    document.getElementById("labelFN").textContent = `Login first, or enter a WebID (any WebID!) to read from its profile`;
-    return false;
-  }
-
-  try {
-    new URL(webID);
-  } catch (_) {
-    document.getElementById("labelFN").textContent = `Provided WebID [${webID}] is not a valid URL - please try again`;
-    return false;
-  }
-
-  const myDatasetWithAcl = await (0, _solidClient.getSolidDatasetWithAcl)("https://testuser1.solidcommunity.net/healthDataDataset", {
+  const agentID = document.getElementById("agentID").value;
+  console.log(agentID);
+  const myDatasetWithAcl = await (0, _solidClient.getSolidDatasetWithAcl)("https://testuser1.solidcommunity.net/healthDataDataset1", {
     fetch: session.fetch
   });
   console.log(myDatasetWithAcl);
-  const myDatasetsAgentAccess = await _solidClient.access.getAgentAccess("https://testuser1.solidcommunity.net/healthDataDataset", // resource  
-  "https://testuser1.solidcommunity.net/profile/card#me", // agent
+  const myDatasetsAgentAccess = await _solidClient.access.getAgentAccess("https://testuser1.solidcommunity.net/healthDataDataset1", // resource  
+  agentID, // agent
   {
     fetch: session.fetch
   } // fetch function from authenticated session
   ).then(access => {
-    logAccessInfo("https://testuser1.solidcommunity.net/profile/card#me", access, "https://testuser1.solidcommunity.net/healthDataDataset");
-  }); // Update the page with the retrieved values.
-  //document.getElementById("labelFN").textContent = `[${formattedName}]`;
+    logAccessInfo(agentID, access, "https://testuser1.solidcommunity.net/healthDataDataset1");
+  });
 }
 
-async function readDummyFile() {
+async function readDataset() {
   const webID = document.getElementById("webID").value;
   console.log(webID);
 
@@ -55453,70 +55429,68 @@ async function readDummyFile() {
     document.getElementById("labelFN").textContent = `Login first, or enter a WebID (any WebID!) to read from its profile`;
     return false;
   }
-
-  const profileDocumentUrl = new URL(webID);
-  console.log(profileDocumentUrl);
-  profileDocumentUrl.hash = ""; // Profile is public data; i.e., you do not need to be logged in to read the data.
-  // For illustrative purposes, shows both an authenticated and non-authenticated reads.
 
   let myDataset;
 
   try {
     if (session.info.isLoggedIn) {
-      //myDataset = await getSolidDataset(profileDocumentUrl.href, { fetch: session.fetch });
-      //myDataset = await getSolidDataset()
-      myDataset = await (0, _solidClient.getSolidDataset)("https://testuser1.solidcommunity.net/healthDataDataset", {
+      myDataset = await (0, _solidClient.getSolidDataset)("https://testuser1.solidcommunity.net/healthDataDataset1", {
         fetch: session.fetch
       });
     } else {
-      myDataset = await (0, _solidClient.getSolidDataset)("https://testuser1.solidcommunity.net/healthDataDataset");
+      myDataset = await (0, _solidClient.getSolidDataset)("https://testuser1.solidcommunity.net/healthDataDataset1");
     }
   } catch (error) {
     document.getElementById("labelFN").textContent = `Entered value [${webID}] does not appear to be a WebID. Error: [${error}]`;
     return false;
   }
 
-  console.log(myDataset); //const testDataUrl = new URL('https://storeydy.solidcommunity.net/public/testData.ttl');
-
-  const testDataUrl = new URL('https://storeydy.solidcommunity.net/public/testData.ttl');
-  console.log(testDataUrl);
-  const testDataFile = await (0, _solidClient.getFile)('https://storeydy.solidcommunity.net/public/testData.ttl', {
+  console.log(myDataset);
+  const datasetContents = (0, _solidClient.getThingAll)(myDataset, {
     fetch: session.fetch
   });
-  console.log(testDataFile);
-  console.log((0, _solidClient.getContentType)(testDataFile)); //npm install rdflib.js
-  //const $rdf = require('rdflib');
-  //const store = $rdf.graph();
-  //var file = $rdf.sym('https://storeydy.solidcommunity.net/public/testData.ttl');
-  //var obj = store.any(file, rel('enemyOf'));
+  console.log(datasetContents);
 
-  var fileReader = new FileReader();
-
-  fileReader.onload = function () {
-    console.log(fileReader.result);
-  };
-
-  fileReader.readAsText(testDataFile);
+  for (let i = 0; i < datasetContents.length; i++) {
+    let fileContents = (0, _solidClient.getStringNoLocale)(datasetContents[i], _vocabCommonRdf.SCHEMA_INRUPT.text);
+    let fileName = (0, _solidClient.getStringNoLocale)(datasetContents[i], _vocabCommonRdf.SCHEMA_INRUPT.name);
+    console.log(fileName, fileContents);
+  }
 }
 
 async function grantAccess() {
   const webID = document.getElementById("granteeID").value;
   console.log(webID);
-  const myDatasetWithAcl = await (0, _solidClient.getSolidDatasetWithAcl)("https://testuser1.solidcommunity.net/privateInfoDataset2", {
-    fetch: session.fetch
-  });
-  const myDatasetsAcl = (0, _solidClient.createAcl)(myDatasetWithAcl); //const myDatasetsAcl = getResourceAcl("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch })
+  const readAccess = document.getElementById("readAccessBox").checked;
+  const writeAccess = document.getElementById("writeAccessBox").checked;
+  const controlAccess = document.getElementById("controlAccessBox").checked;
+  const appendAccess = document.getElementById("appendAccessBox").checked; // console.log("read ", readAccess);
+  // console.log("write " ,writeAccess);
+  // console.log("append ", appendAccess);
+  // console.log("control", controlAccess);
 
-  console.log(myDatasetsAcl);
-  let updatedAcl = (0, _solidClient.setAgentResourceAccess)(myDatasetsAcl, webID, {
-    read: true,
-    append: false,
-    write: false,
-    control: false
-  });
-  await (0, _solidClient.saveAclFor)(myDatasetWithAcl, updatedAcl, {
-    fetch: session.fetch
-  });
+  try {
+    const myDatasetWithAcl = await (0, _solidClient.getSolidDatasetWithAcl)("https://testuser1.solidcommunity.net/healthDataDataset1", {
+      fetch: session.fetch
+    });
+    const myDatasetsAcl = (0, _solidClient.createAcl)(myDatasetWithAcl); //const myDatasetsAcl = getResourceAcl("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch })
+
+    console.log(myDatasetsAcl);
+    let updatedAcl = (0, _solidClient.setAgentResourceAccess)(myDatasetsAcl, webID, {
+      read: readAccess,
+      append: appendAccess,
+      write: writeAccess,
+      control: controlAccess
+    });
+    console.log(updatedAcl);
+    await (0, _solidClient.saveAclFor)(myDatasetWithAcl, updatedAcl, {
+      fetch: session.fetch
+    });
+    document.getElementById("accessStatusLabel").textContent = "Updated access successfully";
+  } catch (err) {
+    console.log("Error updating access to dataset. Exception generated: ", err);
+    document.getElementById("accessStatusLabel").textContent = "Failed to update access";
+  }
 }
 
 async function readPrivateFile() {
@@ -55578,16 +55552,25 @@ async function uploadFile() {
   const fileContent = document.getElementById("fileContent").value;
   console.log("fileName: ", fileName);
   console.log("fileContent: ", fileContent);
-  let myDataset = await (0, _solidClient.getSolidDataset)("https://testuser1.solidcommunity.net/healthDataDataset", {
+  const profileDocumentUrl = new URL(session.info.webId);
+  console.log(profileDocumentUrl);
+  profileDocumentUrl.hash = "";
+  let myProfileDataset = await (0, _solidClient.getSolidDataset)(profileDocumentUrl.href, {
     fetch: session.fetch
-  }); //let healthRecordDataset = createSolidDataset();
-
+  });
+  const profile = (0, _solidClient.getThing)(myProfileDataset, session.info.webId);
+  const name = (0, _solidClient.getStringNoLocale)(profile, _vocabCommonRdf.VCARD.fn);
+  const date = (0, _solidClient.getDatetime)();
+  let myDataset = await (0, _solidClient.getSolidDataset)("https://testuser1.solidcommunity.net/healthDataDataset1", {
+    fetch: session.fetch
+  });
   const newDocument = (0, _solidClient.buildThing)((0, _solidClient.createThing)({
     name: fileName + ".txt"
-  })).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.name, fileName + ".txt").addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.text, fileContent).addUrl(_vocabCommonRdf.RDF.type, "https://schema.org/TextDigitalDocument").build();
+  })).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.name, fileName + ".txt").addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.text, fileContent).addStringNoLocale(_vocabCommonRdf.FOAF.Agent, name) //.addDate("https://schema.org/dateCreated", date )
+  .addUrl(_vocabCommonRdf.RDF.type, "https://schema.org/TextDigitalDocument").build();
   myDataset = (0, _solidClient.setThing)(myDataset, newDocument); //Insert new doc into dataset    
 
-  const savedPrivateInfoDataset = await (0, _solidClient.saveSolidDatasetAt)("https://testuser1.solidcommunity.net/healthDataDataset", myDataset, {
+  const savedPrivateInfoDataset = await (0, _solidClient.saveSolidDatasetAt)("https://testuser1.solidcommunity.net/healthDataDataset1", myDataset, {
     fetch: session.fetch
   });
   document.getElementById("uploadLabel").textContent = "Wrote file successfully";
@@ -55626,7 +55609,7 @@ async function deleteFileFromUrl() {
 
 async function deleteDataset() {
   try {
-    await (0, _solidClient.deleteSolidDataset)("https://testuser1.solidcommunity.net/privateInfoDataset", {
+    await (0, _solidClient.deleteSolidDataset)("https://testuser1.solidcommunity.net/healthDataDataset1", {
       fetch: session.fetch
     });
     console.log("deleted dataset");
@@ -55664,9 +55647,9 @@ readAgentAccessForm.addEventListener("submit", event => {
   event.preventDefault();
   readAgentAccess();
 });
-readDummyForm.addEventListener("submit", event => {
+readDatasetForm.addEventListener("submit", event => {
   event.preventDefault();
-  readDummyFile();
+  readDataset();
 });
 giveAccessForm.addEventListener("submit", event => {
   event.preventDefault();
