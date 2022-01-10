@@ -325,15 +325,19 @@ async function uploadFile() {
     profileDocumentUrl.hash = "";
     let myProfileDataset = await getSolidDataset(profileDocumentUrl.href, {fetch:session.fetch})
     const profile = getThing(myProfileDataset, session.info.webId)
+    console.log(profile)
     const name = getStringNoLocale(profile, VCARD.fn)
-    const date = getDatetime()
+    const role = getStringNoLocale(profile, VCARD.role);
+    console.log(role)
+    const date = new Date().toDateString()
+    console.log(date)
 
     let myDataset = await getSolidDataset("https://testuser1.solidcommunity.net/healthDataDataset1", { fetch: session.fetch });
     const newDocument = buildThing(createThing({ name: fileName + ".txt" }))
         .addStringNoLocale(SCHEMA_INRUPT.name, fileName + ".txt")
         .addStringNoLocale(SCHEMA_INRUPT.text, fileContent)
-        .addStringNoLocale(FOAF.Agent, name)
-        //.addDate("https://schema.org/dateCreated", date )
+        .addStringNoLocale(FOAF.Person, name)
+        .addStringNoLocale("https://schema.org/dateCreated", date )
         .addUrl(RDF.type, "https://schema.org/TextDigitalDocument")
         .build();
 

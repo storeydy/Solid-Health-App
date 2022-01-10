@@ -55559,15 +55559,18 @@ async function uploadFile() {
     fetch: session.fetch
   });
   const profile = (0, _solidClient.getThing)(myProfileDataset, session.info.webId);
+  console.log(profile);
   const name = (0, _solidClient.getStringNoLocale)(profile, _vocabCommonRdf.VCARD.fn);
-  const date = (0, _solidClient.getDatetime)();
+  const role = (0, _solidClient.getStringNoLocale)(profile, _vocabCommonRdf.VCARD.role);
+  console.log(role);
+  const date = new Date().toDateString();
+  console.log(date);
   let myDataset = await (0, _solidClient.getSolidDataset)("https://testuser1.solidcommunity.net/healthDataDataset1", {
     fetch: session.fetch
   });
   const newDocument = (0, _solidClient.buildThing)((0, _solidClient.createThing)({
     name: fileName + ".txt"
-  })).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.name, fileName + ".txt").addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.text, fileContent).addStringNoLocale(_vocabCommonRdf.FOAF.Agent, name) //.addDate("https://schema.org/dateCreated", date )
-  .addUrl(_vocabCommonRdf.RDF.type, "https://schema.org/TextDigitalDocument").build();
+  })).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.name, fileName + ".txt").addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.text, fileContent).addStringNoLocale(_vocabCommonRdf.FOAF.Person, name).addStringNoLocale("https://schema.org/dateCreated", date).addUrl(_vocabCommonRdf.RDF.type, "https://schema.org/TextDigitalDocument").build();
   myDataset = (0, _solidClient.setThing)(myDataset, newDocument); //Insert new doc into dataset    
 
   const savedPrivateInfoDataset = await (0, _solidClient.saveSolidDatasetAt)("https://testuser1.solidcommunity.net/healthDataDataset1", myDataset, {
