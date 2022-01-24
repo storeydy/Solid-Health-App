@@ -23,6 +23,34 @@
     </div>
   </section>
 
+  <div id="institutionInformation" style="display:none">
+    <form id="institutionInformationForm">
+      <!-- <label id = "currentPlace">  </label> -->
+      <h2> There is currently no registered medical institution in your pod, click below to add one </h2>
+      <button type="submit"> Register new medical institution </button>
+    </form>
+  </div>
+
+  <div id="registerNewMedicalInstitution" style="display:none">
+    <form id="newMedicalInstitutionForm">
+      <div class="row newField">
+        <label id="institutionNameLabel"> Name of medical institution: </label>
+        <input type="text" id="institutionName" placeholder="Enter name of new medical institution" size = 70>
+      </div>
+      <div class="row newField">
+        <label id="institutionAddressLabel"> Address of medical institution: </label>
+        <input type="text" id="institutionAddress" placeholder="Enter address of new medical institution" size = 70>
+      </div>
+      <div class="row newField">
+        <label id="institutionSysAdminLabel"> WebID of medical institution administrator: </label>
+        <input type="text" id="institutionSysAdmin" placeholder="Enter webID of medical institution administrator" size = 70>
+        <p><b> Note: The individual associated with this WebID will be able to organise appointments on your behalf and grant other users access to your health records, so it is important to ensure that the correct WebID is entered </b></p>
+      </div>
+      <button type = "submit"> Save institution details to pod </button>
+      <button type = "reset"> Cancel changes </button>
+    </form>
+  </div>
+
   <div id="read" class="panel">
     <div class="row">
       <form id="writeForm">
@@ -176,7 +204,7 @@
     </dl>
   </div>
 
-  <button id="deleteDatasetButton" onclick = "deleteDataset()"> Delete dataset</button>
+  <button id="deleteDatasetButton" onclick="deleteDataset()"> Delete dataset</button>
 </body>
 
 </html>

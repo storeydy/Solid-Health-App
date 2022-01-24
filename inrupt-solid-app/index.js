@@ -38,7 +38,6 @@ import {
     getDatetime
 } from "@inrupt/solid-client";
 
-
 import { Session, getDefaultSession, fetch } from "@inrupt/solid-client-authn-browser";
 import { SCHEMA_INRUPT, VCARD, FOAF, RDF } from "@inrupt/vocab-common-rdf";
 //import fetch from 'unfetch';
@@ -52,11 +51,12 @@ document.getElementById(
 const NOT_ENTERED_WEBID =
     "...not logged in yet - but enter any WebID to read from its profile...";
 
-const session = new Session();
+var session = new Session();
 
 const buttonLogin = document.getElementById("btnLogin");
 const writeForm = document.getElementById("writeForm");
 const readForm = document.getElementById("readForm");
+var medicalInstitutionRegistered = Boolean(0);
 
 // 1a. Start Login Process. Call session.login() function.
 async function login() {
@@ -81,6 +81,7 @@ async function handleRedirectAfterLogin() {
         document.getElementById("labelStatus").setAttribute("role", "alert");
         document.getElementById("webID").value = session.info.webId;
         //deleteDataset();
+        readMedicalInsitution();
     }
 }
 
@@ -88,6 +89,90 @@ async function handleRedirectAfterLogin() {
 // This calls the function to process login information.
 // If the function is called when not part of the login redirect, the function is a no-op.
 handleRedirectAfterLogin();
+
+
+
+
+async function readMedicalInsitution(){
+    const webID = session.info.webId
+    console.log(webID)
+    var healthDataDatasetUrl = webID.substring(0, (webID.length - 16)) + "/healthData"  // https://testuser1.solidcommunity.net/profile/card#me
+    console.log(healthDataDatasetUrl)
+    try{
+    const healthDataDataset = await getSolidDataset(healthDataDatasetUrl + "1", {fetch: session.fetch});
+    //console.log(healthDataDataset);
+    }
+    catch(ex){
+        console.log("here", ex.response.status)
+        if(ex.response.status == 404) //Health data dataset does not exist
+        {
+            medicalInstitutionRegistered = false;
+            console.log(medicalInstitutionRegistered)
+            document.getElementById("institutionInformation").style.display = 'block'
+        }
+    }
+}
+
+function checkBool(){
+    if(medicalInstitutionRegistered == true) return true;
+    else return false
+}
+
+async function registerNewMedicalInstitution(){
+    const institutionName = document.getElementById("institutionName").value;
+    const institutionAddress = document.getElementById("institutionAddress").value;
+    const administratorWebID = document.getElementById("institutionSysAdmin").value;
+    console.log(administratorWebID)
+    const webID = session.info.webId
+    var healthDataDatasetUrl = webID.substring(0, (webID.length - 16)) + "/healthData"  // https://testuser1.solidcommunity.net/profile/card#me
+
+
+    const date = new Date().toDateString()
+
+    let healthDataDataset = createSolidDataset();
+    const institutionDetails = buildThing(createThing({name: "medicalInstitutionDetails"}))
+    .addStringNoLocale(SCHEMA_INRUPT.name, institutionName)
+    .addStringNoLocale(SCHEMA_INRUPT.address, institutionAddress)
+    .addStringNoLocale("https://schema.org/dateCreated", date)
+    .addUrl(RDF.type, "https://schema.org/TextDigitalDocument")
+    .build();
+
+    healthDataDataset = setThing(healthDataDataset, institutionDetails)
+
+    const savedPrivateInfoDataset = await saveSolidDatasetAt(
+        healthDataDatasetUrl + "1",
+        healthDataDataset,
+        { fetch: session.fetch }
+    )
+
+    const myDatasetWithAcl = await getSolidDatasetWithAcl(healthDataDatasetUrl + "1", { fetch: session.fetch })
+    const myDatasetsAcl = createAcl(myDatasetWithAcl)
+
+    console.log(myDatasetsAcl)
+    let updatedAcl = setAgentResourceAccess(
+        myDatasetsAcl,
+        webID,
+        { read: true, append: true, write: true, control: true }
+    )
+    updatedAcl = setAgentResourceAccess(
+        updatedAcl,
+        administratorWebID,
+        { read: true, append: true, write: true, control: true }
+    )
+    updatedAcl = setAgentDefaultAccess(
+        updatedAcl,
+        webID,
+        { read: true, append: true, write: true, control: true }
+    )
+
+    console.log(updatedAcl)
+    try {
+        await saveAclFor(myDatasetWithAcl, updatedAcl, { fetch: session.fetch })
+    }
+    catch (err) {
+        console.log(err)
+    }
+}
 
 // 2. Create new dataset with a file in it
 async function writeProfile() {
@@ -416,6 +501,17 @@ function logAccessInfo(agent, access, resource) {
 buttonLogin.onclick = function () {
     login();
 };
+
+institutionInformationForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    //registerNewMedicalInstitution();
+    document.getElementById("registerNewMedicalInstitution").style.display = "block"
+})
+
+newMedicalInstitutionForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    registerNewMedicalInstitution();
+})
 
 writeForm.addEventListener("submit", (event) => {
     event.preventDefault();
