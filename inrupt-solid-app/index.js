@@ -35,7 +35,8 @@ import {
     removeThing,
     getProfileAll,
     getThingAll,
-    getDatetime
+    getDatetime,
+    getStringNoLocaleAll
 } from "@inrupt/solid-client";
 
 import { Session, getDefaultSession, fetch } from "@inrupt/solid-client-authn-browser";
@@ -82,7 +83,7 @@ async function handleRedirectAfterLogin() {
         document.getElementById("webID").value = session.info.webId;
         //deleteDataset();
         document.getElementById("loginButtonDiv").style.display = "none"
-        document.getElementById("authenticatedOperations").style.display = "block"
+        document.getElementById("accessingPod").style.display = "block"
         readMedicalInsitution();
     }
 }
@@ -95,33 +96,67 @@ handleRedirectAfterLogin();
 
 
 
-async function readMedicalInsitution(podOwner){
-    console.log(podOwner)
-    const webID = session.info.webId
-    console.log(webID)
-    var healthDataDatasetUrl = webID.substring(0, (webID.length - 16)) + "/healthData"  // https://testuser1.solidcommunity.net/profile/card#me
-    console.log(healthDataDatasetUrl)
-    try{
-    const healthDataDataset = await getSolidDataset(healthDataDatasetUrl + "1", {fetch: session.fetch});
-    //console.log(healthDataDataset);
-    }
-    catch(ex){
-        console.log("here", ex.response.status)
-        if(ex.response.status == 404) //Health data dataset does not exist
-        {
-            medicalInstitutionRegistered = false;
-            console.log(medicalInstitutionRegistered)
+async function readMedicalInsitution(podOwner) {
+    if (podOwner) {
+        console.log(podOwner)
+        var webID;
+        if (podOwner == "signedInUser") webID = session.info.webId
+        else if (podOwner == "specifiedUser") webID = document.getElementById("podOwner").value;
+        //const webID = session.info.webId
+        console.log(webID)
+        var healthDataDatasetUrl = webID.substring(0, (webID.length - 16)) + "/healthData"  // https://testuser1.solidcommunity.net/profile/card#me
+        console.log(healthDataDatasetUrl)
+        try {
+            const healthDataDataset = await getSolidDataset(healthDataDatasetUrl + "1", { fetch: session.fetch });
+            console.log(healthDataDataset);
+            //document.getElementById("accessingPod").style.height = '150px';
+            const institutionDetails = await getThing(healthDataDataset, healthDataDatasetUrl + "1#medicalInstitutionDetails")
+            console.log(institutionDetails)
+            let literalName = await getStringNoLocale(institutionDetails, "http://schema.org/name")
+            let literalAddress = await getStringNoLocale(institutionDetails, "http://schema.org/address")
+            console.log(literalName, literalAddress);
+            document.getElementById("ownerOfPod").innerHTML = "Currently accessing the pod belonging to: " + webID;
+            document.getElementById("nameOfInstitution").innerHTML = "Who receives care at: " + literalName;
+            document.getElementById("addressOfInstitution").innerHTML = "Which is located at: " + literalAddress;
+            document.getElementById("accessingPod").style.display = "none"
             document.getElementById("institutionInformation").style.display = 'block'
+        }
+        catch (ex) {
+            console.log("here", ex)
+            if (ex instanceof TypeError) {
+                console.log(ex.message)
+                if(ex.message == "Failed to fetch"){
+                    alert("Invalid URL entered, make sure URL is a valid WebID for a user's Solid pod.")
+                }
+                else if (ex.message == "Failed to construct 'URL': Invalid URL"){
+                    alert("No URL entered, enter a URL.")
+                }
+            }
+            if (ex instanceof Error) {
+                if (ex.response.status == 404) //Health data dataset does not exist
+                {
+                    alert("You have not created a dataset in your Solid pod to hold medical record information. Please create one by following the steps below.")
+                    medicalInstitutionRegistered = false;
+                    console.log(medicalInstitutionRegistered)
+                    document.getElementById("accessingPod").style.display = "none"
+                    document.getElementById("registerNewMedicalInstitution").style.display = 'block'
+                }
+                else if (ex.response.status == 403) //Not authorized
+                {
+                    alert("You have not been authorized to view medical records in the specified individual's pod. Contact them to request access.")
+                }
+            }
+            document.getElementById("podOwner").value = "";
         }
     }
 }
 
-function checkBool(){
-    if(medicalInstitutionRegistered == true) return true;
-    else return false
+function resetCurrentPodSession() {
+    document.getElementById("institutionInformation").style.display = "none";
+    document.getElementById("accessingPod").style.display = "block";
 }
 
-async function registerNewMedicalInstitution(){
+async function registerNewMedicalInstitution() {
     const institutionName = document.getElementById("institutionName").value;
     const institutionAddress = document.getElementById("institutionAddress").value;
     const administratorWebID = document.getElementById("institutionSysAdmin").value;
@@ -133,12 +168,12 @@ async function registerNewMedicalInstitution(){
     const date = new Date().toDateString()
 
     let healthDataDataset = createSolidDataset();
-    const institutionDetails = buildThing(createThing({name: "medicalInstitutionDetails"}))
-    .addStringNoLocale(SCHEMA_INRUPT.name, institutionName)
-    .addStringNoLocale(SCHEMA_INRUPT.address, institutionAddress)
-    .addStringNoLocale("https://schema.org/dateCreated", date)
-    .addUrl(RDF.type, "https://schema.org/TextDigitalDocument")
-    .build();
+    const institutionDetails = buildThing(createThing({ name: "medicalInstitutionDetails" }))
+        .addStringNoLocale(SCHEMA_INRUPT.name, institutionName)
+        .addStringNoLocale(SCHEMA_INRUPT.address, institutionAddress)
+        .addStringNoLocale("https://schema.org/dateCreated", date)
+        .addUrl(RDF.type, "https://schema.org/TextDigitalDocument")
+        .build();
 
     healthDataDataset = setThing(healthDataDataset, institutionDetails)
 
@@ -297,9 +332,9 @@ async function readDataset() {
     }
     console.log(myDataset);
 
-    const datasetContents = getThingAll(myDataset, {fetch: session.fetch});
+    const datasetContents = getThingAll(myDataset, { fetch: session.fetch });
     console.log(datasetContents);
-    for (let i = 0; i < datasetContents.length; i++){
+    for (let i = 0; i < datasetContents.length; i++) {
         let fileContents = getStringNoLocale(datasetContents[i], SCHEMA_INRUPT.text)
         let fileName = getStringNoLocale(datasetContents[i], SCHEMA_INRUPT.name);
         console.log(fileName, fileContents);
@@ -411,7 +446,7 @@ async function uploadFile() {
     const profileDocumentUrl = new URL(session.info.webId);
     console.log(profileDocumentUrl);
     profileDocumentUrl.hash = "";
-    let myProfileDataset = await getSolidDataset(profileDocumentUrl.href, {fetch:session.fetch})
+    let myProfileDataset = await getSolidDataset(profileDocumentUrl.href, { fetch: session.fetch })
     const profile = getThing(myProfileDataset, session.info.webId)
     console.log(profile)
     const name = getStringNoLocale(profile, VCARD.fn)
@@ -425,7 +460,7 @@ async function uploadFile() {
         .addStringNoLocale(SCHEMA_INRUPT.name, fileName + ".txt")
         .addStringNoLocale(SCHEMA_INRUPT.text, fileContent)
         .addStringNoLocale(FOAF.Person, name)
-        .addStringNoLocale("https://schema.org/dateCreated", date )
+        .addStringNoLocale("https://schema.org/dateCreated", date)
         .addUrl(RDF.type, "https://schema.org/TextDigitalDocument")
         .build();
 
@@ -517,6 +552,11 @@ otherUserPodButton.addEventListener('click', (event) => {
 })
 
 institutionInformationForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    resetCurrentPodSession();
+})
+
+noInstitutionInformationForm.addEventListener("submit", (event) => {
     event.preventDefault();
     //registerNewMedicalInstitution();
     document.getElementById("registerNewMedicalInstitution").style.display = "block"

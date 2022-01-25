@@ -55331,7 +55331,7 @@ async function handleRedirectAfterLogin() {
     document.getElementById("webID").value = session.info.webId; //deleteDataset();
 
     document.getElementById("loginButtonDiv").style.display = "none";
-    document.getElementById("authenticatedOperations").style.display = "block";
+    document.getElementById("accessingPod").style.display = "block";
     readMedicalInsitution();
   }
 } // The example has the login redirect back to the index.html.
@@ -55342,31 +55342,67 @@ async function handleRedirectAfterLogin() {
 handleRedirectAfterLogin();
 
 async function readMedicalInsitution(podOwner) {
-  console.log(podOwner);
-  const webID = session.info.webId;
-  console.log(webID);
-  var healthDataDatasetUrl = webID.substring(0, webID.length - 16) + "/healthData"; // https://testuser1.solidcommunity.net/profile/card#me
+  if (podOwner) {
+    console.log(podOwner);
+    var webID;
+    if (podOwner == "signedInUser") webID = session.info.webId;else if (podOwner == "specifiedUser") webID = document.getElementById("podOwner").value; //const webID = session.info.webId
 
-  console.log(healthDataDatasetUrl);
+    console.log(webID);
+    var healthDataDatasetUrl = webID.substring(0, webID.length - 16) + "/healthData"; // https://testuser1.solidcommunity.net/profile/card#me
 
-  try {
-    const healthDataDataset = await (0, _solidClient.getSolidDataset)(healthDataDatasetUrl + "1", {
-      fetch: session.fetch
-    }); //console.log(healthDataDataset);
-  } catch (ex) {
-    console.log("here", ex.response.status);
+    console.log(healthDataDatasetUrl);
 
-    if (ex.response.status == 404) //Health data dataset does not exist
-      {
-        medicalInstitutionRegistered = false;
-        console.log(medicalInstitutionRegistered);
-        document.getElementById("institutionInformation").style.display = 'block';
+    try {
+      const healthDataDataset = await (0, _solidClient.getSolidDataset)(healthDataDatasetUrl + "1", {
+        fetch: session.fetch
+      });
+      console.log(healthDataDataset); //document.getElementById("accessingPod").style.height = '150px';
+
+      const institutionDetails = await (0, _solidClient.getThing)(healthDataDataset, healthDataDatasetUrl + "1#medicalInstitutionDetails");
+      console.log(institutionDetails);
+      let literalName = await (0, _solidClient.getStringNoLocale)(institutionDetails, "http://schema.org/name");
+      let literalAddress = await (0, _solidClient.getStringNoLocale)(institutionDetails, "http://schema.org/address");
+      console.log(literalName, literalAddress);
+      document.getElementById("ownerOfPod").innerHTML = "Currently accessing the pod belonging to: " + webID;
+      document.getElementById("nameOfInstitution").innerHTML = "Who receives care at: " + literalName;
+      document.getElementById("addressOfInstitution").innerHTML = "Which is located at: " + literalAddress;
+      document.getElementById("accessingPod").style.display = "none";
+      document.getElementById("institutionInformation").style.display = 'block';
+    } catch (ex) {
+      console.log("here", ex);
+
+      if (ex instanceof TypeError) {
+        console.log(ex.message);
+
+        if (ex.message == "Failed to fetch") {
+          alert("Invalid URL entered, make sure URL is a valid WebID for a user's Solid pod.");
+        } else if (ex.message == "Failed to construct 'URL': Invalid URL") {
+          alert("No URL entered, enter a URL.");
+        }
       }
+
+      if (ex instanceof Error) {
+        if (ex.response.status == 404) //Health data dataset does not exist
+          {
+            alert("You have not created a dataset in your Solid pod to hold medical record information. Please create one by following the steps below.");
+            medicalInstitutionRegistered = false;
+            console.log(medicalInstitutionRegistered);
+            document.getElementById("accessingPod").style.display = "none";
+            document.getElementById("registerNewMedicalInstitution").style.display = 'block';
+          } else if (ex.response.status == 403) //Not authorized
+          {
+            alert("You have not been authorized to view medical records in the specified individual's pod. Contact them to request access.");
+          }
+      }
+
+      document.getElementById("podOwner").value = "";
+    }
   }
 }
 
-function checkBool() {
-  if (medicalInstitutionRegistered == true) return true;else return false;
+function resetCurrentPodSession() {
+  document.getElementById("institutionInformation").style.display = "none";
+  document.getElementById("accessingPod").style.display = "block";
 }
 
 async function registerNewMedicalInstitution() {
@@ -55732,6 +55768,10 @@ otherUserPodButton.addEventListener('click', event => {
   readMedicalInsitution("specifiedUser");
 });
 institutionInformationForm.addEventListener("submit", event => {
+  event.preventDefault();
+  resetCurrentPodSession();
+});
+noInstitutionInformationForm.addEventListener("submit", event => {
   event.preventDefault(); //registerNewMedicalInstitution();
 
   document.getElementById("registerNewMedicalInstitution").style.display = "block";
@@ -55800,7 +55840,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "65460" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "60956" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

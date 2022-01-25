@@ -24,50 +24,59 @@
     <p id="labelStatus" class="labelStatus"></p>
   </section>
 
-  <div id="accessingPod" class="podSelector">
+  <div id="accessingPod" class="podSelector" style = "display: none;">
     <form id="accessPodForm">
       <h3> Choose the Solid pod that you would like to access: </h3>
-      <button id = "myPodButton" style="position: absolute; left: 20%; top: 40%; font-size: 20px;"> Access my pod</button>
-      <h3 style="position: absolute; left:35%; top: 38%"> OR</h3>
-      <h4 style="position: absolute; left:45%; top: 38%"> The pod belonging to: </h4>
+      <button id = "myPodButton" style="position: absolute; left: 20%; top: 35%; font-size: 15px;"> Access my pod</button>
+      <h3 style="position: absolute; left:35%; top: 33%"> OR</h3>
+      <h4 style="position: absolute; left:45%; top: 33%"> The pod belonging to: </h4>
       <input type="url" id="podOwner" placeholder="Enter WebID of Patient pod" size=40
-        style="position: absolute; left:60%; top: 41%">
-      <button id = "otherUserPodButton" style="position: absolute; left:85%; top: 41%"> Submit </button>
+        style="position: absolute; left:60%; top: 36%">
+      <button id = "otherUserPodButton" style="position: absolute; left:85%; top: 36%"> Submit </button>
+    </form>
+  </div>
+
+  <div id = "institutionInformation" class = "podSelector" style = "display:none">
+    <form id = "institutionInformationForm">
+      <h3 id = "ownerOfPod"></h3>
+      <h3 id = "nameOfInstitution"></h3>
+      <h3 id = "addressOfInstitution"></h3>
+      <button type = "submit" style="position: absolute; left:65%;"> Cancel session with current pod owner </button>
+    </form>
+  </div>
+
+  <div id="noInstitutionInformation" style="display:none">
+    <form id="noInstitutionInformationForm">
+      <!-- <label id = "currentPlace">  </label> -->
+      <h2> There is currently no registered medical institution in your pod, click below to add one </h2>
+      <button type="submit"> Register new medical institution </button>
+    </form>
+  </div>
+
+  <div id="registerNewMedicalInstitution" style="display:none">
+    <form id="newMedicalInstitutionForm">
+      <div class="row newField">
+        <label id="institutionNameLabel"> Name of medical institution: </label>
+        <input type="text" id="institutionName" placeholder="Enter name of new medical institution" size=70>
+      </div>
+      <div class="row newField">
+        <label id="institutionAddressLabel"> Address of medical institution: </label>
+        <input type="text" id="institutionAddress" placeholder="Enter address of new medical institution" size=70>
+      </div>
+      <div class="row newField">
+        <label id="institutionSysAdminLabel"> WebID of medical institution administrator: </label>
+        <input type="url" id="institutionSysAdmin" placeholder="Enter webID of medical institution administrator"
+          size=70>
+        <p><b> Note: The individual associated with this WebID will be able to organise appointments on your behalf
+            and grant other users access to your health records, so it is important to ensure that the correct WebID
+            is entered </b></p>
+      </div>
+      <button type="submit"> Save institution details to pod </button>
+      <button type="reset"> Cancel changes </button>
     </form>
   </div>
 
   <div id="authenticatedOperations" style="display: none;">
-
-    <div id="institutionInformation" style="display:none">
-      <form id="institutionInformationForm">
-        <!-- <label id = "currentPlace">  </label> -->
-        <h2> There is currently no registered medical institution in your pod, click below to add one </h2>
-        <button type="submit"> Register new medical institution </button>
-      </form>
-    </div>
-
-    <div id="registerNewMedicalInstitution" style="display:none">
-      <form id="newMedicalInstitutionForm">
-        <div class="row newField">
-          <label id="institutionNameLabel"> Name of medical institution: </label>
-          <input type="text" id="institutionName" placeholder="Enter name of new medical institution" size=70>
-        </div>
-        <div class="row newField">
-          <label id="institutionAddressLabel"> Address of medical institution: </label>
-          <input type="text" id="institutionAddress" placeholder="Enter address of new medical institution" size=70>
-        </div>
-        <div class="row newField">
-          <label id="institutionSysAdminLabel"> WebID of medical institution administrator: </label>
-          <input type="url" id="institutionSysAdmin" placeholder="Enter webID of medical institution administrator"
-            size=70>
-          <p><b> Note: The individual associated with this WebID will be able to organise appointments on your behalf
-              and grant other users access to your health records, so it is important to ensure that the correct WebID
-              is entered </b></p>
-        </div>
-        <button type="submit"> Save institution details to pod </button>
-        <button type="reset"> Cancel changes </button>
-      </form>
-    </div>
 
     <div id="read" class="panel">
       <div class="row">
