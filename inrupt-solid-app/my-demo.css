@@ -4,9 +4,16 @@
    margin: 1rem 1.2rem 1rem 1.4rem;
  }
 
+ body{
+   font-family:'Trebuchet MS', 'Lucida Sans Unicode', 'Lucida Grande', 'Lucida Sans', Arial, sans-serif;
+ }
+
  header {
    border-bottom: #5795b9 solid;
    padding-left: 0.5rem;
+   border-top: #5795b9 solid;
+   border-left: #5795b9 solid;
+   border-right: #5795b9 solid;
  }
 
  .panel {
@@ -35,6 +42,11 @@
  .display {
    margin-left: 1rem;
    color: gray;
+ }
+
+ .podSelector{
+   height: 300px;
+   border: 2px solid;
  }
 
  dl {

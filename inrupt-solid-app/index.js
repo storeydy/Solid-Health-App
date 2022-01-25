@@ -81,6 +81,8 @@ async function handleRedirectAfterLogin() {
         document.getElementById("labelStatus").setAttribute("role", "alert");
         document.getElementById("webID").value = session.info.webId;
         //deleteDataset();
+        document.getElementById("loginButtonDiv").style.display = "none"
+        document.getElementById("authenticatedOperations").style.display = "block"
         readMedicalInsitution();
     }
 }
@@ -93,7 +95,8 @@ handleRedirectAfterLogin();
 
 
 
-async function readMedicalInsitution(){
+async function readMedicalInsitution(podOwner){
+    console.log(podOwner)
     const webID = session.info.webId
     console.log(webID)
     var healthDataDatasetUrl = webID.substring(0, (webID.length - 16)) + "/healthData"  // https://testuser1.solidcommunity.net/profile/card#me
@@ -501,6 +504,17 @@ function logAccessInfo(agent, access, resource) {
 buttonLogin.onclick = function () {
     login();
 };
+
+
+myPodButton.addEventListener('click', (event) => {
+    event.preventDefault();
+    readMedicalInsitution("signedInUser");
+});
+
+otherUserPodButton.addEventListener('click', (event) => {
+    event.preventDefault();
+    readMedicalInsitution("specifiedUser");
+})
 
 institutionInformationForm.addEventListener("submit", (event) => {
     event.preventDefault();

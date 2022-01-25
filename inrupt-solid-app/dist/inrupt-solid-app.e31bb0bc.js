@@ -55330,6 +55330,8 @@ async function handleRedirectAfterLogin() {
     document.getElementById("labelStatus").setAttribute("role", "alert");
     document.getElementById("webID").value = session.info.webId; //deleteDataset();
 
+    document.getElementById("loginButtonDiv").style.display = "none";
+    document.getElementById("authenticatedOperations").style.display = "block";
     readMedicalInsitution();
   }
 } // The example has the login redirect back to the index.html.
@@ -55339,7 +55341,8 @@ async function handleRedirectAfterLogin() {
 
 handleRedirectAfterLogin();
 
-async function readMedicalInsitution() {
+async function readMedicalInsitution(podOwner) {
+  console.log(podOwner);
   const webID = session.info.webId;
   console.log(webID);
   var healthDataDatasetUrl = webID.substring(0, webID.length - 16) + "/healthData"; // https://testuser1.solidcommunity.net/profile/card#me
@@ -55720,6 +55723,14 @@ buttonLogin.onclick = function () {
   login();
 };
 
+myPodButton.addEventListener('click', event => {
+  event.preventDefault();
+  readMedicalInsitution("signedInUser");
+});
+otherUserPodButton.addEventListener('click', event => {
+  event.preventDefault();
+  readMedicalInsitution("specifiedUser");
+});
 institutionInformationForm.addEventListener("submit", event => {
   event.preventDefault(); //registerNewMedicalInstitution();
 
@@ -55789,7 +55800,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "65196" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "65460" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
