@@ -24,24 +24,27 @@
     <p id="labelStatus" class="labelStatus"></p>
   </section>
 
-  <div id="accessingPod" class="podSelector" style = "display: none;">
+  <div id="accessingPod" class="podSelector" style="display: none;">
     <form id="accessPodForm">
       <h3> Choose the Solid pod that you would like to access: </h3>
-      <button id = "myPodButton" style="position: absolute; left: 20%; top: 35%; font-size: 15px;"> Access my pod</button>
+      <button id="myPodButton" style="position: absolute; left: 20%; top: 35%; font-size: 15px;"> Access my pod</button>
       <h3 style="position: absolute; left:35%; top: 33%"> OR</h3>
       <h4 style="position: absolute; left:45%; top: 33%"> The pod belonging to: </h4>
       <input type="url" id="podOwner" placeholder="Enter WebID of Patient pod" size=40
         style="position: absolute; left:60%; top: 36%">
-      <button id = "otherUserPodButton" style="position: absolute; left:85%; top: 36%"> Submit </button>
+      <button id="otherUserPodButton" style="position: absolute; left:85%; top: 36%"> Submit </button>
     </form>
   </div>
 
-  <div id = "institutionInformation" class = "podSelector" style = "display:none">
-    <form id = "institutionInformationForm">
-      <h3 id = "ownerOfPod"></h3>
-      <h3 id = "nameOfInstitution"></h3>
-      <h3 id = "addressOfInstitution"></h3>
-      <button type = "submit" style="position: absolute; left:65%;"> Cancel session with current pod owner </button>
+  <div id="institutionInformation" class="podSelector" style="display:none">
+    <form id="institutionInformationForm">
+      <h3 id="ownerOfPod"></h3>
+      <h3 id="nameOfInstitution"></h3>
+      <h3 id="addressOfInstitution"></h3>
+      <button type="submit" style="position: absolute; left:65%;"> Cancel session with current pod owner </button>
+    </form>
+    <form id="registerNewAppointmentForm">
+      <button type="submit" style="position: absolute; left: 35%"> Register new appointment</button>
     </form>
   </div>
 
@@ -75,6 +78,19 @@
       <button type="reset"> Cancel changes </button>
     </form>
   </div>
+
+  <div id="uploadNewAppointmentDetails" class="panel" style="display: none;">
+    <form id="newAppointmentDetailsForm">
+      <label> Department of appointment </label>
+      <div id = "dropdown_container"></div>
+        <p> here </p>
+        <!-- <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+        <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+        <script src="healthCareDepartmentDropdown.js"></script> -->
+    </form>
+  </div>
+
+
 
   <div id="authenticatedOperations" style="display: none;">
 

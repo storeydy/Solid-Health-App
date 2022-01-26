@@ -42,6 +42,9 @@
       <h3 id="addressOfInstitution"></h3>
       <button type="submit" style="position: absolute; left:65%;"> Cancel session with current pod owner </button>
     </form>
+    <form id="registerNewAppointmentForm">
+      <button type="submit" style="position: absolute; left: 35%"> Register new appointment</button>
+    </form>
   </div>
 
   <div id="noInstitutionInformation" style="display:none">
@@ -73,6 +76,19 @@
       <button type="reset"> Cancel changes </button>
     </form>
   </div>
+
+  <div id="uploadNewAppointmentDetails" class="panel" style="display: none;">
+    <form id="newAppointmentDetailsForm">
+      <label> Department of appointment </label>
+      <div id="dropdown_container"></div>
+        <p> here </p>
+        <!-- <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+        <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+        <script src="healthCareDepartmentDropdown.js"></script> -->
+    </form>
+  </div>
+
+
 
   <div id="authenticatedOperations" style="display: none;">
 

@@ -55368,6 +55368,7 @@ async function readMedicalInsitution(podOwner) {
       document.getElementById("addressOfInstitution").innerHTML = "Which is located at: " + literalAddress;
       document.getElementById("accessingPod").style.display = "none";
       document.getElementById("institutionInformation").style.display = 'block';
+      checkIfAdministrator(healthDataDatasetUrl);
     } catch (ex) {
       console.log("here", ex);
 
@@ -55454,6 +55455,24 @@ async function registerNewMedicalInstitution() {
   } catch (err) {
     console.log(err);
   }
+}
+
+async function checkIfAdministrator(urlOfHealthRecordDataset) {
+  let signedInUsersWebID = session.info.webId;
+  console.log(signedInUsersWebID);
+  console.log(urlOfHealthRecordDataset + "1"); //const healthDataDatasetWithAcl = await getSolidDatasetWithAcl(urlOfHealthRecordDataset + "1", {fetch: session.fetch})
+  // const myAccess = await access.getAgentAccess(urlOfHealthRecordDataset + "1", signedInUsersWebID, {fetch: session.fetch}).then(access => {
+  //     logAccessInfo(signedInUsersWebID, access, urlOfHealthRecordDataset + "1")
+  // })
+
+  const myDatasetWithAcl = await (0, _solidClient.getSolidDatasetWithAcl)(urlOfHealthRecordDataset + "1", {
+    fetch: session.fetch
+  });
+  console.log(myDatasetWithAcl.internal_resourceInfo.permissions.user); // const myAccess = await getAgentAccess(myDatasetWithAcl, signedInUsersWebID, {fetch: session.fetch})
+  // .then(access => {
+  //     logAccessInfo(signedInUsersWebID, access, urlOfHealthRecordDataset + "1")
+  // })
+  //console.log(myAccess)
 } // 2. Create new dataset with a file in it
 
 
@@ -55771,6 +55790,11 @@ institutionInformationForm.addEventListener("submit", event => {
   event.preventDefault();
   resetCurrentPodSession();
 });
+registerNewAppointmentForm.addEventListener("submit", event => {
+  event.preventDefault();
+  console.log("test wed");
+  document.getElementById("uploadNewAppointmentDetails").style.display = "block";
+});
 noInstitutionInformationForm.addEventListener("submit", event => {
   event.preventDefault(); //registerNewMedicalInstitution();
 
@@ -55840,7 +55864,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "60956" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "57706" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
