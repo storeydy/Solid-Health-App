@@ -41,6 +41,7 @@ import {
 
 import { Session, getDefaultSession, fetch } from "@inrupt/solid-client-authn-browser";
 import { SCHEMA_INRUPT, VCARD, FOAF, RDF } from "@inrupt/vocab-common-rdf";
+import { departments } from "./healthcareDepartments";
 //import fetch from 'unfetch';
 
 // If your Pod is *not* on `solidcommunity.net`, change this to your identity provider.
@@ -126,10 +127,10 @@ async function readMedicalInsitution(podOwner) {
             console.log("here", ex)
             if (ex instanceof TypeError) {
                 console.log(ex.message)
-                if(ex.message == "Failed to fetch"){
+                if (ex.message == "Failed to fetch") {
                     alert("Invalid URL entered, make sure URL is a valid WebID for a user's Solid pod.")
                 }
-                else if (ex.message == "Failed to construct 'URL': Invalid URL"){
+                else if (ex.message == "Failed to construct 'URL': Invalid URL") {
                     alert("No URL entered, enter a URL.")
                 }
             }
@@ -213,7 +214,7 @@ async function registerNewMedicalInstitution() {
     }
 }
 
-async function checkIfAdministrator(urlOfHealthRecordDataset){
+async function checkIfAdministrator(urlOfHealthRecordDataset) {
     let signedInUsersWebID = session.info.webId
     console.log(signedInUsersWebID)
     console.log(urlOfHealthRecordDataset + "1")
@@ -230,7 +231,7 @@ async function checkIfAdministrator(urlOfHealthRecordDataset){
     // .then(access => {
     //     logAccessInfo(signedInUsersWebID, access, urlOfHealthRecordDataset + "1")
     // })
-    
+
     //console.log(myAccess)
 }
 
@@ -556,7 +557,26 @@ function logAccessInfo(agent, access, resource) {
     }
 }
 
-
+function onDropdownClick() {
+    var dropdownOptions = document.getElementById("myDropdown");
+    const departmentList = departments;
+    for (var i = 0; i <= departmentList.length - 1; i++) {
+        //console.log(departmentList[i].label)
+        if (departmentList[i].label) {
+            var newOption = document.createElement("a")
+            newOption.innerHTML = departmentList[i].label
+            console.log("getting set as: ", newOption.innerHTML)
+            newOption.onclick = function () {
+                console.log(newOption.innerHTML)
+                document.getElementById('myInput').value = departmentList[i].label;
+                document.getElementById('myDropdown').classList.toggle('show');
+            }
+            dropdownOptions.appendChild(newOption);
+        }
+    }
+    document.getElementById("myDropdown").classList.toggle("show");
+    //dropdownOptions.appendChild(document.createElement("p", ))
+}
 
 buttonLogin.onclick = function () {
     login();
@@ -582,6 +602,11 @@ registerNewAppointmentForm.addEventListener("submit", (event) => {
     event.preventDefault();
     console.log("test wed")
     document.getElementById("uploadNewAppointmentDetails").style.display = "block"
+})
+
+selectedDepartmentForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    onDropdownClick();
 })
 
 noInstitutionInformationForm.addEventListener("submit", (event) => {

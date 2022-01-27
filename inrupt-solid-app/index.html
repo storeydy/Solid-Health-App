@@ -2,253 +2,297 @@
 <html>
 
 <head>
-  <meta charset="utf-8" />
+  <meta charset="utf-8" name="viewport" content="width=device-width, initial-scale=1">
   <title>Getting Started: Inrupt JavaScript Client Libraries</title>
   <script defer src="./index.js"></script>
   <link rel="stylesheet" href="my-demo.css" />
 </head>
 
 <body style="background-color: #b0dcff;">
-  <header style="background-color: #1c93ed; border: 2%; border-color: black;">
-    <div class="row">
-      <h2 style="padding-left: 40%;">Solid Health App</h2>
-      <h4 </div>
-  </header>
-  <section id="login" class="panel">
-    <div id="loginButtonDiv" class="row">
-      <label id="labelLogin" for="btnLogin">1. Click the button to log into
-        <span id="solid_identity_provider">...provided by the JavaScript code...</span>:
-      </label>
-      <button name="btnLogin" id="btnLogin">Login</button>
+  <div>
+    <header style="background-color: #1c93ed; border: 2%; border-color: black;">
+      <div class="row">
+        <h2 style="padding-left: 40%;">Solid Health App</h2>
+        <h4 </div>
+    </header>
+    <section id="login" class="panel">
+      <div id="loginButtonDiv" class="row">
+        <label id="labelLogin" for="btnLogin">1. Click the button to log into
+          <span id="solid_identity_provider">...provided by the JavaScript code...</span>:
+        </label>
+        <button name="btnLogin" id="btnLogin">Login</button>
+      </div>
+      <p id="labelStatus" class="labelStatus"></p>
+    </section>
+
+    <div id="accessingPod" class="podSelector" style="display: none;">
+      <form id="accessPodForm">
+        <h3> Choose the Solid pod that you would like to access: </h3>
+        <button id="myPodButton" style="position: absolute; left: 20%; top: 35%; font-size: 15px;"> Access my
+          pod</button>
+        <h3 style="position: absolute; left:35%; top: 33%"> OR</h3>
+        <h4 style="position: absolute; left:45%; top: 33%"> The pod belonging to: </h4>
+        <input type="url" id="podOwner" placeholder="Enter WebID of Patient pod" size=40
+          style="position: absolute; left:60%; top: 36%">
+        <button id="otherUserPodButton" style="position: absolute; left:85%; top: 36%"> Submit </button>
+      </form>
     </div>
-    <p id="labelStatus" class="labelStatus"></p>
-  </section>
 
-  <div id="accessingPod" class="podSelector" style="display: none;">
-    <form id="accessPodForm">
-      <h3> Choose the Solid pod that you would like to access: </h3>
-      <button id="myPodButton" style="position: absolute; left: 20%; top: 35%; font-size: 15px;"> Access my pod</button>
-      <h3 style="position: absolute; left:35%; top: 33%"> OR</h3>
-      <h4 style="position: absolute; left:45%; top: 33%"> The pod belonging to: </h4>
-      <input type="url" id="podOwner" placeholder="Enter WebID of Patient pod" size=40
-        style="position: absolute; left:60%; top: 36%">
-      <button id="otherUserPodButton" style="position: absolute; left:85%; top: 36%"> Submit </button>
-    </form>
-  </div>
+    <div id="institutionInformation" class="podSelector" style="display:none">
+      <form id="institutionInformationForm">
+        <h3 id="ownerOfPod"></h3>
+        <h3 id="nameOfInstitution"></h3>
+        <h3 id="addressOfInstitution"></h3>
+        <button type="submit" style="position: absolute; left:65%;"> Cancel session with current pod owner </button>
+      </form>
+      <form id="registerNewAppointmentForm">
+        <button type="submit" style="position: absolute; left: 35%"> Register new appointment</button>
+      </form>
+    </div>
 
-  <div id="institutionInformation" class="podSelector" style="display:none">
-    <form id="institutionInformationForm">
-      <h3 id="ownerOfPod"></h3>
-      <h3 id="nameOfInstitution"></h3>
-      <h3 id="addressOfInstitution"></h3>
-      <button type="submit" style="position: absolute; left:65%;"> Cancel session with current pod owner </button>
-    </form>
-    <form id="registerNewAppointmentForm">
-      <button type="submit" style="position: absolute; left: 35%"> Register new appointment</button>
-    </form>
-  </div>
+    <div id="noInstitutionInformation" style="display:none">
+      <form id="noInstitutionInformationForm">
+        <!-- <label id = "currentPlace">  </label> -->
+        <h2> There is currently no registered medical institution in your pod, click below to add one </h2>
+        <button type="submit"> Register new medical institution </button>
+      </form>
+    </div>
 
-  <div id="noInstitutionInformation" style="display:none">
-    <form id="noInstitutionInformationForm">
-      <!-- <label id = "currentPlace">  </label> -->
-      <h2> There is currently no registered medical institution in your pod, click below to add one </h2>
-      <button type="submit"> Register new medical institution </button>
-    </form>
-  </div>
+    <div id="registerNewMedicalInstitution" style="display:none">
+      <form id="newMedicalInstitutionForm">
+        <div class="row newField">
+          <label id="institutionNameLabel"> Name of medical institution: </label>
+          <input type="text" id="institutionName" placeholder="Enter name of new medical institution" size=70>
+        </div>
+        <div class="row newField">
+          <label id="institutionAddressLabel"> Address of medical institution: </label>
+          <input type="text" id="institutionAddress" placeholder="Enter address of new medical institution" size=70>
+        </div>
+        <div class="row newField">
+          <label id="institutionSysAdminLabel"> WebID of medical institution administrator: </label>
+          <input type="url" id="institutionSysAdmin" placeholder="Enter webID of medical institution administrator"
+            size=70>
+          <p><b> Note: The individual associated with this WebID will be able to organise appointments on your behalf
+              and grant other users access to your health records, so it is important to ensure that the correct WebID
+              is entered </b></p>
+        </div>
+        <button type="submit"> Save institution details to pod </button>
+        <button type="reset"> Cancel changes </button>
+      </form>
+    </div>
 
-  <div id="registerNewMedicalInstitution" style="display:none">
-    <form id="newMedicalInstitutionForm">
-      <div class="row newField">
-        <label id="institutionNameLabel"> Name of medical institution: </label>
-        <input type="text" id="institutionName" placeholder="Enter name of new medical institution" size=70>
-      </div>
-      <div class="row newField">
-        <label id="institutionAddressLabel"> Address of medical institution: </label>
-        <input type="text" id="institutionAddress" placeholder="Enter address of new medical institution" size=70>
-      </div>
-      <div class="row newField">
-        <label id="institutionSysAdminLabel"> WebID of medical institution administrator: </label>
-        <input type="url" id="institutionSysAdmin" placeholder="Enter webID of medical institution administrator"
-          size=70>
-        <p><b> Note: The individual associated with this WebID will be able to organise appointments on your behalf
-            and grant other users access to your health records, so it is important to ensure that the correct WebID
-            is entered </b></p>
-      </div>
-      <button type="submit"> Save institution details to pod </button>
-      <button type="reset"> Cancel changes </button>
-    </form>
-  </div>
+    <div id="uploadNewAppointmentDetails" class="panel" style="display: none;">
 
-  <div id="uploadNewAppointmentDetails" class="panel" style="display: none;">
-    <form id="newAppointmentDetailsForm">
       <label> Department of appointment </label>
-      <div id = "dropdown_container"></div>
+      <form id="selectedDepartmentForm">
+        <div class="dropdown">
+          <button type = "submit" class="dropbtn">Dropdown</button>
+          <div id="myDropdown" class="dropdown-content">
+            <input type="text" placeholder="Search.." id="myInput" onkeyup="filterFunction()">
+            <!-- <a onclick = "document.getElementById('myInput').value = 'About'; document.getElementById('myDropdown').classList.toggle('show');" href="#about">About</a> -->
+            <!-- <a href="#base">Base</a> -->
+            <!-- <a href="#blog">Blog</a> -->
+            <!-- <a href="#contact">Contact</a>
+            <a href="#custom">Custom</a>
+            <a href="#support">Support</a>
+            <a href="#tools">Tools</a> -->
+          </div>
+        </div>
+      </form>
+      <form id="newAppointmentDetailsForm">
+        <div id="dropdown_container"></div>
         <p> here </p>
         <!-- <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
         <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
         <script src="healthCareDepartmentDropdown.js"></script> -->
-    </form>
-  </div>
-
-
-
-  <div id="authenticatedOperations" style="display: none;">
-
-    <div id="read" class="panel">
-      <div class="row">
-        <form id="writeForm">
-          <label id="writelabel" for="name">2. Create a new Solid Dataset: </label>
-          <button type="submit">
-            Create Dataset
-          </button>
-        </form>
-      </div>
-
-      <dl class="display">
-        <dt>Writing status:&nbsp</dt>
-        <dd id="labelWriteStatus" class="labelStatus">...not written yet...</dd>
-      </dl>
+      </form>
     </div>
 
-    <div id="createAcl" class="panel">
-      <div class="row">
-        <form id="createAclForm">
-          <label id="createAclLabel" for="webID">3. Create ACL for dataset that has been created:
-          </label>
-          <button type="submit" name="btnCreateAcl" id="btnCreateAcl">
-            Create ACL
-          </button>
-        </form>
-      </div>
-      <dl class="display">
-        <dt>Formatted Name (FN) read from Pod:&nbsp</dt>
-        <dd id="webID">...not read yet...</dd>
-      </dl>
-    </div>
 
-    <div id="readAgent" class="panel">
-      <div class="row">
-        <form id="readAgentAccessForm">
-          <label id="readlabel" for="webID">4. Read agent access of dataset that has been created:
-          </label>
-          <input type="url" id="agentID" name="agentID" size="50"
-            placeholder="Enter a webID to see the access that webID has" />
-          <button type="submit" name="btnRead" id="btnRead">
-            Read Profile
-          </button>
-        </form>
-      </div>
-      <dl class="display">
-        <dt>Formatted Name (FN) read from Pod:&nbsp</dt>
-        <dd id="labelFN">...not read yet...</dd>
-      </dl>
-    </div>
 
-    <div id="read" class="panel">
-      <div class="row">
-        <form id="readDatasetForm">
-          <label id="readlabel">4. Read back content of dataset
-          </label>
-          <button type="submit" name="btnReadDataset" id="btnReadDataset">
-            Get dataset contents
-          </button>
-        </form>
-      </div>
-      <dl class="display">
-        <dt>File read from Pod:&nbsp</dt>
-        <dd id="labelFN">...not read yet...</dd>
-      </dl>
-    </div>
 
-    <div id="giveAccess" class="panel">
-      <div class="row">
-        <form id="giveAccessForm">
-          <label id="giveAccesslabel" for="webID">5. Grant access to user for created dataset
-          </label>
-          <input type="url" id="granteeID" name="webID" size="50"
-            placeholder="Enter any WebID to grant access to the created dataset" />
-          <br>
-          <input type="checkbox" id="readAccessBox">
-          <label for="readAccessBox"> Read </label>
-          <input type="checkbox" id="writeAccessBox">
-          <label for="writeAccessBox"> Write </label>
-          <input type="checkbox" id="appendAccessBox">
-          <label for="appendAccessBox"> Append </label>
-          <input type="checkbox" id="controlAccessBox">
-          <label for="controlAccessBox"> Control </label>
-          <br>
-          <button type="submit" name="btnRead" id="btnRead">
-            Grant Access
-          </button>
-        </form>
+    <div id="authenticatedOperations" style="display: none;">
+
+      <div id="read" class="panel">
+        <div class="row">
+          <form id="writeForm">
+            <label id="writelabel" for="name">2. Create a new Solid Dataset: </label>
+            <button type="submit">
+              Create Dataset
+            </button>
+          </form>
+        </div>
+
+        <dl class="display">
+          <dt>Writing status:&nbsp</dt>
+          <dd id="labelWriteStatus" class="labelStatus">...not written yet...</dd>
+        </dl>
       </div>
-      <dl class="display">
-        <dt>Writing access status: </dt>
-        <dd id="accessStatusLabel">...not written yet...</dd>
-      </dl>
-      <!-- <dl class="display">
+
+      <div id="createAcl" class="panel">
+        <div class="row">
+          <form id="createAclForm">
+            <label id="createAclLabel" for="webID">3. Create ACL for dataset that has been created:
+            </label>
+            <button type="submit" name="btnCreateAcl" id="btnCreateAcl">
+              Create ACL
+            </button>
+          </form>
+        </div>
+        <dl class="display">
+          <dt>Formatted Name (FN) read from Pod:&nbsp</dt>
+          <dd id="webID">...not read yet...</dd>
+        </dl>
+      </div>
+
+      <div id="readAgent" class="panel">
+        <div class="row">
+          <form id="readAgentAccessForm">
+            <label id="readlabel" for="webID">4. Read agent access of dataset that has been created:
+            </label>
+            <input type="url" id="agentID" name="agentID" size="50"
+              placeholder="Enter a webID to see the access that webID has" />
+            <button type="submit" name="btnRead" id="btnRead">
+              Read Profile
+            </button>
+          </form>
+        </div>
+        <dl class="display">
+          <dt>Formatted Name (FN) read from Pod:&nbsp</dt>
+          <dd id="labelFN">...not read yet...</dd>
+        </dl>
+      </div>
+
+      <div id="read" class="panel">
+        <div class="row">
+          <form id="readDatasetForm">
+            <label id="readlabel">4. Read back content of dataset
+            </label>
+            <button type="submit" name="btnReadDataset" id="btnReadDataset">
+              Get dataset contents
+            </button>
+          </form>
+        </div>
+        <dl class="display">
+          <dt>File read from Pod:&nbsp</dt>
+          <dd id="labelFN">...not read yet...</dd>
+        </dl>
+      </div>
+
+      <div id="giveAccess" class="panel">
+        <div class="row">
+          <form id="giveAccessForm">
+            <label id="giveAccesslabel" for="webID">5. Grant access to user for created dataset
+            </label>
+            <input type="url" id="granteeID" name="webID" size="50"
+              placeholder="Enter any WebID to grant access to the created dataset" />
+            <br>
+            <input type="checkbox" id="readAccessBox">
+            <label for="readAccessBox"> Read </label>
+            <input type="checkbox" id="writeAccessBox">
+            <label for="writeAccessBox"> Write </label>
+            <input type="checkbox" id="appendAccessBox">
+            <label for="appendAccessBox"> Append </label>
+            <input type="checkbox" id="controlAccessBox">
+            <label for="controlAccessBox"> Control </label>
+            <br>
+            <button type="submit" name="btnRead" id="btnRead">
+              Grant Access
+            </button>
+          </form>
+        </div>
+        <dl class="display">
+          <dt>Writing access status: </dt>
+          <dd id="accessStatusLabel">...not written yet...</dd>
+        </dl>
+        <!-- <dl class="display">
           <dt>Formatted Name (FN) read from Pod:&nbsp</dt>
           <dd id="labelFN">...not read yet...</dd>
         </dl> -->
-    </div>
-
-    <div id="read" class="panel">
-      <div class="row">
-        <form id="readPrivateForm">
-          <label id="readlabel" for="webID">6. Read back private text file belonging to Test User 1
-          </label>
-          <button type="submit" name="btnReadPrivateFile" id="btnReadPrivateFile">
-            Get private file
-          </button>
-        </form>
       </div>
-      <dl class="display">
-        <dt>File read from Pod:&nbsp</dt>
-        <dd id="labelFN">...not read yet...</dd>
-      </dl>
-    </div>
 
-    <div id="uploadFile" class="panel">
-      <div class="row">
-        <form id="uploadFileForm">
-          <label id="readlabel" for="webID">7. Upload new file to dataset
-          </label>
-          <input type="text" id="fileName" name="fileName" size="30" placeholder="Enter name of file" />
-          <br>
-          <br>
-          <input type="text" id="fileContent" name="fileContent" size="50" placeholder="Enter file content" />
-          <button type="submit" name="btnUploadPrivateFile" id="btnUploadPrivateFile">
-            Upload file
-          </button>
-        </form>
+      <div id="read" class="panel">
+        <div class="row">
+          <form id="readPrivateForm">
+            <label id="readlabel" for="webID">6. Read back private text file belonging to Test User 1
+            </label>
+            <button type="submit" name="btnReadPrivateFile" id="btnReadPrivateFile">
+              Get private file
+            </button>
+          </form>
+        </div>
+        <dl class="display">
+          <dt>File read from Pod:&nbsp</dt>
+          <dd id="labelFN">...not read yet...</dd>
+        </dl>
       </div>
-      <dl class="display">
-        <dt>Writing status: </dt>
-        <dd id="uploadLabel">...not written yet...</dd>
-      </dl>
-    </div>
 
-    <div id="deleteFile" class="panel">
-      <div class="row">
-        <form id="deleteFileForm">
-          <label id="readlabel" for="webID">8. Delete file from dataset
-          </label>
-          <br>
-          <br>
-          <input type="url" id="fileUrl" name="fileUrl" size="50" placeholder="Enter file URL" />
-          <button type="submit" name="btnDeletePrivateFile" id="btnDeletePrivateFile">
-            Delete file
-          </button>
-        </form>
+      <div id="uploadFile" class="panel">
+        <div class="row">
+          <form id="uploadFileForm">
+            <label id="readlabel" for="webID">7. Upload new file to dataset
+            </label>
+            <input type="text" id="fileName" name="fileName" size="30" placeholder="Enter name of file" />
+            <br>
+            <br>
+            <input type="text" id="fileContent" name="fileContent" size="50" placeholder="Enter file content" />
+            <button type="submit" name="btnUploadPrivateFile" id="btnUploadPrivateFile">
+              Upload file
+            </button>
+          </form>
+        </div>
+        <dl class="display">
+          <dt>Writing status: </dt>
+          <dd id="uploadLabel">...not written yet...</dd>
+        </dl>
       </div>
-      <dl class="display">
-        <dt>Deleting status: </dt>
-        <dd id="deleteLabel">...not deleted yet...</dd>
-      </dl>
-    </div>
 
-    <button id="deleteDatasetButton" onclick="deleteDataset()"> Delete dataset</button>
+      <div id="deleteFile" class="panel">
+        <div class="row">
+          <form id="deleteFileForm">
+            <label id="readlabel" for="webID">8. Delete file from dataset
+            </label>
+            <br>
+            <br>
+            <input type="url" id="fileUrl" name="fileUrl" size="50" placeholder="Enter file URL" />
+            <button type="submit" name="btnDeletePrivateFile" id="btnDeletePrivateFile">
+              Delete file
+            </button>
+          </form>
+        </div>
+        <dl class="display">
+          <dt>Deleting status: </dt>
+          <dd id="deleteLabel">...not deleted yet...</dd>
+        </dl>
+      </div>
+
+      <button id="deleteDatasetButton" onclick="deleteDataset()"> Delete dataset</button>
+    </div>
   </div>
+
+  <script>
+    /* When the user clicks on the button,
+    toggle between hiding and showing the dropdown content */
+    // function myFunction() {
+    //   document.getElementById("myDropdown").classList.toggle("show");
+    // }
+
+    function filterFunction() {
+      var input, filter, ul, li, a, i;
+      input = document.getElementById("myInput");
+      filter = input.value.toUpperCase();
+      div = document.getElementById("myDropdown");
+      a = div.getElementsByTagName("a");
+      for (i = 0; i < a.length; i++) {
+        txtValue = a[i].textContent || a[i].innerText;
+        if (txtValue.toUpperCase().indexOf(filter) > -1) {
+          a[i].style.display = "";
+        } else {
+          a[i].style.display = "none";
+        }
+      }
+    }
+  </script>
 </body>
 
 </html>

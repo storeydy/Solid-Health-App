@@ -5,5 +5,5 @@ export const departments = [
     {label: 'Gastroenterology'},
     {label: 'Gynaecology'},
     {label: 'Haematology'},
-    {label: 'Microbiology'},
+    {label: 'Microbiology'}
 ];

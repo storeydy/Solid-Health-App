@@ -55286,6 +55286,29 @@ var XSD = {
   gMonth: _NS("gMonth")
 };
 exports.XSD = XSD;
+},{}],"healthcareDepartments.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.departments = void 0;
+const departments = [{
+  label: 'Audiology'
+}, {
+  label: 'Cardiology'
+}, {
+  label: 'Ear nose and throat (ENT)'
+}, {
+  label: 'Gastroenterology'
+}, {
+  label: 'Gynaecology'
+}, {
+  label: 'Haematology'
+}, {
+  label: 'Microbiology'
+}];
+exports.departments = departments;
 },{}],"index.js":[function(require,module,exports) {
 "use strict";
 
@@ -55294,6 +55317,8 @@ var _solidClient = require("@inrupt/solid-client");
 var _solidClientAuthnBrowser = require("@inrupt/solid-client-authn-browser");
 
 var _vocabCommonRdf = require("@inrupt/vocab-common-rdf");
+
+var _healthcareDepartments = require("./healthcareDepartments");
 
 // import {
 //     setPublicAccess,
@@ -55774,6 +55799,30 @@ function logAccessInfo(agent, access, resource) {
   }
 }
 
+function onDropdownClick() {
+  var dropdownOptions = document.getElementById("myDropdown");
+  const departmentList = _healthcareDepartments.departments;
+
+  for (var i = 0; i <= departmentList.length - 1; i++) {
+    //console.log(departmentList[i].label)
+    if (departmentList[i].label) {
+      var newOption = document.createElement("a");
+      newOption.innerHTML = departmentList[i].label;
+      console.log("getting set as: ", newOption.innerHTML);
+
+      newOption.onclick = function () {
+        console.log(newOption.innerHTML);
+        document.getElementById('myInput').value = departmentList[i].label;
+        document.getElementById('myDropdown').classList.toggle('show');
+      };
+
+      dropdownOptions.appendChild(newOption);
+    }
+  }
+
+  document.getElementById("myDropdown").classList.toggle("show"); //dropdownOptions.appendChild(document.createElement("p", ))
+}
+
 buttonLogin.onclick = function () {
   login();
 };
@@ -55794,6 +55843,10 @@ registerNewAppointmentForm.addEventListener("submit", event => {
   event.preventDefault();
   console.log("test wed");
   document.getElementById("uploadNewAppointmentDetails").style.display = "block";
+});
+selectedDepartmentForm.addEventListener("submit", event => {
+  event.preventDefault();
+  onDropdownClick();
 });
 noInstitutionInformationForm.addEventListener("submit", event => {
   event.preventDefault(); //registerNewMedicalInstitution();
@@ -55836,7 +55889,7 @@ deleteFileForm.addEventListener("submit", event => {
   event.preventDefault();
   deleteFileFromUrl(); //deleteDataset();
 });
-},{"@inrupt/solid-client":"node_modules/@inrupt/solid-client/dist/index.es.js","@inrupt/solid-client-authn-browser":"node_modules/@inrupt/solid-client-authn-browser/dist/index.js","@inrupt/vocab-common-rdf":"node_modules/@inrupt/vocab-common-rdf/dist/index.es.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+},{"@inrupt/solid-client":"node_modules/@inrupt/solid-client/dist/index.es.js","@inrupt/solid-client-authn-browser":"node_modules/@inrupt/solid-client-authn-browser/dist/index.js","@inrupt/vocab-common-rdf":"node_modules/@inrupt/vocab-common-rdf/dist/index.es.js","./healthcareDepartments":"healthcareDepartments.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -55864,7 +55917,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "57706" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "62453" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
