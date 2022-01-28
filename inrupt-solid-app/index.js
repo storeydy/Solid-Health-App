@@ -559,23 +559,26 @@ function logAccessInfo(agent, access, resource) {
 
 function onDropdownClick() {
     var dropdownOptions = document.getElementById("myDropdown");
-    const departmentList = departments;
-    for (var i = 0; i <= departmentList.length - 1; i++) {
-        //console.log(departmentList[i].label)
-        if (departmentList[i].label) {
-            var newOption = document.createElement("a")
-            newOption.innerHTML = departmentList[i].label
-            console.log("getting set as: ", newOption.innerHTML)
-            newOption.onclick = function () {
-                console.log(newOption.innerHTML)
-                document.getElementById('myInput').value = departmentList[i].label;
-                document.getElementById('myDropdown').classList.toggle('show');
+    if (dropdownOptions.children.length <= 1) {
+        const departmentList = departments;
+        for (var i = 0; i <= departmentList.length - 1; i++) {
+            //console.log(departmentList[i].label)
+            if (departmentList[i].label) {
+                let newOption = document.createElement("a")
+                const labelValue = departmentList[i].label
+                newOption.innerHTML = labelValue
+                console.log("getting set as: ", newOption.innerHTML)
+                newOption.onclick = function () {
+                    console.log(newOption.innerHTML)
+                    document.getElementById('myInput').value = labelValue;
+                    document.getElementById("departmentDropdownButton").innerHTML = labelValue;
+                    document.getElementById('myDropdown').classList.toggle('show');
+                }
+                dropdownOptions.appendChild(newOption);
             }
-            dropdownOptions.appendChild(newOption);
         }
     }
     document.getElementById("myDropdown").classList.toggle("show");
-    //dropdownOptions.appendChild(document.createElement("p", ))
 }
 
 buttonLogin.onclick = function () {

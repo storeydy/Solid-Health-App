@@ -82,23 +82,35 @@
     </div>
 
     <div id="uploadNewAppointmentDetails" class="panel" style="display: none;">
-
-      <label> Department of appointment </label>
-      <form id="selectedDepartmentForm">
-        <div class="dropdown">
-          <button type = "submit" class="dropbtn">Dropdown</button>
-          <div id="myDropdown" class="dropdown-content">
-            <input type="text" placeholder="Search.." id="myInput" onkeyup="filterFunction()">
-            <!-- <a onclick = "document.getElementById('myInput').value = 'About'; document.getElementById('myDropdown').classList.toggle('show');" href="#about">About</a> -->
-            <!-- <a href="#base">Base</a> -->
-            <!-- <a href="#blog">Blog</a> -->
-            <!-- <a href="#contact">Contact</a>
-            <a href="#custom">Custom</a>
-            <a href="#support">Support</a>
-            <a href="#tools">Tools</a> -->
+      <h2 style="text-align: center;"> Upload new appointment details </h2>
+      <div class="row">
+        <label class = "column-4" style="font-size: 2vh;"> Department of appointment: </label>
+        <form class = "column-4" id="selectedDepartmentForm">
+          <div class="dropdown">
+            <button type="submit" class="dropbtn" id="departmentDropdownButton">Select a department</button>
+            <div id="myDropdown" class="dropdown-content">
+              <input type="text" placeholder="Search.." id="myInput" onkeyup="filterFunction()">
+            </div>
           </div>
-        </div>
-      </form>
+        </form>
+      </div>
+      <div class = "row">
+        <!-- <div class="column-4"> -->
+          <label class = "column-6"> Time of appointment: </label>
+          <input class = "column-6" type = "text" placeholder= "Enter time of appointment" id = "newAppointmentTime">
+        <!-- </div> -->
+        <input class = "column-6" style="float:right" type = "text" placeholder= "Enter date of appointment" id = "newAppointmentDate">
+        <label class = "column-6" style="float:right"> Date of appointment: </label>
+      </div>
+      <div class = "row">
+        <!-- <div class="column-4"> -->
+          <label class = "column-4"> WebID of Health worker conducting appointment: </label>
+          <input class = "column-4" type = "url" placeholder= "Enter Doctor's WebID" id = "newAppointmentDoctor">
+        <!-- </div> -->
+        <!-- <input class = "column-6" size=50 style="float:right; height:10vh; overflow-x: scroll;" type = "text" placeholder= "Enter any relevant notes" id = "newAppointmentNotes"> -->
+        <textarea class = "column-6" style="float:right; resize: none;" cols = "40" rows="5"></textarea>
+        <label class = "column-6" style="float:right"> Notes: </label>
+      </div>
       <form id="newAppointmentDetailsForm">
         <div id="dropdown_container"></div>
         <p> here </p>

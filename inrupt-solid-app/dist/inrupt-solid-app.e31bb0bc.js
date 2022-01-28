@@ -55801,26 +55801,31 @@ function logAccessInfo(agent, access, resource) {
 
 function onDropdownClick() {
   var dropdownOptions = document.getElementById("myDropdown");
-  const departmentList = _healthcareDepartments.departments;
 
-  for (var i = 0; i <= departmentList.length - 1; i++) {
-    //console.log(departmentList[i].label)
-    if (departmentList[i].label) {
-      var newOption = document.createElement("a");
-      newOption.innerHTML = departmentList[i].label;
-      console.log("getting set as: ", newOption.innerHTML);
+  if (dropdownOptions.children.length <= 1) {
+    const departmentList = _healthcareDepartments.departments;
 
-      newOption.onclick = function () {
-        console.log(newOption.innerHTML);
-        document.getElementById('myInput').value = departmentList[i].label;
-        document.getElementById('myDropdown').classList.toggle('show');
-      };
+    for (var i = 0; i <= departmentList.length - 1; i++) {
+      //console.log(departmentList[i].label)
+      if (departmentList[i].label) {
+        let newOption = document.createElement("a");
+        const labelValue = departmentList[i].label;
+        newOption.innerHTML = labelValue;
+        console.log("getting set as: ", newOption.innerHTML);
 
-      dropdownOptions.appendChild(newOption);
+        newOption.onclick = function () {
+          console.log(newOption.innerHTML);
+          document.getElementById('myInput').value = labelValue;
+          document.getElementById("departmentDropdownButton").innerHTML = labelValue;
+          document.getElementById('myDropdown').classList.toggle('show');
+        };
+
+        dropdownOptions.appendChild(newOption);
+      }
     }
   }
 
-  document.getElementById("myDropdown").classList.toggle("show"); //dropdownOptions.appendChild(document.createElement("p", ))
+  document.getElementById("myDropdown").classList.toggle("show");
 }
 
 buttonLogin.onclick = function () {
@@ -55917,7 +55922,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "62453" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50353" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

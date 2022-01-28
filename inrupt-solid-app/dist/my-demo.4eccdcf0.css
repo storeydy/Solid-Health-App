@@ -66,8 +66,8 @@
  .dropbtn {
   background-color: #04AA6D;
   color: white;
-  padding: 16px;
-  font-size: 16px;
+  padding: 1.5vh;
+  font-size: 2vh;
   border: none;
   cursor: pointer;
 }
@@ -91,6 +91,7 @@
 
 .dropdown {
   position: relative;
+  max-height: 2%;
   display: inline-block;
 }
 
@@ -98,7 +99,7 @@
   display: none;
   position: absolute;
   background-color: #f6f6f6;
-  min-width: 230px;
+  /* min-width: 230px; */
   overflow: auto;
   border: 1px solid #ddd;
   z-index: 1;
@@ -114,6 +115,31 @@
 .dropdown a:hover {background-color: #ddd;}
 
 .show {display: block;}
+
+.row{
+  padding: 5vh;
+  position: relative;
+  vertical-align: middle;
+}
+.row:after{
+  content: "";
+  display: table;
+  clear:both;
+}
+.column-4{
+  float: left;
+  width: 25%;
+  position: relative;
+  top: 50%;
+  bottom: 50%;
+}
+.column-6{
+  float: left;
+  width: 16%;
+  position: relative;
+  top: 50%;
+  bottom: 50%;
+}
 /* .hide {display: hidden} */
 
 /*# sourceMappingURL=/my-demo.4eccdcf0.css.map */
