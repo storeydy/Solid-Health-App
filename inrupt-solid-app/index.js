@@ -43,7 +43,7 @@ import { Session, getDefaultSession, fetch } from "@inrupt/solid-client-authn-br
 import { SCHEMA_INRUPT, VCARD, FOAF, RDF } from "@inrupt/vocab-common-rdf";
 import { departments } from "./healthcareDepartments";
 import { checkIfDatasetExists, checkIfAdministrator } from "./podReader";
-import { writeAppointment } from "./podWriter";
+import { writeAppointment, createDepartmentDataset, storeMedicalInsitutionInformation } from "./podWriter";
 //import fetch from 'unfetch';
 
 // If your Pod is *not* on `solidcommunity.net`, change this to your identity provider.
@@ -86,16 +86,13 @@ async function handleRedirectAfterLogin() {
         ).innerHTML = `Your session is logged in with the WebID [<a target="_blank" href="${session.info.webId}">${session.info.webId}</a>].`;
         document.getElementById("labelStatus").setAttribute("role", "alert");
         document.getElementById("webID").value = session.info.webId;
-        //deleteDataset();
         document.getElementById("loginButtonDiv").style.display = "none"
         document.getElementById("accessingPod").style.display = "block"
         checkMedicalInstitutionStatus();
     }
 }
 
-// The example has the login redirect back to the index.html.
-// This calls the function to process login information.
-// If the function is called when not part of the login redirect, the function is a no-op.
+
 handleRedirectAfterLogin();
 
 
@@ -109,9 +106,9 @@ async function checkMedicalInstitutionStatus(podOwner) {
         //const webID = session.info.webId
         accessedPodOwnerUrl = webID;
         accessedPodOwnerBaseUrl = webID.substring(0, (webID.length - 16))
-        var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/healthData1"  // https://testuser1.solidcommunity.net/profile/card#me
+        var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/healthData1/Info"  // https://testuser1.solidcommunity.net/profile/card#me
         console.log(webID)
-        let healthDataExists = checkIfDatasetExists(session, healthDataDatasetUrl) // https://testuser1.solidcommunity.net/profile/card#me
+        let healthDataExists = await checkIfDatasetExists(session, healthDataDatasetUrl) // https://testuser1.solidcommunity.net/profile/card#me
         if (healthDataExists == true) {
             const healthDataDataset = await getSolidDataset(healthDataDatasetUrl, { fetch: session.fetch });
             const institutionDetails = await getThing(healthDataDataset, healthDataDatasetUrl + "#medicalInstitutionDetails")
@@ -123,8 +120,9 @@ async function checkMedicalInstitutionStatus(podOwner) {
             document.getElementById("addressOfInstitution").innerHTML = "Which is located at: " + literalAddress;
             document.getElementById("accessingPod").style.display = "none"
             document.getElementById("institutionInformation").style.display = 'block'
-            checkIfAdministrator(session, healthDataDatasetUrl);
-            saveNewAppointment()
+            checkIfAdministrator(session, accessedPodOwnerBaseUrl + "/healthData1");
+            // saveNewAppointment()
+            //await storeMedicalInsitutionInformation(session, accessedPodOwnerBaseUrl + "/healthData1", {administrator: "https://testuser2.solidcommunity.net/profile/card#me"} )
         }
         else{
             alert("You have not created a dataset in your Solid pod to hold medical record information. Please create one by following the steps below.")
@@ -135,31 +133,6 @@ async function checkMedicalInstitutionStatus(podOwner) {
             document.getElementById("podOwner").value = "";
         }
 
-        // try {
-        //     //document.getElementById("accessingPod").style.height = '150px';
-        // }
-        // catch (ex) {
-        //     console.log("here", ex)
-        //     if (ex instanceof TypeError) {
-        //         console.log(ex.message)
-        //         if (ex.message == "Failed to fetch") {
-        //             alert("Invalid URL entered, make sure URL is a valid WebID for a user's Solid pod.")
-        //         }
-        //         else if (ex.message == "Failed to construct 'URL': Invalid URL") {
-        //             alert("No URL entered, enter a URL.")
-        //         }
-        //     }
-        //     if (ex instanceof Error) {
-        //         if (ex.response.status == 404) //Health data dataset does not exist
-        //         {
-                  
-        //         }
-        //         else if (ex.response.status == 403) //Not authorized
-        //         {
-        //             alert("You have not been authorized to view medical records in the specified individual's pod. Contact them to request access.")
-        //         }
-        //     }
-        // }
     }
 }
 
@@ -174,70 +147,30 @@ async function registerNewMedicalInstitution() {
     const administratorWebID = document.getElementById("institutionSysAdmin").value;
     console.log(administratorWebID)
     const webID = session.info.webId
-    var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/healthData"  // https://testuser1.solidcommunity.net/profile/card#me
-
-
-    const date = new Date().toDateString()
-
-    let healthDataDataset = createSolidDataset();
-    const institutionDetails = buildThing(createThing({ name: "medicalInstitutionDetails" }))
-        .addStringNoLocale(SCHEMA_INRUPT.name, institutionName)
-        .addStringNoLocale(SCHEMA_INRUPT.address, institutionAddress)
-        .addStringNoLocale("https://schema.org/dateCreated", date)
-        .addUrl(RDF.type, "https://schema.org/TextDigitalDocument")
-        .build();
-
-    healthDataDataset = setThing(healthDataDataset, institutionDetails)
-
-    const savedPrivateInfoDataset = await saveSolidDatasetAt(
-        healthDataDatasetUrl + "1",
-        healthDataDataset,
-        { fetch: session.fetch }
-    )
-
-    const myDatasetWithAcl = await getSolidDatasetWithAcl(healthDataDatasetUrl + "1", { fetch: session.fetch })
-    const myDatasetsAcl = createAcl(myDatasetWithAcl)
-
-    console.log(myDatasetsAcl)
-    let updatedAcl = setAgentResourceAccess(
-        myDatasetsAcl,
-        webID,
-        { read: true, append: true, write: true, control: true }
-    )
-    updatedAcl = setAgentResourceAccess(
-        updatedAcl,
-        administratorWebID,
-        { read: true, append: true, write: true, control: true }
-    )
-    updatedAcl = setAgentDefaultAccess(
-        updatedAcl,
-        webID,
-        { read: true, append: true, write: true, control: true }
-    )
-
-    console.log(updatedAcl)
-    try {
-        await saveAclFor(myDatasetWithAcl, updatedAcl, { fetch: session.fetch })
+    var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/healthData1"  // https://testuser1.solidcommunity.net/profile/card#me
+    let institutionDetails = {
+        name: institutionName,
+        address: institutionAddress,
+        administrator: administratorWebID
     }
-    catch (err) {
-        console.log(err)
-    }
+    await storeMedicalInsitutionInformation(session, healthDataDatasetUrl, institutionDetails)
+    
 }
 
 
 
 async function saveNewAppointment() {
-    // let department = document.getElementById("selectedAppointmentDepartmentDropdown").value
-    // let timeOfAppointment = document.getElementById("newAppointmentTime").value;
-    // let dateOfAppointment = document.getElementById("newAppointmentDate").value;
-    // let doctorWebID = document.getElementById("newAppointmentDoctor").value;
-    // let notes = document.getElementById("newAppointmentNotes").value;
+    let department = document.getElementById("selectedAppointmentDepartmentDropdown").value
+    let timeOfAppointment = document.getElementById("newAppointmentTime").value;
+    let dateOfAppointment = document.getElementById("newAppointmentDate").value;
+    let doctorWebID = document.getElementById("newAppointmentDoctor").value;
+    let notes = document.getElementById("newAppointmentNotes").value;
 
-    let department = "Cardiology"
-    let timeOfAppointment = "12:33"
-    let dateOfAppointment = "22/11/22"
-    let doctorWebID = "https://testuser2.solidcommunity.net/profile/card#me"
-    let notes = "Some notes for appointment"
+    // let department = "Cardiology"
+    // let timeOfAppointment = "12:33"
+    // let dateOfAppointment = "22/11/22"
+    // let doctorWebID = "https://testuser2.solidcommunity.net/profile/card#me"
+    // let notes = "Some notes for appointment"
 
     let appointmentDateAsString = "20" + dateOfAppointment.substring(0, 2) + "-" + dateOfAppointment.substring(3, 5) + "-" + dateOfAppointment.substring(6, 8) + " " + timeOfAppointment
     console.log(appointmentDateAsString)
