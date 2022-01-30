@@ -140,4 +140,11 @@
   top: 50%;
   bottom: 50%;
 }
+.column-8{
+  float: left;
+  width: 12%;
+  position: relative;
+  top: 50%;
+  bottom: 50%;
+}
 /* .hide {display: hidden} */

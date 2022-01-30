@@ -87,37 +87,31 @@
           <div class="dropdown">
             <button type="submit" class="dropbtn" id="departmentDropdownButton">Select a department</button>
             <div id="myDropdown" class="dropdown-content">
-              <input type="text" placeholder="Search.." id="myInput" onkeyup="filterFunction()">
+              <input type="text" placeholder="Search.." id="selectedAppointmentDepartmentDropdown" onkeyup="filterFunction()">
             </div>
           </div>
         </form>
       </div>
-      <div class="row">
-        <!-- <div class="column-4"> -->
+      <form id="saveNewAppointmentDetailsForm">
+        <div class="row">
           <label class="column-6"> Time of appointment: </label>
-          <input class="column-6" type="text" placeholder="Enter time of appointment" id="newAppointmentTime">
-        <!-- </div> -->
-        <input class="column-6" style="float:right" type="text" placeholder="Enter date of appointment" id="newAppointmentDate">
-        <label class="column-6" style="float:right"> Date of appointment: </label>
-      </div>
-      <div class="row">
-        <!-- <div class="column-4"> -->
+          <input class="column-6" type="text" placeholder="hh:mm (24hr)" id="newAppointmentTime" required="" pattern="[0-9][0-9]:[0-5][0-9]" minlength="5" maxlength="5"> 
+          <input class="column-6" style="float:right" type="text" placeholder="dd/mm/yy" id="newAppointmentDate" required="" pattern="[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" minlength="8" maxlength="8">
+          <label class="column-6" style="float:right"> Date of appointment: </label>
+        </div>
+        <div class="row">
           <label class="column-4"> WebID of Health worker conducting appointment: </label>
-          <input class="column-4" type="url" placeholder="Enter Doctor's WebID" id="newAppointmentDoctor">
-        <!-- </div> -->
-        <!-- <input class = "column-6" size=50 style="float:right; height:10vh; overflow-x: scroll;" type = "text" placeholder= "Enter any relevant notes" id = "newAppointmentNotes"> -->
-        <textarea class="column-6" style="float:right; resize: none;" cols="40" rows="5"></textarea>
-        <label class="column-6" style="float:right"> Notes: </label>
-      </div>
-      <form id="newAppointmentDetailsForm">
-        <div id="dropdown_container"></div>
-        <p> here </p>
-        <!-- <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
-        <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
-        <script src="healthCareDepartmentDropdown.js"></script> -->
+          <input class="column-4" type="url" placeholder="Enter Doctor's WebID" id="newAppointmentDoctor" required="">
+          <textarea class="column-6" style="float:right; resize: none;" cols="40" rows="5" placeholder="Enter any notes relevant to the appointment" id="newAppointmentNotes"></textarea>
+          <label class="column-6" style="float:right"> Notes: </label>
+        </div>
+        <button type="submit" id="saveAppointmentDetailsButton"> Save Appointment Details to pod </button>
       </form>
     </div>
 
+    <!-- <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+        <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+        <script src="healthCareDepartmentDropdown.js"></script> -->
 
 
 
@@ -285,7 +279,7 @@
 // }
 function filterFunction() {
   var input, filter, ul, li, a, i;
-  input = document.getElementById("myInput");
+  input = document.getElementById("selectedAppointmentDepartmentDropdown");
   filter = input.value.toUpperCase();
   div = document.getElementById("myDropdown");
   a = div.getElementsByTagName("a");
