@@ -71005,16 +71005,33 @@ async function writeAppointment(session, appointmentDetails) {
   if (datasetExists == false) {
     console.log("shouldn't go in here");
     await createDepartmentDataset(session, departmentDatasetUrl, appointmentDetails.podOwnerBaseUrl, appointmentDetails.appointmentDepartment);
-  }
+  } // console.log("about to call")
 
-  console.log("about to call");
-  let doctorHasAccess = await (0, _podReader.checkIfPersonHasAccess)(session, departmentDatasetUrl, appointmentDetails.appointmentDoctor, ["write", "read"]);
+
+  let expectedDoctorPermissionSet = {
+    read: true,
+    write: true,
+    append: true,
+    controlRead: true,
+    controlWrite: true
+  };
+  let doctorHasAccess = await (0, _podReader.checkIfPersonHasAccess)(session, departmentDatasetUrl + "/Appointments", appointmentDetails.appointmentDoctor, expectedDoctorPermissionSet);
 
   if (doctorHasAccess == false) {
-    await grantPersonAccess();
+    let doctorPermissionSet = {
+      read: true,
+      write: true,
+      append: true,
+      control: true
+    };
+    console.log("giving doctor access");
+    await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, appointmentDetails.podOwnerBaseUrl + "/healthData2/" + appointmentDetails.appointmentDepartment + "/Appointments", doctorPermissionSet, false);
+    await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, appointmentDetails.podOwnerBaseUrl + "/healthData2/" + appointmentDetails.appointmentDepartment + "/Records", doctorPermissionSet, false);
+    await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, appointmentDetails.podOwnerBaseUrl + "/healthData2/" + appointmentDetails.appointmentDepartment + "/Diagnoses", doctorPermissionSet, false);
+    await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, appointmentDetails.podOwnerBaseUrl + "/healthData2/" + appointmentDetails.appointmentDepartment + "/Prescriptions", doctorPermissionSet, false);
   }
 
-  logNewAppointment();
+  logNewAppointment(session);
 }
 
 async function createDepartmentDataset(session, datasetUrl, podOwnerBaseUrl, departmentName) {
@@ -71234,6 +71251,7 @@ async function checkIfPersonHasAccess(session, departmentDatasetUrl, personWebID
     fetch: session.fetch
   });
   console.log(access);
+  if (access == permissionSet) return true;else return false;
 }
 
 async function checkIfAdministrator(session, urlOfHealthRecordDataset) {

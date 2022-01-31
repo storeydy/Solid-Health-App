@@ -30,13 +30,19 @@ export async function writeAppointment(session, appointmentDetails) {
         await createDepartmentDataset(session, departmentDatasetUrl, appointmentDetails.podOwnerBaseUrl, appointmentDetails.appointmentDepartment)
     }
 
-    console.log("about to call")
-    let doctorHasAccess = await checkIfPersonHasAccess(session, departmentDatasetUrl, appointmentDetails.appointmentDoctor, ["write", "read"])
+    // console.log("about to call")
+    let expectedDoctorPermissionSet = { read: true, write: true, append: true, controlRead: true, controlWrite: true }
+    let doctorHasAccess = await checkIfPersonHasAccess(session, departmentDatasetUrl + "/Appointments", appointmentDetails.appointmentDoctor, expectedDoctorPermissionSet)
     if (doctorHasAccess == false) {
-        await grantPersonAccess()
-        CONTINUE FROM HERE
+        let doctorPermissionSet = {read: true, write: true, append: true, control: true}
+        console.log("giving doctor access")
+        await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, appointmentDetails.podOwnerBaseUrl + "/healthData2/"+ appointmentDetails.appointmentDepartment + "/Appointments" , doctorPermissionSet, false)
+        await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, appointmentDetails.podOwnerBaseUrl + "/healthData2/"+ appointmentDetails.appointmentDepartment + "/Records" , doctorPermissionSet, false)
+        await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, appointmentDetails.podOwnerBaseUrl + "/healthData2/"+ appointmentDetails.appointmentDepartment + "/Diagnoses" , doctorPermissionSet, false)
+        await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, appointmentDetails.podOwnerBaseUrl + "/healthData2/"+ appointmentDetails.appointmentDepartment + "/Prescriptions" , doctorPermissionSet, false)
     }
-    logNewAppointment()
+
+    logNewAppointment(session, )
 }
 
 export async function createDepartmentDataset(session, datasetUrl, podOwnerBaseUrl, departmentName) {

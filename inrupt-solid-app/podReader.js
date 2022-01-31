@@ -80,6 +80,8 @@ export async function checkIfPersonHasAccess(session, departmentDatasetUrl, pers
     console.log(permissionSet)
     const access = await getAgentAccess(departmentDatasetUrl, personWebID, {fetch: session.fetch});
     console.log(access)
+    if(access == permissionSet) return true;
+    else return false
 }
 
 export async function checkIfAdministrator(session, urlOfHealthRecordDataset) {
