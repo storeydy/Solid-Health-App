@@ -1,7 +1,9 @@
 import {
     getSolidDataset,
-    getResourceInfoWithAcl
+    getResourceInfoWithAcl,
+    getAgentResourceAccess
 } from "@inrupt/solid-client";
+import { getAgentAccess } from "@inrupt/solid-client/dist/access/universal_v1";
 import { storeMedicalInsitutionInformation } from "./podWriter";
 
 export async function checkIfDatasetExists(session, datasetUrl) {
@@ -70,6 +72,15 @@ export async function checkIfDatasetExists(session, datasetUrl) {
 //         document.getElementById("podOwner").value = "";
 //     }
 // }
+
+export async function checkIfPersonHasAccess(session, departmentDatasetUrl, personWebID, permissionSet)
+{
+    console.log(departmentDatasetUrl)
+    console.log(personWebID)
+    console.log(permissionSet)
+    const access = await getAgentAccess(departmentDatasetUrl, personWebID, {fetch: session.fetch});
+    console.log(access)
+}
 
 export async function checkIfAdministrator(session, urlOfHealthRecordDataset) {
     let signedInUsersWebID = session.info.webId

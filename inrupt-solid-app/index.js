@@ -106,7 +106,7 @@ async function checkMedicalInstitutionStatus(podOwner) {
         //const webID = session.info.webId
         accessedPodOwnerUrl = webID;
         accessedPodOwnerBaseUrl = webID.substring(0, (webID.length - 16))
-        var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/healthData1/Info"  // https://testuser1.solidcommunity.net/profile/card#me
+        var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/healthData2/Info"  // https://testuser1.solidcommunity.net/profile/card#me
         console.log(webID)
         let healthDataExists = await checkIfDatasetExists(session, healthDataDatasetUrl) // https://testuser1.solidcommunity.net/profile/card#me
         if (healthDataExists == true) {
@@ -121,15 +121,20 @@ async function checkMedicalInstitutionStatus(podOwner) {
             document.getElementById("accessingPod").style.display = "none"
             document.getElementById("institutionInformation").style.display = 'block'
             checkIfAdministrator(session, accessedPodOwnerBaseUrl + "/healthData1");
-            // saveNewAppointment()
+            await saveNewAppointment()
             //await storeMedicalInsitutionInformation(session, accessedPodOwnerBaseUrl + "/healthData1", {administrator: "https://testuser2.solidcommunity.net/profile/card#me"} )
         }
         else{
+            if(podOwner == "signedInUser"){
             alert("You have not created a dataset in your Solid pod to hold medical record information. Please create one by following the steps below.")
             medicalInstitutionRegistered = false;
             console.log(medicalInstitutionRegistered)
             document.getElementById("accessingPod").style.display = "none"
             document.getElementById("registerNewMedicalInstitution").style.display = 'block'
+            }
+            else{
+                alert("You have not been authorized to view medical records in the specified individual's pod. Contact them to request access.")
+            }
             document.getElementById("podOwner").value = "";
         }
 
@@ -147,7 +152,7 @@ async function registerNewMedicalInstitution() {
     const administratorWebID = document.getElementById("institutionSysAdmin").value;
     console.log(administratorWebID)
     const webID = session.info.webId
-    var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/healthData1"  // https://testuser1.solidcommunity.net/profile/card#me
+    var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/healthData2"  // https://testuser1.solidcommunity.net/profile/card#me
     let institutionDetails = {
         name: institutionName,
         address: institutionAddress,
@@ -160,17 +165,17 @@ async function registerNewMedicalInstitution() {
 
 
 async function saveNewAppointment() {
-    let department = document.getElementById("selectedAppointmentDepartmentDropdown").value
-    let timeOfAppointment = document.getElementById("newAppointmentTime").value;
-    let dateOfAppointment = document.getElementById("newAppointmentDate").value;
-    let doctorWebID = document.getElementById("newAppointmentDoctor").value;
-    let notes = document.getElementById("newAppointmentNotes").value;
+    // let department = document.getElementById("selectedAppointmentDepartmentDropdown").value
+    // let timeOfAppointment = document.getElementById("newAppointmentTime").value;
+    // let dateOfAppointment = document.getElementById("newAppointmentDate").value;
+    // let doctorWebID = document.getElementById("newAppointmentDoctor").value;
+    // let notes = document.getElementById("newAppointmentNotes").value;
 
-    // let department = "Cardiology"
-    // let timeOfAppointment = "12:33"
-    // let dateOfAppointment = "22/11/22"
-    // let doctorWebID = "https://testuser2.solidcommunity.net/profile/card#me"
-    // let notes = "Some notes for appointment"
+    let department = "Cardiology"
+    let timeOfAppointment = "12:33"
+    let dateOfAppointment = "22/11/22"
+    let doctorWebID = "https://testuser2.solidcommunity.net/profile/card#me"
+    let notes = "Some notes for appointment"
 
     let appointmentDateAsString = "20" + dateOfAppointment.substring(0, 2) + "-" + dateOfAppointment.substring(3, 5) + "-" + dateOfAppointment.substring(6, 8) + " " + timeOfAppointment
     console.log(appointmentDateAsString)
@@ -183,7 +188,7 @@ async function saveNewAppointment() {
         appointmentDoctor: doctorWebID,
         appointmentNotes: notes
     }
-    writeAppointment(session, appointmentDetails)
+    await writeAppointment(session, appointmentDetails)
 }
 
 // 2. Create new dataset with a file in it
