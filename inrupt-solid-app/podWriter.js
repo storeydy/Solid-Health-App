@@ -64,7 +64,7 @@ export async function createDepartmentDataset(session, datasetUrl, podOwnerBaseU
     let podOwnerWebID = podOwnerBaseUrl + "/profile/card#me"
     let permissionSetForCreator = { read: true, append: true, write: true, control: true }
     await saveSolidDatasetAt(podOwnerBaseUrl + "/healthData2/" + departmentName + "/Appointments", newDepartmentAppointmentsDataset, { fetch: session.fetch })
-    // await grantAccessToDataset(session, session.info.webId, podOwnerBaseUrl + "/healthData1/" + departmentName, permissionSetForCreator, false )
+    // await grantAccessToDataset(session, session.info.webId, podOwnerBaseUrl + "/healthData2/" + departmentName, permissionSetForCreator, false ) //MESSES UP WHOLE DATASET
     await grantAccessToDataset(session, session.info.webId, podOwnerBaseUrl + "/healthData2/" + departmentName + "/Appointments", permissionSetForCreator, false)
     await saveSolidDatasetAt(podOwnerBaseUrl + "/healthData2/" + departmentName + "/Records", newDepartmentRecordsDataset, { fetch: session.fetch })
     await grantAccessToDataset(session, session.info.webId, podOwnerBaseUrl + "/healthData2/" + departmentName + "/Records", permissionSetForCreator, false)

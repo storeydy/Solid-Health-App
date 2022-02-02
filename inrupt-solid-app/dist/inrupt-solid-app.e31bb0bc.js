@@ -71059,7 +71059,7 @@ async function createDepartmentDataset(session, datasetUrl, podOwnerBaseUrl, dep
   };
   await (0, _solidClient.saveSolidDatasetAt)(podOwnerBaseUrl + "/healthData2/" + departmentName + "/Appointments", newDepartmentAppointmentsDataset, {
     fetch: session.fetch
-  }); // await grantAccessToDataset(session, session.info.webId, podOwnerBaseUrl + "/healthData1/" + departmentName, permissionSetForCreator, false )
+  }); // await grantAccessToDataset(session, session.info.webId, podOwnerBaseUrl + "/healthData2/" + departmentName, permissionSetForCreator, false ) //MESSES UP WHOLE DATASET
 
   await grantAccessToDataset(session, session.info.webId, podOwnerBaseUrl + "/healthData2/" + departmentName + "/Appointments", permissionSetForCreator, false);
   await (0, _solidClient.saveSolidDatasetAt)(podOwnerBaseUrl + "/healthData2/" + departmentName + "/Records", newDepartmentRecordsDataset, {
@@ -71180,6 +71180,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.checkIfAdministrator = checkIfAdministrator;
 exports.checkIfDatasetExists = checkIfDatasetExists;
 exports.checkIfPersonHasAccess = checkIfPersonHasAccess;
+exports.getResource = getResource;
 
 var _solidClient = require("@inrupt/solid-client");
 
@@ -71206,6 +71207,27 @@ async function checkIfDatasetExists(session, datasetUrl) {
       {
         return false; //Not sure to return false here or not
       }
+  }
+}
+
+async function getResource(session, resourceUrl) {
+  try {
+    const healthDataDataset = await (0, _solidClient.getSolidDataset)("https://testuser1.solidcommunity.net/healthData2/", {
+      fetch: session.fetch
+    });
+    const listOfDatasetsWithinHealthDataDataset = await (0, _solidClient.getContainedResourceUrlAll)(healthDataDataset, {
+      fetch: session.fetch
+    });
+
+    for (var i = 0; i < listOfDatasetsWithinHealthDataDataset.length; i++) {
+      if (!(0, _solidClient.isContainer)(listOfDatasetsWithinHealthDataDataset[i], {
+        fetch: session.fetch
+      })) listOfDatasetsWithinHealthDataDataset.splice(i, 1);
+    }
+
+    console.log(listOfDatasetsWithinHealthDataDataset);
+  } catch (ex) {
+    console.log(ex);
   }
 } // export async function checkIfHealthDataExists(session, healthDataUrl) {
 //     try {
@@ -71362,8 +71384,8 @@ async function checkMedicalInstitutionStatus(podOwner) {
       document.getElementById("addressOfInstitution").innerHTML = "Which is located at: " + literalAddress;
       document.getElementById("accessingPod").style.display = "none";
       document.getElementById("institutionInformation").style.display = 'block';
-      (0, _podReader.checkIfAdministrator)(session, accessedPodOwnerBaseUrl + "/healthData1"); // await saveNewAppointment()
-      //await storeMedicalInsitutionInformation(session, accessedPodOwnerBaseUrl + "/healthData1", {administrator: "https://testuser2.solidcommunity.net/profile/card#me"} )
+      (0, _podReader.checkIfAdministrator)(session, accessedPodOwnerBaseUrl + "/healthData2"); // await saveNewAppointment()
+      //await storeMedicalInsitutionInformation(session, accessedPodOwnerBaseUrl + "/healthData2", {administrator: "https://testuser2.solidcommunity.net/profile/card#me"} )
     } else {
       if (podOwner == "signedInUser") {
         alert("You have not created a dataset in your Solid pod to hold medical record information. Please create one by following the steps below.");
@@ -71424,6 +71446,16 @@ async function saveNewAppointment() {
     appointmentNotes: notes
   };
   await (0, _podWriter.writeAppointment)(session, appointmentDetails);
+}
+
+async function getPatientDepartmentsAndDisplay() {
+  console.log("made it to the right function in anyways");
+  let healthDataContainerDatasetUrl = accessedPodOwnerBaseUrl + "/healthData2/"; // let isAContainer = await isContainer("https://testuser1.solidcommunity.net/healthData2/", {fetch:session.fetch})
+  // console.log(isAContainer)
+  // let containerContents = await getContainedResourceUrlAll("https://testuser1.solidcommunity.net/healthData2/", {fetch:session.fetch})
+  // console.log(containerContents)
+
+  (0, _podReader.getResource)(session, healthDataContainerDatasetUrl);
 } // 2. Create new dataset with a file in it
 
 
@@ -71823,6 +71855,10 @@ uploadFileForm.addEventListener("submit", event => {
 deleteFileForm.addEventListener("submit", event => {
   event.preventDefault();
   deleteFileFromUrl(); //deleteDataset();
+});
+accessMedicalRecordsForm.addEventListener("submit", event => {
+  event.preventDefault();
+  getPatientDepartmentsAndDisplay();
 });
 },{"@inrupt/solid-client":"node_modules/@inrupt/solid-client/dist/index.es.js","@inrupt/solid-client-authn-browser":"node_modules/@inrupt/solid-client-authn-browser/dist/index.js","@inrupt/vocab-common-rdf":"node_modules/@inrupt/vocab-common-rdf/dist/index.es.js","./healthcareDepartments":"healthcareDepartments.js","./podReader":"podReader.js","./podWriter":"podWriter.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];

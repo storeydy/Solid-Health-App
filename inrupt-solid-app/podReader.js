@@ -1,7 +1,12 @@
 import {
     getSolidDataset,
     getResourceInfoWithAcl,
-    getAgentResourceAccess
+    getAgentResourceAccess,
+    getContainedResourceUrlAll,
+    isContainer,
+    getResourceInfo,
+    getLinkedResourceUrlAll,
+    getContentType
 } from "@inrupt/solid-client";
 import { getAgentAccess } from "@inrupt/solid-client/dist/access/universal_v1";
 import { storeMedicalInsitutionInformation } from "./podWriter";
@@ -25,6 +30,22 @@ export async function checkIfDatasetExists(session, datasetUrl) {
             return false //Not sure to return false here or not
         }
     }
+}
+
+export async function getResource(session, resourceUrl) {
+    try {
+        const healthDataDataset = await getSolidDataset("https://testuser1.solidcommunity.net/healthData2/", { fetch: session.fetch })
+        const listOfDatasetsWithinHealthDataDataset = await getContainedResourceUrlAll(healthDataDataset, { fetch: session.fetch })
+        for(var i = 0 ; i < listOfDatasetsWithinHealthDataDataset.length; i++)
+        {
+            if(!(isContainer(listOfDatasetsWithinHealthDataDataset[i], {fetch: session.fetch}))) listOfDatasetsWithinHealthDataDataset.splice(i, 1)
+        }
+        console.log(listOfDatasetsWithinHealthDataDataset)
+    }
+    catch (ex) {
+        console.log(ex)
+    }
+
 }
 
 // export async function checkIfHealthDataExists(session, healthDataUrl) {
@@ -73,14 +94,13 @@ export async function checkIfDatasetExists(session, datasetUrl) {
 //     }
 // }
 
-export async function checkIfPersonHasAccess(session, departmentDatasetUrl, personWebID, permissionSet)
-{
+export async function checkIfPersonHasAccess(session, departmentDatasetUrl, personWebID, permissionSet) {
     console.log(departmentDatasetUrl)
     console.log(personWebID)
     console.log(permissionSet)
-    const access = await getAgentAccess(departmentDatasetUrl, personWebID, {fetch: session.fetch});
+    const access = await getAgentAccess(departmentDatasetUrl, personWebID, { fetch: session.fetch });
     console.log(access)
-    if(access == permissionSet) return true;
+    if (access == permissionSet) return true;
     else return false
 }
 

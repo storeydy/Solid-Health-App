@@ -36,13 +36,15 @@ import {
     getProfileAll,
     getThingAll,
     getDatetime,
-    getStringNoLocaleAll
+    getStringNoLocaleAll,
+    isContainer,
+    getContainedResourceUrlAll
 } from "@inrupt/solid-client";
 
 import { Session, getDefaultSession, fetch } from "@inrupt/solid-client-authn-browser";
 import { SCHEMA_INRUPT, VCARD, FOAF, RDF } from "@inrupt/vocab-common-rdf";
 import { departments } from "./healthcareDepartments";
-import { checkIfDatasetExists, checkIfAdministrator } from "./podReader";
+import { checkIfDatasetExists, checkIfAdministrator, getResource } from "./podReader";
 import { writeAppointment, createDepartmentDataset, storeMedicalInsitutionInformation } from "./podWriter";
 //import fetch from 'unfetch';
 
@@ -120,9 +122,9 @@ async function checkMedicalInstitutionStatus(podOwner) {
             document.getElementById("addressOfInstitution").innerHTML = "Which is located at: " + literalAddress;
             document.getElementById("accessingPod").style.display = "none"
             document.getElementById("institutionInformation").style.display = 'block'
-            checkIfAdministrator(session, accessedPodOwnerBaseUrl + "/healthData1");
+            checkIfAdministrator(session, accessedPodOwnerBaseUrl + "/healthData2");
             // await saveNewAppointment()
-            //await storeMedicalInsitutionInformation(session, accessedPodOwnerBaseUrl + "/healthData1", {administrator: "https://testuser2.solidcommunity.net/profile/card#me"} )
+            //await storeMedicalInsitutionInformation(session, accessedPodOwnerBaseUrl + "/healthData2", {administrator: "https://testuser2.solidcommunity.net/profile/card#me"} )
         }
         else{
             if(podOwner == "signedInUser"){
@@ -162,8 +164,6 @@ async function registerNewMedicalInstitution() {
     
 }
 
-
-
 async function saveNewAppointment() {
     // let department = document.getElementById("selectedAppointmentDepartmentDropdown").value
     // let timeOfAppointment = document.getElementById("newAppointmentTime").value;
@@ -189,6 +189,16 @@ async function saveNewAppointment() {
         appointmentNotes: notes
     }
     await writeAppointment(session, appointmentDetails)
+}
+
+async function getPatientDepartmentsAndDisplay(){
+    console.log("made it to the right function in anyways")
+    let healthDataContainerDatasetUrl = accessedPodOwnerBaseUrl + "/healthData2/"
+    // let isAContainer = await isContainer("https://testuser1.solidcommunity.net/healthData2/", {fetch:session.fetch})
+    // console.log(isAContainer)
+    // let containerContents = await getContainedResourceUrlAll("https://testuser1.solidcommunity.net/healthData2/", {fetch:session.fetch})
+    // console.log(containerContents)
+    getResource(session, healthDataContainerDatasetUrl)
 }
 
 // 2. Create new dataset with a file in it
@@ -623,5 +633,10 @@ deleteFileForm.addEventListener("submit", (event) => {
     event.preventDefault();
     deleteFileFromUrl();
     //deleteDataset();
+})
+
+accessMedicalRecordsForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    getPatientDepartmentsAndDisplay();
 })
 
