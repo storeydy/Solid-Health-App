@@ -121,7 +121,7 @@ async function checkMedicalInstitutionStatus(podOwner) {
             document.getElementById("accessingPod").style.display = "none"
             document.getElementById("institutionInformation").style.display = 'block'
             checkIfAdministrator(session, accessedPodOwnerBaseUrl + "/healthData1");
-            await saveNewAppointment()
+            // await saveNewAppointment()
             //await storeMedicalInsitutionInformation(session, accessedPodOwnerBaseUrl + "/healthData1", {administrator: "https://testuser2.solidcommunity.net/profile/card#me"} )
         }
         else{

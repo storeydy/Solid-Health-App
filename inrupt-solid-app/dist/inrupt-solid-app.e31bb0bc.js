@@ -71031,7 +71031,18 @@ async function writeAppointment(session, appointmentDetails) {
     await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, appointmentDetails.podOwnerBaseUrl + "/healthData2/" + appointmentDetails.appointmentDepartment + "/Prescriptions", doctorPermissionSet, false);
   }
 
-  logNewAppointment(session);
+  let departmentAppointmentDataset = await (0, _solidClient.getSolidDataset)(appointmentDetails.podOwnerBaseUrl + "/healthData2/" + appointmentDetails.appointmentDepartment + "/Appointments", {
+    fetch: session.fetch
+  });
+  let appointmentFileName = "Appointment @ " + appointmentDetails.appointmentTime.toDateString();
+  const appointmentDetailsFile = (0, _solidClient.buildThing)((0, _solidClient.createThing)({
+    name: appointmentFileName
+  })).addStringNoLocale("https://schema.org/startDate", appointmentDetails.appointmentTime).addStringNoLocale("https://schema.org/organizer", appointmentDetails.appointmentDoctor).addStringNoLocale("https://schema.org/about", appointmentDetails.appointmentNotes).addUrl(_vocabCommonRdf.RDF.type, "https://schema.org/Event").build();
+  departmentAppointmentDataset = (0, _solidClient.setThing)(departmentAppointmentDataset, appointmentDetailsFile);
+  await (0, _solidClient.saveSolidDatasetAt)(appointmentDetails.podOwnerBaseUrl + "/healthData2/" + appointmentDetails.appointmentDepartment + "/Appointments", departmentAppointmentDataset, {
+    fetch: session.fetch
+  });
+  console.log("appointment details saved to pod");
 }
 
 async function createDepartmentDataset(session, datasetUrl, podOwnerBaseUrl, departmentName) {
@@ -71351,8 +71362,8 @@ async function checkMedicalInstitutionStatus(podOwner) {
       document.getElementById("addressOfInstitution").innerHTML = "Which is located at: " + literalAddress;
       document.getElementById("accessingPod").style.display = "none";
       document.getElementById("institutionInformation").style.display = 'block';
-      (0, _podReader.checkIfAdministrator)(session, accessedPodOwnerBaseUrl + "/healthData1");
-      await saveNewAppointment(); //await storeMedicalInsitutionInformation(session, accessedPodOwnerBaseUrl + "/healthData1", {administrator: "https://testuser2.solidcommunity.net/profile/card#me"} )
+      (0, _podReader.checkIfAdministrator)(session, accessedPodOwnerBaseUrl + "/healthData1"); // await saveNewAppointment()
+      //await storeMedicalInsitutionInformation(session, accessedPodOwnerBaseUrl + "/healthData1", {administrator: "https://testuser2.solidcommunity.net/profile/card#me"} )
     } else {
       if (podOwner == "signedInUser") {
         alert("You have not created a dataset in your Solid pod to hold medical record information. Please create one by following the steps below.");
