@@ -28,29 +28,35 @@
     <div id="accessingPod" class="podSelector" style="display: none;">
       <form id="accessPodForm">
         <h3> Choose the Solid pod that you would like to access: </h3>
-        <button id="myPodButton" style="position: absolute; left: 20%; top: 35%; font-size: 15px;"> Access my
-          pod</button>
-        <h3 style="position: absolute; left:35%; top: 33%"> OR</h3>
-        <h4 style="position: absolute; left:45%; top: 33%"> The pod belonging to: </h4>
-        <input type="url" id="podOwner" placeholder="Enter WebID of Patient pod" size=40
-          style="position: absolute; left:60%; top: 36%">
-        <button id="otherUserPodButton" style="position: absolute; left:85%; top: 36%"> Submit </button>
+        <div class="row">
+          <button id="myPodButton" style="position: inherit; left: 20%; font-size: 15px;"> Access my
+            pod</button>
+          <div class="row" style="align-content: center;">
+            <h3 style="position: inherit; left:35%; max-width: max-content;"> OR</h3>
+            <h4 style="position: inherit; left:45%; max-width: max-content;"> The pod belonging to: </h4>
+            <input type="url" id="podOwner" placeholder="Enter WebID of Patient pod" size=40
+              style="position: inherit; left:60%">
+            <button id="otherUserPodButton" style="position: inherit; left:65%"> Submit </button>
+          </div>
+        </div>
       </form>
     </div>
 
     <div id="institutionInformation" class="podSelector" style="display:none">
-      <form id="institutionInformationForm">
-        <h3 id="ownerOfPod"></h3>
-        <h3 id="nameOfInstitution"></h3>
-        <h3 id="addressOfInstitution"></h3>
-        <button type="submit" style="position: absolute; left:65%;"> Cancel session with current pod owner </button>
-      </form>
-      <form id="registerNewAppointmentForm">
-        <button type="submit" style="position: absolute; left: 35%"> Register new appointment</button>
-      </form>
-      <form id="accessMedicalRecordsForm">
-        <button type="submit" style="position: absolute; left: 10%"> Access medical records </button>
-      </form>
+      <div class="row">
+        <form id="institutionInformationForm">
+          <h3 id="ownerOfPod"></h3>
+          <h3 id="nameOfInstitution"></h3>
+          <h3 id="addressOfInstitution"></h3>
+          <button type="submit" class="column-4" style = "margin: 2%;"> Cancel session with current pod owner </button>
+        </form>
+        <form id="registerNewAppointmentForm">
+          <button type="submit" class="column-4" id = "registerNewAppointmentButton" style = "margin: 2%;"> Register new appointment</button>
+        </form>
+        <form id="accessMedicalRecordsForm">
+          <button type="submit" class="column-4" id = "accessMedicalRecordsButton" style = "margin: 2%;"> Access medical records </button>
+        </form>
+      </div>
     </div>
 
     <div id="noInstitutionInformation" style="display:none">
@@ -101,24 +107,27 @@
       <form id="saveNewAppointmentDetailsForm">
         <div class="row">
           <label class="column-6"> Time of appointment: </label>
-          <input class="column-6" type="text" placeholder="hh:mm (24hr)" id="newAppointmentTime" required pattern="[0-9][0-9]:[0-5][0-9]" required minlength="5" maxlength="5"> 
-          <input class="column-6" style="float:right" type="text" placeholder="dd/mm/yy" id="newAppointmentDate"required pattern="[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" required minlength="8" maxlength="8">
+          <input class="column-6" type="text" placeholder="hh:mm (24hr)" id="newAppointmentTime" required
+            pattern="[0-9][0-9]:[0-5][0-9]" required minlength="5" maxlength="5">
+          <input class="column-6" style="float:right" type="text" placeholder="dd/mm/yy" id="newAppointmentDate"
+            required pattern="[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" required minlength="8" maxlength="8">
           <label class="column-6" style="float:right"> Date of appointment: </label>
         </div>
         <div class="row">
           <label class="column-4"> WebID of Health worker conducting appointment: </label>
           <input class="column-4" type="url" placeholder="Enter Doctor's WebID" id="newAppointmentDoctor" required>
           <textarea class="column-6" style="float:right; resize: none;" cols="40" rows="5"
-            placeholder="Enter any notes relevant to the appointment" id = "newAppointmentNotes"></textarea>
+            placeholder="Enter any notes relevant to the appointment" id="newAppointmentNotes"></textarea>
           <label class="column-6" style="float:right"> Notes: </label>
         </div>
         <button type="submit" id="saveAppointmentDetailsButton"> Save Appointment Details to pod </button>
       </form>
     </div>
 
-    <div id = "accessingRecordsDiv" class = "panel" style="display:none">
-      <form id = "departmentSelectionForm"> 
-        <p> Hiello </p>
+    <div id="accessingRecordsDiv" class="panel" style="display:none">
+      <form id="departmentSelectionForm">
+        <h4 style= "text-align: center;"> Select a department to access record types within that department </h4>
+        <!-- <button type="submit"> View records in selected department </button> -->
       </form>
     </div>
 

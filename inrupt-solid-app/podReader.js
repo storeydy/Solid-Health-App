@@ -32,15 +32,16 @@ export async function checkIfDatasetExists(session, datasetUrl) {
     }
 }
 
-export async function getResource(session, resourceUrl) {
+export async function getDepartments(session, resourceUrl) {
     try {
-        const healthDataDataset = await getSolidDataset("https://testuser1.solidcommunity.net/healthData2/", { fetch: session.fetch })
+        const healthDataDataset = await getSolidDataset(resourceUrl, { fetch: session.fetch })
         const listOfDatasetsWithinHealthDataDataset = await getContainedResourceUrlAll(healthDataDataset, { fetch: session.fetch })
         for(var i = 0 ; i < listOfDatasetsWithinHealthDataDataset.length; i++)
         {
             if(!(isContainer(listOfDatasetsWithinHealthDataDataset[i], {fetch: session.fetch}))) listOfDatasetsWithinHealthDataDataset.splice(i, 1)
         }
-        console.log(listOfDatasetsWithinHealthDataDataset)
+        // console.log(listOfDatasetsWithinHealthDataDataset)
+        return listOfDatasetsWithinHealthDataDataset
     }
     catch (ex) {
         console.log(ex)

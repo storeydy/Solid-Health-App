@@ -45,8 +45,10 @@
  }
 
  .podSelector{
-   height: 15vh;
+   /* height: 15vh; */
    border: 2px solid;
+   block-size: fit-content;
+   height: fit-content
  }
 
  dl {

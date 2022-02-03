@@ -44,7 +44,7 @@ import {
 import { Session, getDefaultSession, fetch } from "@inrupt/solid-client-authn-browser";
 import { SCHEMA_INRUPT, VCARD, FOAF, RDF } from "@inrupt/vocab-common-rdf";
 import { departments } from "./healthcareDepartments";
-import { checkIfDatasetExists, checkIfAdministrator, getResource } from "./podReader";
+import { checkIfDatasetExists, checkIfAdministrator, getDepartments } from "./podReader";
 import { writeAppointment, createDepartmentDataset, storeMedicalInsitutionInformation } from "./podWriter";
 //import fetch from 'unfetch';
 
@@ -126,15 +126,15 @@ async function checkMedicalInstitutionStatus(podOwner) {
             // await saveNewAppointment()
             //await storeMedicalInsitutionInformation(session, accessedPodOwnerBaseUrl + "/healthData2", {administrator: "https://testuser2.solidcommunity.net/profile/card#me"} )
         }
-        else{
-            if(podOwner == "signedInUser"){
-            alert("You have not created a dataset in your Solid pod to hold medical record information. Please create one by following the steps below.")
-            medicalInstitutionRegistered = false;
-            console.log(medicalInstitutionRegistered)
-            document.getElementById("accessingPod").style.display = "none"
-            document.getElementById("registerNewMedicalInstitution").style.display = 'block'
+        else {
+            if (podOwner == "signedInUser") {
+                alert("You have not created a dataset in your Solid pod to hold medical record information. Please create one by following the steps below.")
+                medicalInstitutionRegistered = false;
+                console.log(medicalInstitutionRegistered)
+                document.getElementById("accessingPod").style.display = "none"
+                document.getElementById("registerNewMedicalInstitution").style.display = 'block'
             }
-            else{
+            else {
                 alert("You have not been authorized to view medical records in the specified individual's pod. Contact them to request access.")
             }
             document.getElementById("podOwner").value = "";
@@ -161,7 +161,7 @@ async function registerNewMedicalInstitution() {
         administrator: administratorWebID
     }
     await storeMedicalInsitutionInformation(session, healthDataDatasetUrl, institutionDetails)
-    
+
 }
 
 async function saveNewAppointment() {
@@ -191,14 +191,34 @@ async function saveNewAppointment() {
     await writeAppointment(session, appointmentDetails)
 }
 
-async function getPatientDepartmentsAndDisplay(){
-    console.log("made it to the right function in anyways")
+async function getPatientDepartmentsAndDisplay() {
     let healthDataContainerDatasetUrl = accessedPodOwnerBaseUrl + "/healthData2/"
-    // let isAContainer = await isContainer("https://testuser1.solidcommunity.net/healthData2/", {fetch:session.fetch})
-    // console.log(isAContainer)
-    // let containerContents = await getContainedResourceUrlAll("https://testuser1.solidcommunity.net/healthData2/", {fetch:session.fetch})
-    // console.log(containerContents)
-    getResource(session, healthDataContainerDatasetUrl)
+    let departments = await getDepartments(session, healthDataContainerDatasetUrl)
+    console.log(departments)
+    if (departments.length == 0) {
+        alert("The currently accessed pod owner has no medical records stored in their pod.")
+        return
+    }
+    else {
+        let departmentListForm = document.getElementById("departmentSelectionForm")
+        let selectAble = document.createElement("select")
+        selectAble.id = "selectedDepartment"
+        selectAble.style.margin = "2%"
+        // departmentsListForm.appendChild(selectable)
+        for (var i = 0; i <= departments.length - 1; i++) {
+            let newOption = document.createElement("option")
+            newOption.innerHTML = departments[i].substring( departments[i].lastIndexOf("healthData2/") + 12, departments[i].length - 1 )
+            selectAble.appendChild(newOption)
+        }
+        departmentListForm.appendChild(selectAble)
+        document.getElementById("accessingRecordsDiv").style.display = "block"
+        let submitButton = document.createElement("button")
+        submitButton.type = "submit"
+        // submitButton.style.paddingLeft = "4px"
+        submitButton.innerHTML = "View records in selected department"
+        departmentListForm.appendChild(submitButton)
+    }
+
 }
 
 // 2. Create new dataset with a file in it
@@ -637,6 +657,10 @@ deleteFileForm.addEventListener("submit", (event) => {
 
 accessMedicalRecordsForm.addEventListener("submit", (event) => {
     event.preventDefault();
+    document.getElementById("registerNewAppointmentButton").disabled = true
+    document.getElementById("accessMedicalRecordsButton").disabled = true
+    document.getElementById("accessMedicalRecordsButton").style.color = "#b5b3b3" 
+    document.getElementById("accessMedicalRecordsButton").style.backgroundColor = "#595959" 
     getPatientDepartmentsAndDisplay();
 })
 

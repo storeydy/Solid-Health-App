@@ -71180,7 +71180,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.checkIfAdministrator = checkIfAdministrator;
 exports.checkIfDatasetExists = checkIfDatasetExists;
 exports.checkIfPersonHasAccess = checkIfPersonHasAccess;
-exports.getResource = getResource;
+exports.getDepartments = getDepartments;
 
 var _solidClient = require("@inrupt/solid-client");
 
@@ -71210,9 +71210,9 @@ async function checkIfDatasetExists(session, datasetUrl) {
   }
 }
 
-async function getResource(session, resourceUrl) {
+async function getDepartments(session, resourceUrl) {
   try {
-    const healthDataDataset = await (0, _solidClient.getSolidDataset)("https://testuser1.solidcommunity.net/healthData2/", {
+    const healthDataDataset = await (0, _solidClient.getSolidDataset)(resourceUrl, {
       fetch: session.fetch
     });
     const listOfDatasetsWithinHealthDataDataset = await (0, _solidClient.getContainedResourceUrlAll)(healthDataDataset, {
@@ -71223,9 +71223,10 @@ async function getResource(session, resourceUrl) {
       if (!(0, _solidClient.isContainer)(listOfDatasetsWithinHealthDataDataset[i], {
         fetch: session.fetch
       })) listOfDatasetsWithinHealthDataDataset.splice(i, 1);
-    }
+    } // console.log(listOfDatasetsWithinHealthDataDataset)
 
-    console.log(listOfDatasetsWithinHealthDataDataset);
+
+    return listOfDatasetsWithinHealthDataDataset;
   } catch (ex) {
     console.log(ex);
   }
@@ -71449,13 +71450,33 @@ async function saveNewAppointment() {
 }
 
 async function getPatientDepartmentsAndDisplay() {
-  console.log("made it to the right function in anyways");
-  let healthDataContainerDatasetUrl = accessedPodOwnerBaseUrl + "/healthData2/"; // let isAContainer = await isContainer("https://testuser1.solidcommunity.net/healthData2/", {fetch:session.fetch})
-  // console.log(isAContainer)
-  // let containerContents = await getContainedResourceUrlAll("https://testuser1.solidcommunity.net/healthData2/", {fetch:session.fetch})
-  // console.log(containerContents)
+  let healthDataContainerDatasetUrl = accessedPodOwnerBaseUrl + "/healthData2/";
+  let departments = await (0, _podReader.getDepartments)(session, healthDataContainerDatasetUrl);
+  console.log(departments);
 
-  (0, _podReader.getResource)(session, healthDataContainerDatasetUrl);
+  if (departments.length == 0) {
+    alert("The currently accessed pod owner has no medical records stored in their pod.");
+    return;
+  } else {
+    let departmentListForm = document.getElementById("departmentSelectionForm");
+    let selectAble = document.createElement("select");
+    selectAble.id = "selectedDepartment";
+    selectAble.style.margin = "2%"; // departmentsListForm.appendChild(selectable)
+
+    for (var i = 0; i <= departments.length - 1; i++) {
+      let newOption = document.createElement("option");
+      newOption.innerHTML = departments[i].substring(departments[i].lastIndexOf("healthData2/") + 12, departments[i].length - 1);
+      selectAble.appendChild(newOption);
+    }
+
+    departmentListForm.appendChild(selectAble);
+    document.getElementById("accessingRecordsDiv").style.display = "block";
+    let submitButton = document.createElement("button");
+    submitButton.type = "submit"; // submitButton.style.paddingLeft = "4px"
+
+    submitButton.innerHTML = "View records in selected department";
+    departmentListForm.appendChild(submitButton);
+  }
 } // 2. Create new dataset with a file in it
 
 
@@ -71858,6 +71879,10 @@ deleteFileForm.addEventListener("submit", event => {
 });
 accessMedicalRecordsForm.addEventListener("submit", event => {
   event.preventDefault();
+  document.getElementById("registerNewAppointmentButton").disabled = true;
+  document.getElementById("accessMedicalRecordsButton").disabled = true;
+  document.getElementById("accessMedicalRecordsButton").style.color = "#b5b3b3";
+  document.getElementById("accessMedicalRecordsButton").style.backgroundColor = "#595959";
   getPatientDepartmentsAndDisplay();
 });
 },{"@inrupt/solid-client":"node_modules/@inrupt/solid-client/dist/index.es.js","@inrupt/solid-client-authn-browser":"node_modules/@inrupt/solid-client-authn-browser/dist/index.js","@inrupt/vocab-common-rdf":"node_modules/@inrupt/vocab-common-rdf/dist/index.es.js","./healthcareDepartments":"healthcareDepartments.js","./podReader":"podReader.js","./podWriter":"podWriter.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
@@ -71888,7 +71913,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "53511" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50838" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
