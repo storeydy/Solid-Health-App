@@ -244,19 +244,33 @@ async function getPatientFilesAndDisplay(recordType, department){
     console.log(urlOfSelectedDataset)
     let filesInSelectedDataset = await getFilesInDataset(session, urlOfSelectedDataset)
     console.log(filesInSelectedDataset)
+    let totalFileObjs = []
     for(var i = 0; i <= filesInSelectedDataset.length - 1; i++)
     {
         let fileObj = {}
         fileObj.title = (filesInSelectedDataset[i].url.substring(filesInSelectedDataset[i].url.lastIndexOf("#") + 1, filesInSelectedDataset[i].url.length )).replaceAll("%20", " ")
-        console.log(fileObj.title)
-        console.log(filesInSelectedDataset[i])
         fileObj.details = {}
-        console.log(filesInSelectedDataset[i].predicates)
-        for(var j = 0; j <= Object.keys(filesInSelectedDataset[i].predicates).length; j++)
+        let keyValue = ""   //TODO: Trim strings from full URLs to the last portion, e.g. 'organiser'
+        for( const [key,value] of Object.entries(filesInSelectedDataset[i].predicates))
         {
-            console.log(j)
+            for (const [innerKey, innerValue] of Object.entries(value))
+            {
+                if(innerValue[0] && innerValue[0].length > 0){
+                    fileObj.details[key] = innerValue[0]
+                }
+                else{
+                    for(const [innerKey2, innerValue2] of Object.entries(innerValue)){
+                        if(innerValue2[0] && innerValue2[0].length > 0){
+                            fileObj.details[key] = innerValue2[0]
+                        }
+                    }
+                }
+
+            }
         }
+        totalFileObjs.push(fileObj)
     }
+    console.log(totalFileObjs)
 }
 
 // 2. Create new dataset with a file in it
