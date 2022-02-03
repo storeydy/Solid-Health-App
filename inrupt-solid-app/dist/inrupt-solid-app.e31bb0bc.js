@@ -71181,6 +71181,7 @@ exports.checkIfAdministrator = checkIfAdministrator;
 exports.checkIfDatasetExists = checkIfDatasetExists;
 exports.checkIfPersonHasAccess = checkIfPersonHasAccess;
 exports.getDepartments = getDepartments;
+exports.getFilesInDataset = getFilesInDataset;
 
 var _solidClient = require("@inrupt/solid-client");
 
@@ -71230,6 +71231,18 @@ async function getDepartments(session, resourceUrl) {
   } catch (ex) {
     console.log(ex);
   }
+}
+
+async function getFilesInDataset(session, resourceUrl) {
+  const selectedDataset = await (0, _solidClient.getSolidDataset)(resourceUrl, {
+    fetch: session.fetch
+  });
+  console.log(selectedDataset);
+  let filesInDataset = await (0, _solidClient.getThingAll)(selectedDataset, {
+    fetch: session.fetch
+  });
+  console.log(filesInDataset);
+  return filesInDataset;
 } // export async function checkIfHealthDataExists(session, healthDataUrl) {
 //     try {
 //         console.log(healthDataUrl + "/Info")
@@ -71459,23 +71472,59 @@ async function getPatientDepartmentsAndDisplay() {
     return;
   } else {
     let departmentListForm = document.getElementById("departmentSelectionForm");
-    let selectAble = document.createElement("select");
-    selectAble.id = "selectedDepartment";
-    selectAble.style.margin = "2%"; // departmentsListForm.appendChild(selectable)
+    let selectAbleRecordType = document.createElement("select");
+    selectAbleRecordType.id = "selectedRecordType";
+    selectAbleRecordType.style.margin = "2%";
+    let appointmentOption = document.createElement("option");
+    appointmentOption.innerHTML = "Appointments";
+    selectAbleRecordType.appendChild(appointmentOption);
+    let diagnosesOption = document.createElement("option");
+    diagnosesOption.innerHTML = "Diagnoses";
+    selectAbleRecordType.appendChild(diagnosesOption);
+    let prescriptionOption = document.createElement("option");
+    prescriptionOption.innerHTML = "Prescriptions";
+    selectAbleRecordType.appendChild(prescriptionOption);
+    let recordsOption = document.createElement("option");
+    recordsOption.innerHTML = "Records";
+    selectAbleRecordType.appendChild(recordsOption);
+    departmentListForm.appendChild(selectAbleRecordType);
+    let selectAbleDepartment = document.createElement("select");
+    selectAbleDepartment.id = "selectedDepartment";
+    selectAbleDepartment.style.margin = "2%"; // departmentsListForm.appendChild(selectable)
 
     for (var i = 0; i <= departments.length - 1; i++) {
       let newOption = document.createElement("option");
       newOption.innerHTML = departments[i].substring(departments[i].lastIndexOf("healthData2/") + 12, departments[i].length - 1);
-      selectAble.appendChild(newOption);
+      selectAbleDepartment.appendChild(newOption);
     }
 
-    departmentListForm.appendChild(selectAble);
+    departmentListForm.appendChild(selectAbleDepartment);
     document.getElementById("accessingRecordsDiv").style.display = "block";
     let submitButton = document.createElement("button");
     submitButton.type = "submit"; // submitButton.style.paddingLeft = "4px"
 
     submitButton.innerHTML = "View records in selected department";
     departmentListForm.appendChild(submitButton);
+  }
+}
+
+async function getPatientFilesAndDisplay(recordType, department) {
+  let urlOfSelectedDataset = accessedPodOwnerBaseUrl + "/healthData2/" + department + "/" + recordType;
+  console.log(urlOfSelectedDataset);
+  let filesInSelectedDataset = await (0, _podReader.getFilesInDataset)(session, urlOfSelectedDataset);
+  console.log(filesInSelectedDataset);
+
+  for (var i = 0; i <= filesInSelectedDataset.length - 1; i++) {
+    let fileObj = {};
+    fileObj.title = filesInSelectedDataset[i].url.substring(filesInSelectedDataset[i].url.lastIndexOf("#") + 1, filesInSelectedDataset[i].url.length).replaceAll("%20", " ");
+    console.log(fileObj.title);
+    console.log(filesInSelectedDataset[i]);
+    fileObj.details = {};
+    console.log(filesInSelectedDataset[i].predicates);
+
+    for (var j = 0; j <= Object.keys(filesInSelectedDataset[i].predicates).length; j++) {
+      console.log(j);
+    }
   }
 } // 2. Create new dataset with a file in it
 
@@ -71811,6 +71860,12 @@ buttonLogin.onclick = function () {
   login();
 };
 
+departmentSelectionForm.addEventListener("submit", event => {
+  event.preventDefault();
+  let selectedDepartment = document.getElementById("selectedDepartment").value;
+  let selectedRecordType = document.getElementById("selectedRecordType").value;
+  getPatientFilesAndDisplay(selectedRecordType, selectedDepartment);
+});
 myPodButton.addEventListener('click', event => {
   event.preventDefault();
   checkMedicalInstitutionStatus("signedInUser");

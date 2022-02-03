@@ -6,7 +6,8 @@ import {
     isContainer,
     getResourceInfo,
     getLinkedResourceUrlAll,
-    getContentType
+    getContentType,
+    getThingAll
 } from "@inrupt/solid-client";
 import { getAgentAccess } from "@inrupt/solid-client/dist/access/universal_v1";
 import { storeMedicalInsitutionInformation } from "./podWriter";
@@ -46,7 +47,15 @@ export async function getDepartments(session, resourceUrl) {
     catch (ex) {
         console.log(ex)
     }
+}
 
+export async function getFilesInDataset(session, resourceUrl)
+{
+    const selectedDataset = await getSolidDataset(resourceUrl, {fetch:session.fetch})
+    console.log(selectedDataset)
+    let filesInDataset = await getThingAll(selectedDataset, {fetch: session.fetch})
+    console.log(filesInDataset)
+    return filesInDataset
 }
 
 // export async function checkIfHealthDataExists(session, healthDataUrl) {

@@ -44,7 +44,7 @@ import {
 import { Session, getDefaultSession, fetch } from "@inrupt/solid-client-authn-browser";
 import { SCHEMA_INRUPT, VCARD, FOAF, RDF } from "@inrupt/vocab-common-rdf";
 import { departments } from "./healthcareDepartments";
-import { checkIfDatasetExists, checkIfAdministrator, getDepartments } from "./podReader";
+import { checkIfDatasetExists, checkIfAdministrator, getDepartments, getFilesInDataset } from "./podReader";
 import { writeAppointment, createDepartmentDataset, storeMedicalInsitutionInformation } from "./podWriter";
 //import fetch from 'unfetch';
 
@@ -201,16 +201,34 @@ async function getPatientDepartmentsAndDisplay() {
     }
     else {
         let departmentListForm = document.getElementById("departmentSelectionForm")
-        let selectAble = document.createElement("select")
-        selectAble.id = "selectedDepartment"
-        selectAble.style.margin = "2%"
+        let selectAbleRecordType = document.createElement("select")
+        selectAbleRecordType.id = "selectedRecordType"
+        selectAbleRecordType.style.margin = "2%"
+
+        let appointmentOption = document.createElement("option")
+        appointmentOption.innerHTML = "Appointments"
+        selectAbleRecordType.appendChild(appointmentOption)
+        let diagnosesOption = document.createElement("option")
+        diagnosesOption.innerHTML = "Diagnoses"
+        selectAbleRecordType.appendChild(diagnosesOption)
+        let prescriptionOption = document.createElement("option")
+        prescriptionOption.innerHTML = "Prescriptions"
+        selectAbleRecordType.appendChild(prescriptionOption)
+        let recordsOption = document.createElement("option")
+        recordsOption.innerHTML = "Records"
+        selectAbleRecordType.appendChild(recordsOption)
+        departmentListForm.appendChild(selectAbleRecordType)
+
+        let selectAbleDepartment = document.createElement("select")
+        selectAbleDepartment.id = "selectedDepartment"
+        selectAbleDepartment.style.margin = "2%"
         // departmentsListForm.appendChild(selectable)
         for (var i = 0; i <= departments.length - 1; i++) {
             let newOption = document.createElement("option")
             newOption.innerHTML = departments[i].substring( departments[i].lastIndexOf("healthData2/") + 12, departments[i].length - 1 )
-            selectAble.appendChild(newOption)
+            selectAbleDepartment.appendChild(newOption)
         }
-        departmentListForm.appendChild(selectAble)
+        departmentListForm.appendChild(selectAbleDepartment)
         document.getElementById("accessingRecordsDiv").style.display = "block"
         let submitButton = document.createElement("button")
         submitButton.type = "submit"
@@ -219,6 +237,26 @@ async function getPatientDepartmentsAndDisplay() {
         departmentListForm.appendChild(submitButton)
     }
 
+}
+
+async function getPatientFilesAndDisplay(recordType, department){
+    let urlOfSelectedDataset = accessedPodOwnerBaseUrl + "/healthData2/" + department + "/" + recordType
+    console.log(urlOfSelectedDataset)
+    let filesInSelectedDataset = await getFilesInDataset(session, urlOfSelectedDataset)
+    console.log(filesInSelectedDataset)
+    for(var i = 0; i <= filesInSelectedDataset.length - 1; i++)
+    {
+        let fileObj = {}
+        fileObj.title = (filesInSelectedDataset[i].url.substring(filesInSelectedDataset[i].url.lastIndexOf("#") + 1, filesInSelectedDataset[i].url.length )).replaceAll("%20", " ")
+        console.log(fileObj.title)
+        console.log(filesInSelectedDataset[i])
+        fileObj.details = {}
+        console.log(filesInSelectedDataset[i].predicates)
+        for(var j = 0; j <= Object.keys(filesInSelectedDataset[i].predicates).length; j++)
+        {
+            console.log(j)
+        }
+    }
 }
 
 // 2. Create new dataset with a file in it
@@ -570,6 +608,13 @@ function onDropdownClick() {
 buttonLogin.onclick = function () {
     login();
 };
+
+departmentSelectionForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    let selectedDepartment = document.getElementById("selectedDepartment").value
+    let selectedRecordType = document.getElementById("selectedRecordType").value
+    getPatientFilesAndDisplay(selectedRecordType, selectedDepartment);
+})
 
 
 myPodButton.addEventListener('click', (event) => {
