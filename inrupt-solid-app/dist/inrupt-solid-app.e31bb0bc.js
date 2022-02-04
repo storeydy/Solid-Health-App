@@ -71416,9 +71416,30 @@ async function checkMedicalInstitutionStatus(podOwner) {
   }
 }
 
-function resetCurrentPodSession() {
-  document.getElementById("institutionInformation").style.display = "none";
-  document.getElementById("accessingPod").style.display = "block";
+function resetCurrentPodSession(completelyReset) {
+  if (completelyReset == true) {
+    document.getElementById("institutionInformation").style.display = "none";
+    document.getElementById("accessingPod").style.display = "block";
+  }
+
+  let recordsContainer = document.getElementById("containerForDisplayedRecords");
+  if (recordsContainer) recordsContainer.remove(); // let appointmentsContainer = document.getElementById("uploadNewAppointmentDetails")
+
+  document.getElementById("uploadNewAppointmentDetails").style.display = "none";
+  document.getElementById("accessingRecordsDiv").style.display = "none";
+  let buttonForAppointment = document.getElementById("registerNewAppointmentButton");
+  buttonForAppointment.style = "margin: 2%";
+  buttonForAppointment.className = "column-4";
+  buttonForAppointment.disabled = false;
+  let buttonForReadingFiles = document.getElementById("accessMedicalRecordsButton");
+  buttonForReadingFiles.style = "margin: 2%";
+  buttonForReadingFiles.className = "column-4";
+  buttonForReadingFiles.disabled = false;
+  let departmentSelectionForm = document.getElementById("departmentSelectionForm");
+
+  while (departmentSelectionForm.children.length > 1) {
+    departmentSelectionForm.removeChild(departmentSelectionForm.lastChild);
+  }
 }
 
 async function registerNewMedicalInstitution() {
@@ -71518,6 +71539,7 @@ async function getPatientFilesAndDisplay(recordType, department) {
   for (var i = 0; i <= filesInSelectedDataset.length - 1; i++) {
     let fileObj = {};
     fileObj.title = filesInSelectedDataset[i].url.substring(filesInSelectedDataset[i].url.lastIndexOf("#") + 1, filesInSelectedDataset[i].url.length).replaceAll("%20", " ");
+    fileObj.url = filesInSelectedDataset[i].url;
     fileObj.details = {};
     let keyValue = ""; //TODO: Trim strings from full URLs to the last portion, e.g. 'organiser'
 
@@ -71538,7 +71560,42 @@ async function getPatientFilesAndDisplay(recordType, department) {
     totalFileObjs.push(fileObj);
   }
 
-  console.log(totalFileObjs);
+  let containerDivForFiles = document.createElement("div");
+  containerDivForFiles.id = "containerForDisplayedRecords";
+  containerDivForFiles.className = "panel";
+
+  for (var k = 0; k < totalFileObjs.length; k++) {
+    let fileDisplayObj = document.createElement("div");
+    fileDisplayObj.id = "displayedFile" + k;
+    fileDisplayObj.className = "panel";
+    let titleOfFile = document.createElement("h3");
+    console.log(totalFileObjs[k].title);
+    titleOfFile.innerHTML = "Title: " + totalFileObjs[k].title;
+    titleOfFile.style.textAlign = "center";
+    let urlOfFile = document.createElement("h6");
+    console.log(totalFileObjs[k].url);
+    urlOfFile.innerHTML = "URL: " + totalFileObjs[k].url;
+    let detailsOfFile = document.createElement("div");
+    console.log(totalFileObjs[k].details);
+
+    for (const [key, value] of Object.entries(totalFileObjs[k].details)) {
+      console.log(key, value);
+      let fileProperty = document.createElement("p");
+      fileProperty.innerHTML = key + ": " + value;
+      detailsOfFile.appendChild(fileProperty);
+    } // detailsOfFile.innerHTML = totalFileObjs[k].details
+
+
+    fileDisplayObj.appendChild(titleOfFile);
+    fileDisplayObj.appendChild(urlOfFile);
+    fileDisplayObj.appendChild(detailsOfFile);
+    console.log(fileDisplayObj);
+    containerDivForFiles.appendChild(fileDisplayObj);
+  }
+
+  let medicalRecordsDiv = document.getElementById("accessingRecordsDiv");
+  console.log(medicalRecordsDiv);
+  medicalRecordsDiv.appendChild(containerDivForFiles); // console.log(totalFileObjs)
 } // 2. Create new dataset with a file in it
 
 
@@ -71873,6 +71930,11 @@ buttonLogin.onclick = function () {
   login();
 };
 
+returnFromAccessingRecords.onclick = function () {
+  console.log("ah heyor");
+  resetCurrentPodSession(false);
+};
+
 departmentSelectionForm.addEventListener("submit", event => {
   event.preventDefault();
   let selectedDepartment = document.getElementById("selectedDepartment").value;
@@ -71889,7 +71951,7 @@ otherUserPodButton.addEventListener('click', event => {
 });
 institutionInformationForm.addEventListener("submit", event => {
   event.preventDefault();
-  resetCurrentPodSession();
+  resetCurrentPodSession(true);
 });
 registerNewAppointmentForm.addEventListener("submit", event => {
   event.preventDefault();
