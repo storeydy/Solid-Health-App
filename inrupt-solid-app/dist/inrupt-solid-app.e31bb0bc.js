@@ -71534,68 +71534,75 @@ async function getPatientFilesAndDisplay(recordType, department) {
   console.log(urlOfSelectedDataset);
   let filesInSelectedDataset = await (0, _podReader.getFilesInDataset)(session, urlOfSelectedDataset);
   console.log(filesInSelectedDataset);
-  let totalFileObjs = [];
 
-  for (var i = 0; i <= filesInSelectedDataset.length - 1; i++) {
-    let fileObj = {};
-    fileObj.title = filesInSelectedDataset[i].url.substring(filesInSelectedDataset[i].url.lastIndexOf("#") + 1, filesInSelectedDataset[i].url.length).replaceAll("%20", " ");
-    fileObj.url = filesInSelectedDataset[i].url;
-    fileObj.details = {};
-    let keyValue = ""; //TODO: Trim strings from full URLs to the last portion, e.g. 'organiser'
+  if (filesInSelectedDataset.length > 0) {
+    let totalFileObjs = [];
 
-    for (const [key, value] of Object.entries(filesInSelectedDataset[i].predicates)) {
-      for (const [innerKey, innerValue] of Object.entries(value)) {
-        if (innerValue[0] && innerValue[0].length > 0) {
-          fileObj.details[key] = innerValue[0];
-        } else {
-          for (const [innerKey2, innerValue2] of Object.entries(innerValue)) {
-            if (innerValue2[0] && innerValue2[0].length > 0) {
-              fileObj.details[key] = innerValue2[0];
+    for (var i = 0; i <= filesInSelectedDataset.length - 1; i++) {
+      let fileObj = {};
+      fileObj.title = filesInSelectedDataset[i].url.substring(filesInSelectedDataset[i].url.lastIndexOf("#") + 1, filesInSelectedDataset[i].url.length).replaceAll("%20", " ");
+      fileObj.url = filesInSelectedDataset[i].url;
+      fileObj.details = {};
+      let keyValue = ""; //TODO: Trim strings from full URLs to the last portion, e.g. 'organiser'
+
+      for (const [key, value] of Object.entries(filesInSelectedDataset[i].predicates)) {
+        for (const [innerKey, innerValue] of Object.entries(value)) {
+          if (innerValue[0] && innerValue[0].length > 0) {
+            fileObj.details[key] = innerValue[0];
+          } else {
+            for (const [innerKey2, innerValue2] of Object.entries(innerValue)) {
+              if (innerValue2[0] && innerValue2[0].length > 0) {
+                fileObj.details[key] = innerValue2[0];
+              }
             }
           }
         }
       }
+
+      totalFileObjs.push(fileObj);
     }
 
-    totalFileObjs.push(fileObj);
+    let existingDisplayedFiles = document.getElementById("containerForDisplayedRecords");
+    if (existingDisplayedFiles) existingDisplayedFiles.remove();
+    let containerDivForFiles = document.createElement("div");
+    containerDivForFiles.id = "containerForDisplayedRecords";
+    containerDivForFiles.className = "panel";
+
+    for (var k = 0; k < totalFileObjs.length; k++) {
+      let fileDisplayObj = document.createElement("div");
+      fileDisplayObj.id = "displayedFile" + k;
+      fileDisplayObj.className = "panel";
+      let titleOfFile = document.createElement("h3");
+      console.log(totalFileObjs[k].title);
+      titleOfFile.innerHTML = "Title: " + totalFileObjs[k].title;
+      titleOfFile.style.textAlign = "center";
+      let urlOfFile = document.createElement("h6");
+      console.log(totalFileObjs[k].url);
+      urlOfFile.innerHTML = "URL: " + totalFileObjs[k].url;
+      let detailsOfFile = document.createElement("div");
+      console.log(totalFileObjs[k].details);
+
+      for (const [key, value] of Object.entries(totalFileObjs[k].details)) {
+        console.log(key, value);
+        let fileProperty = document.createElement("p");
+        fileProperty.innerHTML = key + ": " + value;
+        detailsOfFile.appendChild(fileProperty);
+      } // detailsOfFile.innerHTML = totalFileObjs[k].details
+
+
+      fileDisplayObj.appendChild(titleOfFile);
+      fileDisplayObj.appendChild(urlOfFile);
+      fileDisplayObj.appendChild(detailsOfFile);
+      console.log(fileDisplayObj);
+      containerDivForFiles.appendChild(fileDisplayObj);
+    }
+
+    let medicalRecordsDiv = document.getElementById("accessingRecordsDiv");
+    console.log(medicalRecordsDiv);
+    medicalRecordsDiv.appendChild(containerDivForFiles); // console.log(totalFileObjs)
+  } else {
+    alert("No files found in the chosen patient's pod of the selected record type.");
   }
-
-  let containerDivForFiles = document.createElement("div");
-  containerDivForFiles.id = "containerForDisplayedRecords";
-  containerDivForFiles.className = "panel";
-
-  for (var k = 0; k < totalFileObjs.length; k++) {
-    let fileDisplayObj = document.createElement("div");
-    fileDisplayObj.id = "displayedFile" + k;
-    fileDisplayObj.className = "panel";
-    let titleOfFile = document.createElement("h3");
-    console.log(totalFileObjs[k].title);
-    titleOfFile.innerHTML = "Title: " + totalFileObjs[k].title;
-    titleOfFile.style.textAlign = "center";
-    let urlOfFile = document.createElement("h6");
-    console.log(totalFileObjs[k].url);
-    urlOfFile.innerHTML = "URL: " + totalFileObjs[k].url;
-    let detailsOfFile = document.createElement("div");
-    console.log(totalFileObjs[k].details);
-
-    for (const [key, value] of Object.entries(totalFileObjs[k].details)) {
-      console.log(key, value);
-      let fileProperty = document.createElement("p");
-      fileProperty.innerHTML = key + ": " + value;
-      detailsOfFile.appendChild(fileProperty);
-    } // detailsOfFile.innerHTML = totalFileObjs[k].details
-
-
-    fileDisplayObj.appendChild(titleOfFile);
-    fileDisplayObj.appendChild(urlOfFile);
-    fileDisplayObj.appendChild(detailsOfFile);
-    console.log(fileDisplayObj);
-    containerDivForFiles.appendChild(fileDisplayObj);
-  }
-
-  let medicalRecordsDiv = document.getElementById("accessingRecordsDiv");
-  console.log(medicalRecordsDiv);
-  medicalRecordsDiv.appendChild(containerDivForFiles); // console.log(totalFileObjs)
 } // 2. Create new dataset with a file in it
 
 
@@ -71931,7 +71938,10 @@ buttonLogin.onclick = function () {
 };
 
 returnFromAccessingRecords.onclick = function () {
-  console.log("ah heyor");
+  resetCurrentPodSession(false);
+};
+
+returnFromUploadingAppointment.onclick = function () {
   resetCurrentPodSession(false);
 };
 
@@ -71956,6 +71966,10 @@ institutionInformationForm.addEventListener("submit", event => {
 registerNewAppointmentForm.addEventListener("submit", event => {
   event.preventDefault();
   console.log("test wed");
+  document.getElementById("registerNewAppointmentButton").disabled = true;
+  document.getElementById("accessMedicalRecordsButton").disabled = true;
+  document.getElementById("registerNewAppointmentButton").style.color = "#b5b3b3";
+  document.getElementById("registerNewAppointmentButton").style.backgroundColor = "#595959";
   document.getElementById("uploadNewAppointmentDetails").style.display = "block";
 });
 selectedDepartmentForm.addEventListener("submit", event => {
