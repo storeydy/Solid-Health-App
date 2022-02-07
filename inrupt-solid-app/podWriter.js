@@ -107,7 +107,7 @@ export async function storeMedicalInsitutionInformation(session, healthDataDatas
         .addStringNoLocale(SCHEMA_INRUPT.name, institutionDetails.name)
         .addStringNoLocale(SCHEMA_INRUPT.address, institutionDetails.address)
         .addStringNoLocale("https://schema.org/dateCreated", date)
-        .addUrl(RDF.type, "https://schema.org/TextDigitalDocument")
+        .addUrl(RDF.type, "https://schema.org/MedicalOrganization")
         .build();
 
     healthDataDataset = setThing(healthDataDataset, institutionDetailsFile)

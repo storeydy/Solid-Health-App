@@ -168,7 +168,9 @@ function resetCurrentPodSession(completelyReset) {
         departmentSelectionForm.removeChild(departmentSelectionForm.lastChild);
     }
     document.getElementById("medicalRecordTypeSelection").style.display = "block"
-    document.getElementById("createNewMedicalRecordDiv").style.display = "none";
+    document.getElementById("createNewGeneralRecordDiv").style.display = "none";
+    document.getElementById("medicalRecordTypeSelection").style.display = "block"
+    if(document.getElementById("selectedDepartment")) document.getElementById("selectedDepartment").remove()
 }
 
 async function registerNewMedicalInstitution() {
@@ -231,7 +233,7 @@ async function getPatientDepartmentsAndDisplay(locationForDropdown) {
         if(locationForDropdown == "uploadingNewRecord")
         {
             console.log("made it")
-            departmentListForm = document.getElementById("newMedicalRecordForm")
+            departmentListForm = document.getElementById("newRecordDepartmentPlaceholderDiv")
         }
         else if(locationForDropdown == "accessingRecords")
         {
@@ -348,24 +350,22 @@ async function getPatientFilesAndDisplay(recordType, department) {
     }
 }
 
-// async function displayRecordForm(){
-//     console.log("HERA")
-//     document.getElementById("medicalRecordTypeSelection").style.display = "none"
-//     let newDivForUploadingRecord = document.createElement("div")
-//     newDivForUploadingRecord.id = "createNewMedicalRecordDiv"
-//     let titleOfForm = document.createElement("h5")
-//     titleOfForm.innerHTML = 'Record type: <u>General Record<u>'
-//     newDivForUploadingRecord.appendChild(titleOfForm)
-//     let divRow = document.createElement("div")
-//     divRow.className = "row"
-//     let relevantDateLabel = document.createElement("p")
-//     relevantDateLabel.innerHTML = 'Date of record: '
-//     let relevantDateInput = document.createElement("input")
-//     relevantDateInput.placeholder = "dd/mm/yy"
-//     relevantDateInput.required.pa
-//     document.getElementById("uploadNewMedicalRecordDiv").appendChild(newDivForUploadingRecord);
-// }
+async function saveGeneralRecordDetailsToPod(){
+    let date = document.getElementById("generalRecordDate").value
+    let title = document.getElementById("generalRecordTitle").value
+    let description = document.getElementById("newGeneralRecordDescription").value
+    let department = document.getElementById("selectedDepartment").value
 
+    let generalRecordDetails = {
+        "https://schema.org/dateCreated": new Date().toDateString(),
+        "Record date ": date,
+        "https://schema.org/creator": accessedPodOwnerUrl,
+        "https://schema.org/title": title,
+        "https://schema.org/description": description,
+        "https://schema.org/department": department,
+    }
+    await uploadMedicalRecord(session, generalRecordDetails)
+}
 // 2. Create new dataset with a file in it
 async function writeProfile() {
 
@@ -751,12 +751,16 @@ institutionInformationForm.addEventListener("submit", (event) => {
 
 registerNewAppointmentForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    console.log("test wed")
     document.getElementById("registerNewAppointmentButton").disabled = true
     document.getElementById("accessMedicalRecordsButton").disabled = true
     document.getElementById("uploadMedicalRecordsButton").disabled = true;
     document.getElementById("registerNewAppointmentButton").classList.add("clicked-button")
     document.getElementById("uploadNewAppointmentDetails").style.display = "block"
+})
+
+newGeneralRecordForm.addEventListener("submit", (event)=> {
+    event.preventDefault();
+    saveGeneralRecordDetailsToPod();
 })
 
 selectedDepartmentForm.addEventListener("submit", (event) => {
@@ -841,6 +845,7 @@ uploadMedicalRecordsForm.addEventListener("submit", (event) => {
 
 continueWithSelectedRecordTypeButton.addEventListener("click", (event) => {
     event.preventDefault();
+    document.getElementById("medicalRecordTypeSelection").style.display = "none"
     getPatientDepartmentsAndDisplay("uploadingNewRecord")
     // let patientsDepartments = await getDepartments(session, accessedPodOwnerBaseUrl + "/healthData2/")
     console.log

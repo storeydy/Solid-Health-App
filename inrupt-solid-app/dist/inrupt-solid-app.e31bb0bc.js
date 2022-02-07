@@ -71108,7 +71108,7 @@ async function storeMedicalInsitutionInformation(session, healthDataDatasetUrl, 
   });
   const institutionDetailsFile = (0, _solidClient.buildThing)((0, _solidClient.createThing)({
     name: "medicalInstitutionDetails"
-  })).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.name, institutionDetails.name).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.address, institutionDetails.address).addStringNoLocale("https://schema.org/dateCreated", date).addUrl(_vocabCommonRdf.RDF.type, "https://schema.org/TextDigitalDocument").build();
+  })).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.name, institutionDetails.name).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.address, institutionDetails.address).addStringNoLocale("https://schema.org/dateCreated", date).addUrl(_vocabCommonRdf.RDF.type, "https://schema.org/MedicalOrganization").build();
   healthDataDataset = (0, _solidClient.setThing)(healthDataDataset, institutionDetailsFile);
   const savedPrivateInfoDataset = await (0, _solidClient.saveSolidDatasetAt)(healthDataDatasetUrl + "/Info", healthDataDataset, {
     fetch: session.fetch
@@ -71444,7 +71444,9 @@ function resetCurrentPodSession(completelyReset) {
   }
 
   document.getElementById("medicalRecordTypeSelection").style.display = "block";
-  document.getElementById("createNewMedicalRecordDiv").style.display = "none";
+  document.getElementById("createNewGeneralRecordDiv").style.display = "none";
+  document.getElementById("medicalRecordTypeSelection").style.display = "block";
+  if (document.getElementById("selectedDepartment")) document.getElementById("selectedDepartment").remove();
 }
 
 async function registerNewMedicalInstitution() {
@@ -71501,7 +71503,7 @@ async function getPatientDepartmentsAndDisplay(locationForDropdown) {
 
     if (locationForDropdown == "uploadingNewRecord") {
       console.log("made it");
-      departmentListForm = document.getElementById("newMedicalRecordForm");
+      departmentListForm = document.getElementById("newRecordDepartmentPlaceholderDiv");
     } else if (locationForDropdown == "accessingRecords") {
       departmentListForm = document.getElementById("departmentSelectionForm");
       document.getElementById("accessingRecordsDiv").style.display = "block";
@@ -71618,24 +71620,23 @@ async function getPatientFilesAndDisplay(recordType, department) {
   } else {
     alert("No files found in the chosen patient's pod of the selected record type.");
   }
-} // async function displayRecordForm(){
-//     console.log("HERA")
-//     document.getElementById("medicalRecordTypeSelection").style.display = "none"
-//     let newDivForUploadingRecord = document.createElement("div")
-//     newDivForUploadingRecord.id = "createNewMedicalRecordDiv"
-//     let titleOfForm = document.createElement("h5")
-//     titleOfForm.innerHTML = 'Record type: <u>General Record<u>'
-//     newDivForUploadingRecord.appendChild(titleOfForm)
-//     let divRow = document.createElement("div")
-//     divRow.className = "row"
-//     let relevantDateLabel = document.createElement("p")
-//     relevantDateLabel.innerHTML = 'Date of record: '
-//     let relevantDateInput = document.createElement("input")
-//     relevantDateInput.placeholder = "dd/mm/yy"
-//     relevantDateInput.required.pa
-//     document.getElementById("uploadNewMedicalRecordDiv").appendChild(newDivForUploadingRecord);
-// }
-// 2. Create new dataset with a file in it
+}
+
+async function saveGeneralRecordDetailsToPod() {
+  let date = document.getElementById("generalRecordDate").value;
+  let title = document.getElementById("generalRecordTitle").value;
+  let description = document.getElementById("newGeneralRecordDescription").value;
+  let department = document.getElementById("selectedDepartment").value;
+  let generalRecordDetails = {
+    "https://schema.org/dateCreated": new Date().toDateString(),
+    "Record date ": date,
+    "https://schema.org/creator": accessedPodOwnerUrl,
+    "https://schema.org/title": title,
+    "https://schema.org/description": description,
+    "https://schema.org/department": department
+  };
+  await uploadMedicalRecord(session, generalRecordDetails);
+} // 2. Create new dataset with a file in it
 
 
 async function writeProfile() {
@@ -72001,12 +72002,15 @@ institutionInformationForm.addEventListener("submit", event => {
 });
 registerNewAppointmentForm.addEventListener("submit", event => {
   event.preventDefault();
-  console.log("test wed");
   document.getElementById("registerNewAppointmentButton").disabled = true;
   document.getElementById("accessMedicalRecordsButton").disabled = true;
   document.getElementById("uploadMedicalRecordsButton").disabled = true;
   document.getElementById("registerNewAppointmentButton").classList.add("clicked-button");
   document.getElementById("uploadNewAppointmentDetails").style.display = "block";
+});
+newGeneralRecordForm.addEventListener("submit", event => {
+  event.preventDefault();
+  saveGeneralRecordDetailsToPod();
 });
 selectedDepartmentForm.addEventListener("submit", event => {
   event.preventDefault();
@@ -72075,6 +72079,7 @@ uploadMedicalRecordsForm.addEventListener("submit", event => {
 });
 continueWithSelectedRecordTypeButton.addEventListener("click", event => {
   event.preventDefault();
+  document.getElementById("medicalRecordTypeSelection").style.display = "none";
   getPatientDepartmentsAndDisplay("uploadingNewRecord"); // let patientsDepartments = await getDepartments(session, accessedPodOwnerBaseUrl + "/healthData2/")
 
   console.log;

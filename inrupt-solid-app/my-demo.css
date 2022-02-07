@@ -45,7 +45,6 @@
  }
 
  .podSelector{
-   /* height: 15vh; */
    border: 2px solid;
    block-size: fit-content;
    height: fit-content
@@ -101,7 +100,6 @@
   display: none;
   position: absolute;
   background-color: #f6f6f6;
-  /* min-width: 230px; */
   overflow: auto;
   border: 1px solid #ddd;
   z-index: 1;
@@ -136,6 +134,22 @@
   background-color:#e6f4f9;
   color:#005b81
 }
+.green-button{
+  border-radius: 20px;
+  padding: 1%;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: medium;
+  background-color:#3e8e41;
+  color: #e6f4f9
+}
+.red-button{
+  border-radius: 20px;
+  padding: 1%;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: medium;
+  background-color:#e21313;
+  color: #e6f4f9
+}
 .selection-div{
   background-color: #1c93ed;
   padding: 1%;
@@ -153,6 +167,13 @@
   font-weight: 600;
   color:aliceblue
   /* display:block; */
+}
+.column-3{
+  float: left;
+  width: 33%;
+  position: relative;
+  top: 50%;
+  bottom: 50%;
 }
 .column-4{
   float: left;

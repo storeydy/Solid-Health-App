@@ -98,7 +98,7 @@
     </div>
 
     <div id="uploadNewAppointmentDetails" class="panel" style="display: none;">
-      <button id="returnFromUploadingAppointment"
+      <button id="returnFromUploadingAppointment" class="red-button"
         style="float: right; position: inherit; align-self: flex-end; top: 5%"> Go back </button>
       <h2 style="text-align: center;"> Upload new appointment details </h2>
       <div class="row">
@@ -129,12 +129,12 @@
             placeholder="Enter any notes relevant to the appointment" id="newAppointmentNotes"></textarea>
           <label class="column-6" style="float:right"> Notes: </label>
         </div>
-        <button type="submit" id="saveAppointmentDetailsButton"> Save Appointment Details to pod </button>
+        <button type="submit" class="green-button" id="saveAppointmentDetailsButton"> Save Appointment Details to pod </button>
       </form>
     </div>
 
     <div id="accessingRecordsDiv" class="panel" style="display:none">
-      <button id="returnFromAccessingRecords" style="float: right; position: inherit; align-self: flex-end; top: 5%"> Go
+      <button id="returnFromAccessingRecords" class="red-button" style="float: right; position: inherit; align-self: flex-end; top: 5%"> Go
         back </button>
       <form id="departmentSelectionForm">
         <h2 style="text-align: center;"> Select a department to access record types within that department </h2>
@@ -146,7 +146,7 @@
   </div>
 
   <div id="uploadNewMedicalRecordDiv" class="panel" style="display:none">
-    <button id="returnFromUploadingMedicalRecord"
+    <button id="returnFromUploadingMedicalRecord" class="red-button"
       style="float: right; position: inherit; align-self: flex-end; top: 5%"> Go back </button>
     <h2 style="text-align: center;">Upload new medical record to selected user's pod </h2>
     <div id="medicalRecordTypeSelection">
@@ -175,14 +175,25 @@
       </div>
       <button id="continueWithSelectedRecordTypeButton" class="light-blue-button"> Continue </button>
     </div>
-    <form id = "newMedicalRecordForm">
+    <form id = "newGeneralRecordForm">
       <div id="createNewGeneralRecordDiv" style="display:none">
         <h5> Record type: <u>General Record</u></h5>
-        <div class="row">
+        <div class="row" id="newGeneralRecordDateAndDepartment">
           <label class="column-6">Date of record: </label>
           <input class="column-6" placeholder="dd/mm/yy" required pattern="[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" required
             minlength="8" maxlength="8" id="generalRecordDate">
+          <div id = "newRecordDepartmentPlaceholderDiv" class="column-6"style="float:right"></div>
+          <label class = "column-6" style="float:right"> Department: </label>
         </div>
+        <div class = "row">
+          <label class="column-6">Title of record: </label>
+          <input class="column-3" placeholder="Enter a title" required  id="generalRecordTitle">
+        </div>
+        <div class = "row">
+          <label class="column-6"> Description of record: </label>
+          <textarea class = "column-3" style="resize:none" required placeholder="Enter a description" cols="80" rows="10" id="newGeneralRecordDescription"></textarea>
+        </div>
+        <button type="submit" class = "green-button" id="saveGeneralRecordDetailsButton"> Save General Record Details to pod </button>
       </div>
     </form>
   </div>
