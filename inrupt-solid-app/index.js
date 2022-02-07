@@ -153,14 +153,16 @@ function resetCurrentPodSession(completelyReset) {
     // let appointmentsContainer = document.getElementById("uploadNewAppointmentDetails")
     document.getElementById("uploadNewAppointmentDetails").style.display = "none"
     document.getElementById("accessingRecordsDiv").style.display = "none";
+    document.getElementById("uploadNewMedicalRecordDiv").style.display = "none";
     let buttonForAppointment = document.getElementById("registerNewAppointmentButton")
-    buttonForAppointment.style = "margin: 2%"
-    buttonForAppointment.className = "column-4"
+    buttonForAppointment.classList.remove("clicked-button")
     buttonForAppointment.disabled = false
     let buttonForReadingFiles = document.getElementById("accessMedicalRecordsButton")
-    buttonForReadingFiles.style = "margin: 2%"
-    buttonForReadingFiles.className = "column-4"
+    buttonForReadingFiles.classList.remove("clicked-button")
     buttonForReadingFiles.disabled = false
+    let buttonForUploadingFiles = document.getElementById("uploadMedicalRecordsButton")
+    buttonForUploadingFiles.classList.remove("clicked-button")
+    buttonForUploadingFiles.disabled = false
     let departmentSelectionForm = document.getElementById("departmentSelectionForm")
     while (departmentSelectionForm.children.length > 1) {
         departmentSelectionForm.removeChild(departmentSelectionForm.lastChild);
@@ -326,7 +328,7 @@ async function getPatientFilesAndDisplay(recordType, department) {
         medicalRecordsDiv.appendChild(containerDivForFiles)
         // console.log(totalFileObjs)
     }
-    else{
+    else {
         alert("No files found in the chosen patient's pod of the selected record type.")
     }
 }
@@ -687,6 +689,9 @@ returnFromAccessingRecords.onclick = function () {
 returnFromUploadingAppointment.onclick = function () {
     resetCurrentPodSession(false)
 }
+returnFromUploadingMedicalRecord.onclick = function () {
+    resetCurrentPodSession(false);
+}
 
 departmentSelectionForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -716,8 +721,8 @@ registerNewAppointmentForm.addEventListener("submit", (event) => {
     console.log("test wed")
     document.getElementById("registerNewAppointmentButton").disabled = true
     document.getElementById("accessMedicalRecordsButton").disabled = true
-    document.getElementById("registerNewAppointmentButton").style.color = "#b5b3b3"
-    document.getElementById("registerNewAppointmentButton").style.backgroundColor = "#595959"
+    document.getElementById("uploadMedicalRecordsButton").disabled = true;
+    document.getElementById("registerNewAppointmentButton").classList.add("clicked-button")
     document.getElementById("uploadNewAppointmentDetails").style.display = "block"
 })
 
@@ -787,8 +792,17 @@ accessMedicalRecordsForm.addEventListener("submit", (event) => {
     event.preventDefault();
     document.getElementById("registerNewAppointmentButton").disabled = true
     document.getElementById("accessMedicalRecordsButton").disabled = true
-    document.getElementById("accessMedicalRecordsButton").style.color = "#b5b3b3"
-    document.getElementById("accessMedicalRecordsButton").style.backgroundColor = "#595959"
+    document.getElementById("uploadMedicalRecordsButton").disabled = true;
+    document.getElementById("accessMedicalRecordsButton").classList.add("clicked-button")
     getPatientDepartmentsAndDisplay();
+})
+
+uploadMedicalRecordsForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    document.getElementById("uploadMedicalRecordsButton").disabled = true;
+    document.getElementById("accessMedicalRecordsButton").disabled = true;
+    document.getElementById("registerNewAppointmentButton").disabled = true;
+    document.getElementById("uploadMedicalRecordsButton").classList.add("clicked-button")
+    document.getElementById("uploadNewMedicalRecordDiv").style.display = "block"
 })
 

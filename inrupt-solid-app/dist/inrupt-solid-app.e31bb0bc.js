@@ -71427,14 +71427,16 @@ function resetCurrentPodSession(completelyReset) {
 
   document.getElementById("uploadNewAppointmentDetails").style.display = "none";
   document.getElementById("accessingRecordsDiv").style.display = "none";
+  document.getElementById("uploadNewMedicalRecordDiv").style.display = "none";
   let buttonForAppointment = document.getElementById("registerNewAppointmentButton");
-  buttonForAppointment.style = "margin: 2%";
-  buttonForAppointment.className = "column-4";
+  buttonForAppointment.classList.remove("clicked-button");
   buttonForAppointment.disabled = false;
   let buttonForReadingFiles = document.getElementById("accessMedicalRecordsButton");
-  buttonForReadingFiles.style = "margin: 2%";
-  buttonForReadingFiles.className = "column-4";
+  buttonForReadingFiles.classList.remove("clicked-button");
   buttonForReadingFiles.disabled = false;
+  let buttonForUploadingFiles = document.getElementById("uploadMedicalRecordsButton");
+  buttonForUploadingFiles.classList.remove("clicked-button");
+  buttonForUploadingFiles.disabled = false;
   let departmentSelectionForm = document.getElementById("departmentSelectionForm");
 
   while (departmentSelectionForm.children.length > 1) {
@@ -71945,6 +71947,10 @@ returnFromUploadingAppointment.onclick = function () {
   resetCurrentPodSession(false);
 };
 
+returnFromUploadingMedicalRecord.onclick = function () {
+  resetCurrentPodSession(false);
+};
+
 departmentSelectionForm.addEventListener("submit", event => {
   event.preventDefault();
   let selectedDepartment = document.getElementById("selectedDepartment").value;
@@ -71968,8 +71974,8 @@ registerNewAppointmentForm.addEventListener("submit", event => {
   console.log("test wed");
   document.getElementById("registerNewAppointmentButton").disabled = true;
   document.getElementById("accessMedicalRecordsButton").disabled = true;
-  document.getElementById("registerNewAppointmentButton").style.color = "#b5b3b3";
-  document.getElementById("registerNewAppointmentButton").style.backgroundColor = "#595959";
+  document.getElementById("uploadMedicalRecordsButton").disabled = true;
+  document.getElementById("registerNewAppointmentButton").classList.add("clicked-button");
   document.getElementById("uploadNewAppointmentDetails").style.display = "block";
 });
 selectedDepartmentForm.addEventListener("submit", event => {
@@ -72025,9 +72031,17 @@ accessMedicalRecordsForm.addEventListener("submit", event => {
   event.preventDefault();
   document.getElementById("registerNewAppointmentButton").disabled = true;
   document.getElementById("accessMedicalRecordsButton").disabled = true;
-  document.getElementById("accessMedicalRecordsButton").style.color = "#b5b3b3";
-  document.getElementById("accessMedicalRecordsButton").style.backgroundColor = "#595959";
+  document.getElementById("uploadMedicalRecordsButton").disabled = true;
+  document.getElementById("accessMedicalRecordsButton").classList.add("clicked-button");
   getPatientDepartmentsAndDisplay();
+});
+uploadMedicalRecordsForm.addEventListener("submit", event => {
+  event.preventDefault();
+  document.getElementById("uploadMedicalRecordsButton").disabled = true;
+  document.getElementById("accessMedicalRecordsButton").disabled = true;
+  document.getElementById("registerNewAppointmentButton").disabled = true;
+  document.getElementById("uploadMedicalRecordsButton").classList.add("clicked-button");
+  document.getElementById("uploadNewMedicalRecordDiv").style.display = "block";
 });
 },{"@inrupt/solid-client":"node_modules/@inrupt/solid-client/dist/index.es.js","@inrupt/solid-client-authn-browser":"node_modules/@inrupt/solid-client-authn-browser/dist/index.js","@inrupt/vocab-common-rdf":"node_modules/@inrupt/vocab-common-rdf/dist/index.es.js","./healthcareDepartments":"healthcareDepartments.js","./podReader":"podReader.js","./podWriter":"podWriter.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
@@ -72057,7 +72071,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50838" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "55555" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

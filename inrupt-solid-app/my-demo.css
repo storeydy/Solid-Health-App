@@ -128,9 +128,31 @@
   display: table;
   clear:both;
 }
+.white-button{
+  border-radius: 20px;
+  padding: 1%;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: large;
+  background-color:#e6f4f9;
+  color:#005b81
+}
 .column-4{
   float: left;
   width: 25%;
+  position: relative;
+  top: 50%;
+  bottom: 50%;
+}
+.clicked-button{
+  color: #b5b3b3;
+  background-color: #595959;
+  /* background-color: #593359; */
+  /* background-color: #005b81; */
+  /* font-size: x-large; */
+}
+.column-5{
+  float: left;
+  width: 20%;
   position: relative;
   top: 50%;
   bottom: 50%;
