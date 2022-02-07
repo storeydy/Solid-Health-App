@@ -167,6 +167,8 @@ function resetCurrentPodSession(completelyReset) {
     while (departmentSelectionForm.children.length > 1) {
         departmentSelectionForm.removeChild(departmentSelectionForm.lastChild);
     }
+    document.getElementById("medicalRecordTypeSelection").style.display = "block"
+    document.getElementById("createNewMedicalRecordDiv").style.display = "none";
 }
 
 async function registerNewMedicalInstitution() {
@@ -212,7 +214,7 @@ async function saveNewAppointment() {
     await writeAppointment(session, appointmentDetails)
 }
 
-async function getPatientDepartmentsAndDisplay() {
+async function getPatientDepartmentsAndDisplay(locationForDropdown) {
     let healthDataContainerDatasetUrl = accessedPodOwnerBaseUrl + "/healthData2/"
     let departments = await getDepartments(session, healthDataContainerDatasetUrl)
     console.log(departments)
@@ -221,25 +223,38 @@ async function getPatientDepartmentsAndDisplay() {
         return
     }
     else {
-        let departmentListForm = document.getElementById("departmentSelectionForm")
-        let selectAbleRecordType = document.createElement("select")
-        selectAbleRecordType.id = "selectedRecordType"
-        selectAbleRecordType.style.margin = "2%"
+        let departmentListForm = ""
 
-        let appointmentOption = document.createElement("option")
-        appointmentOption.innerHTML = "Appointments"
-        selectAbleRecordType.appendChild(appointmentOption)
-        let diagnosesOption = document.createElement("option")
-        diagnosesOption.innerHTML = "Diagnoses"
-        selectAbleRecordType.appendChild(diagnosesOption)
-        let prescriptionOption = document.createElement("option")
-        prescriptionOption.innerHTML = "Prescriptions"
-        selectAbleRecordType.appendChild(prescriptionOption)
-        let recordsOption = document.createElement("option")
-        recordsOption.innerHTML = "Records"
-        selectAbleRecordType.appendChild(recordsOption)
-        departmentListForm.appendChild(selectAbleRecordType)
+        // document.getElementById("accessingRecordsDiv").style.display = "block"
+      
 
+        if(locationForDropdown == "uploadingNewRecord")
+        {
+            console.log("made it")
+            departmentListForm = document.getElementById("newMedicalRecordForm")
+        }
+        else if(locationForDropdown == "accessingRecords")
+        {
+            departmentListForm = document.getElementById("departmentSelectionForm")
+            document.getElementById("accessingRecordsDiv").style.display = "block"
+            let selectAbleRecordType = document.createElement("select")
+            selectAbleRecordType.id = "selectedRecordType"
+            selectAbleRecordType.style.margin = "2%"
+    
+            let appointmentOption = document.createElement("option")
+            appointmentOption.innerHTML = "Appointments"
+            selectAbleRecordType.appendChild(appointmentOption)
+            let diagnosesOption = document.createElement("option")
+            diagnosesOption.innerHTML = "Diagnoses"
+            selectAbleRecordType.appendChild(diagnosesOption)
+            let prescriptionOption = document.createElement("option")
+            prescriptionOption.innerHTML = "Prescriptions"
+            selectAbleRecordType.appendChild(prescriptionOption)
+            let recordsOption = document.createElement("option")
+            recordsOption.innerHTML = "Records"
+            selectAbleRecordType.appendChild(recordsOption)
+            departmentListForm.appendChild(selectAbleRecordType)
+        }
         let selectAbleDepartment = document.createElement("select")
         selectAbleDepartment.id = "selectedDepartment"
         selectAbleDepartment.style.margin = "2%"
@@ -250,14 +265,14 @@ async function getPatientDepartmentsAndDisplay() {
             selectAbleDepartment.appendChild(newOption)
         }
         departmentListForm.appendChild(selectAbleDepartment)
-        document.getElementById("accessingRecordsDiv").style.display = "block"
-        let submitButton = document.createElement("button")
-        submitButton.type = "submit"
-        // submitButton.style.paddingLeft = "4px"
-        submitButton.innerHTML = "View records in selected department"
-        departmentListForm.appendChild(submitButton)
-    }
+        if(locationForDropdown == "accessingRecords")  {
+            let submitButton = document.createElement("button")
+            submitButton.type = "submit"
+            submitButton.innerHTML = "View records in selected department"
+            departmentListForm.appendChild(submitButton)
+        }
 
+    }
 }
 
 async function getPatientFilesAndDisplay(recordType, department) {
@@ -332,6 +347,24 @@ async function getPatientFilesAndDisplay(recordType, department) {
         alert("No files found in the chosen patient's pod of the selected record type.")
     }
 }
+
+// async function displayRecordForm(){
+//     console.log("HERA")
+//     document.getElementById("medicalRecordTypeSelection").style.display = "none"
+//     let newDivForUploadingRecord = document.createElement("div")
+//     newDivForUploadingRecord.id = "createNewMedicalRecordDiv"
+//     let titleOfForm = document.createElement("h5")
+//     titleOfForm.innerHTML = 'Record type: <u>General Record<u>'
+//     newDivForUploadingRecord.appendChild(titleOfForm)
+//     let divRow = document.createElement("div")
+//     divRow.className = "row"
+//     let relevantDateLabel = document.createElement("p")
+//     relevantDateLabel.innerHTML = 'Date of record: '
+//     let relevantDateInput = document.createElement("input")
+//     relevantDateInput.placeholder = "dd/mm/yy"
+//     relevantDateInput.required.pa
+//     document.getElementById("uploadNewMedicalRecordDiv").appendChild(newDivForUploadingRecord);
+// }
 
 // 2. Create new dataset with a file in it
 async function writeProfile() {
@@ -794,7 +827,7 @@ accessMedicalRecordsForm.addEventListener("submit", (event) => {
     document.getElementById("accessMedicalRecordsButton").disabled = true
     document.getElementById("uploadMedicalRecordsButton").disabled = true;
     document.getElementById("accessMedicalRecordsButton").classList.add("clicked-button")
-    getPatientDepartmentsAndDisplay();
+    getPatientDepartmentsAndDisplay("accessingRecords");
 })
 
 uploadMedicalRecordsForm.addEventListener("submit", (event) => {
@@ -804,5 +837,27 @@ uploadMedicalRecordsForm.addEventListener("submit", (event) => {
     document.getElementById("registerNewAppointmentButton").disabled = true;
     document.getElementById("uploadMedicalRecordsButton").classList.add("clicked-button")
     document.getElementById("uploadNewMedicalRecordDiv").style.display = "block"
+})
+
+continueWithSelectedRecordTypeButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    getPatientDepartmentsAndDisplay("uploadingNewRecord")
+    // let patientsDepartments = await getDepartments(session, accessedPodOwnerBaseUrl + "/healthData2/")
+    console.log
+    if (document.getElementById("diagnosisCheckbox").checked) {
+        // displayDiagnosisForm();
+        document.getElementById("createNewGeneralRecordDiv").style.display = "block"
+        return;
+    }
+    if (document.getElementById("prescriptionCheckbox").checked) {
+        displayPrescriptionForm();
+        return;
+    }
+    if (document.getElementById("recordCheckbox").checked) {
+        // displayRecordForm();
+        document.getElementById("createNewGeneralRecordDiv").style.display = "block"
+        return;
+    }
+    alert('No record type to upload has been selected. Please select one to continue.')
 })
 

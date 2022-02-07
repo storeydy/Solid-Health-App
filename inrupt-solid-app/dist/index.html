@@ -140,20 +140,40 @@
 
   <div id="uploadNewMedicalRecordDiv" class="panel" style="display:none">
     <button id="returnFromUploadingMedicalRecord" style="float: right; position: inherit; align-self: flex-end; top: 5%"> Go back </button>
+    <h2 style="text-align: center;">Upload new medical record to selected user's pod </h2>
     <div id="medicalRecordTypeSelection">
-      <h2 style="text-align: center;">Upload new medical record to selected user's pod </h2>
       <div class="row">
         <h5> Select a record type to upload. Hover over options for more details. </h5>
-        <input type="checkbox" name="test" value="Diagnosis" id="diagnosisCheckbox">
-        <label title="Medical record containing details of a diagnosis that has been reached from test results" for="diagnosisCheckbox" style="margin-right: 2%;"> Diagnosis </label>
-        <input type="checkbox" name="test" value="Prescription" id="prescriptionCheckbox">
-        <label title="Medical record containing details of prescribed medication for the owner of the currently accessed pod" for="prescriptionCheckbox" style="margin-right: 2%;"> Prescription </label>
-        <input type="checkbox" name="test" value="Record" id="recordCheckbox">
-        <label title="Medical record containing details of notes from a recent appointment or other encounter with a Health Worker" for="prescriptionCheckbox" style="margin-right: 2%;"> General Record </label>
+        <div class="column-6 selection-div">
+          <input type="checkbox" name="test" value="Diagnosis" id="diagnosisCheckbox" onclick="disableOtherCheckboxes('recordCheckbox', 'prescriptionCheckbox')">
+          <label title="Medical record containing details of a diagnosis that has been reached from test results" for="diagnosisCheckbox" style="margin-right: 2%;"> Diagnosis </label>
+        </div>
+        <div class="column-6 selection-div">
+          <input type="checkbox" name="test" value="Prescription" id="prescriptionCheckbox" onclick="disableOtherCheckboxes('diagnosisCheckbox', 'recordCheckbox')">
+          <label title="Medical record containing details of prescribed medication for the owner of the currently accessed pod" for="prescriptionCheckbox" style="margin-right: 2%;"> Prescription </label>
+        </div>
+        <div class="column-6 selection-div">
+          <input type="checkbox" name="test" value="Record" id="recordCheckbox" onclick="disableOtherCheckboxes('diagnosisCheckbox', 'prescriptionCheckbox')">
+          <label title="Medical record containing details of notes from a recent appointment or other encounter with a Health Worker" for="recordCheckbox" style="margin-right: 2%;"> General Record </label>
+        </div>
       </div>
+      <button id="continueWithSelectedRecordTypeButton" class="light-blue-button"> Continue </button>
     </div>
+    <form id="newMedicalRecordForm">
+      <div id="createNewGeneralRecordDiv" style="display:none">
+        <h5> Record type: <u>General Record</u></h5>
+        <div class="row">
+          <label class="column-6">Date of record: </label>
+          <input class="column-6" placeholder="dd/mm/yy" required="" pattern="[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" minlength="8" maxlength="8" id="generalRecordDate">
+        </div>
+      </div>
+    </form>
   </div>
 
+  <script>function disableOtherCheckboxes(checkboxToDisable1, checkboxToDisable2) {
+  document.getElementById(checkboxToDisable1).disabled = !document.getElementById(checkboxToDisable1).disabled;
+  document.getElementById(checkboxToDisable2).disabled = !document.getElementById(checkboxToDisable2).disabled;
+}</script>
   <!-- <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
         <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
         <script src="healthCareDepartmentDropdown.js"></script> -->

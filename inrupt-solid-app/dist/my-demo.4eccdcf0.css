@@ -136,6 +136,24 @@
   background-color:#e6f4f9;
   color:#005b81
 }
+.selection-div{
+  background-color: #1c93ed;
+  padding: 1%;
+  margin: 1%;
+  border-radius: 50%;
+  text-align: center;
+  border:1px solid navy;
+  color: aliceblue
+}
+.light-blue-button{
+  margin-left:5%;
+  margin-right: auto;
+  width: 8em;
+  background-color: #76cdff;
+  font-weight: 600;
+  color:aliceblue
+  /* display:block; */
+}
 .column-4{
   float: left;
   width: 25%;

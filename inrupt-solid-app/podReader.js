@@ -41,7 +41,7 @@ export async function getDepartments(session, resourceUrl) {
         {
             if(!(isContainer(listOfDatasetsWithinHealthDataDataset[i], {fetch: session.fetch}))) listOfDatasetsWithinHealthDataDataset.splice(i, 1)
         }
-        // console.log(listOfDatasetsWithinHealthDataDataset)
+        console.log(listOfDatasetsWithinHealthDataDataset)
         return listOfDatasetsWithinHealthDataDataset
     }
     catch (ex) {
