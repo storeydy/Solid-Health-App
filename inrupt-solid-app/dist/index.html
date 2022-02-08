@@ -22,6 +22,7 @@
         </label>
         <button name="btnLogin" id="btnLogin">Login</button>
       </div>
+      <button name="btnLogout" id="btnLogout" class="orange-button" style="display:none; float:right;">Logout</button>
       <p id="labelStatus" class="labelStatus"></p>
     </section>
 
@@ -113,7 +114,7 @@
         <div class="row">
           <label class="column-6"> Time of appointment: </label>
           <input class="column-6" type="text" placeholder="hh:mm (24hr)" id="newAppointmentTime" required="" pattern="[0-9][0-9]:[0-5][0-9]" minlength="5" maxlength="5">
-          <input class="column-6" style="float:right" type="text" placeholder="dd/mm/yy" id="newAppointmentDate" required="" pattern="[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" minlength="8" maxlength="8">
+          <input class="column-6" style="float:right" type="text" placeholder="dd/mm/yy" id="newAppointmentDate" required="" pattern="[0-9][0-9]/[0-1][0-9]/[0-9][0-9]" minlength="8" maxlength="8">
           <label class="column-6" style="float:right"> Date of appointment: </label>
         </div>
         <div class="row">
@@ -122,7 +123,8 @@
           <textarea class="column-6" style="float:right; resize: none;" cols="40" rows="5" placeholder="Enter any notes relevant to the appointment" id="newAppointmentNotes"></textarea>
           <label class="column-6" style="float:right"> Notes: </label>
         </div>
-        <button type="submit" class="green-button" id="saveAppointmentDetailsButton"> Save Appointment Details to pod </button>
+        <button type="submit" class="green-button" id="saveAppointmentDetailsButton"> Save Appointment Details to pod
+        </button>
       </form>
     </div>
 
@@ -164,7 +166,7 @@
         <h5> Record type: <u>General Record</u></h5>
         <div class="row" id="newGeneralRecordDateAndDepartment">
           <label class="column-6">Date of record: </label>
-          <input class="column-6" placeholder="dd/mm/yy" required="" pattern="[0-9][0-9]/[0-9][0-9]/[0-9][0-9]" minlength="8" maxlength="8" id="generalRecordDate">
+          <input class="column-6" placeholder="dd/mm/yy" required="" pattern="[0-9][0-9]/[0-1][0-9]/[0-9][0-9]" minlength="8" maxlength="8" id="generalRecordDate">
           <div id="newRecordDepartmentPlaceholderDiv" class="column-6" style="float:right"></div>
           <label class="column-6" style="float:right"> Department: </label>
         </div>
@@ -176,7 +178,57 @@
           <label class="column-6"> Description of record: </label>
           <textarea class="column-3" style="resize:none" required="" placeholder="Enter a description" cols="80" rows="10" id="newGeneralRecordDescription"></textarea>
         </div>
-        <button type="submit" class="green-button" id="saveGeneralRecordDetailsButton"> Save General Record Details to pod </button>
+        <button type="submit" class="green-button" id="saveGeneralRecordDetailsButton"> Save general record details to
+          pod </button>
+      </div>
+    </form>
+    <form id="newPrescriptionForm">
+      <div id="createNewPrescriptionDiv" style="display:none">
+        <h5> Record type: <u>Prescription</u></h5>
+        <div class="row" id="newPrescriptionDateAndDepartment">
+          <label class="column-6">Title of prescription: </label>
+          <input class="column-3" placeholder="Enter a title" required="" id="prescriptionTitle">
+          <div id="newPrescriptionDepartmentPlaceholderDiv" class="column-6" style="float:right"></div>
+          <label class="column-6" style="float:right"> Department: </label>
+        </div>
+        <div class="row">
+          <label class="column-6">Start date of prescription: </label>
+          <input class="column-6" placeholder="dd/mm/yy" required="" pattern="[0-9][0-9]/[0-1][0-9]/[0-9][0-9]" minlength="8" maxlength="8" id="prescriptionStartDate">
+          <input style="float:right" class="column-6" placeholder="dd/mm/yy" required="" pattern="[0-9][0-9]/[0-1][0-9]/[0-9][0-9]" minlength="8" maxlength="8" id="prescriptionEndDate">
+          <label style="float:right" class="column-6">End date of prescription: </label>
+        </div>
+        <div class="row">
+          <label class="column-6"> Description of prescription: </label>
+          <textarea class="column-3" style="resize:none" required="" placeholder="Enter a description" cols="80" rows="10" id="newPrescriptionDescription"></textarea>
+          <input style="float:right" type="url" value="" class="column-6" placeholder="Enter a pharmacist WebID" id="prescriptionPharmacist">
+          <label style="float:right" class="column-6">Pharmacist to fill prescription (optional):  </label>
+        </div>
+        <button type="submit" class="green-button" id="savePrescriptionDetailsButton"> Save prescription details to
+          pod </button>
+      </div>
+    </form>
+    <form id="newDiagnosisForm">
+      <div id="createNewDiagnosisDiv" style="display:none">
+        <h5> Record type: <u>Diagnosis</u></h5>
+        <div class="row" id="newDiagnosisDateAndDepartment">
+          <label class="column-6">Title of diagnosis: </label>
+          <input class="column-3" placeholder="Enter a title" required="" id="diagnosisTitle">
+          <div id="newDiagnosisDepartmentPlaceholderDiv" class="column-6" style="float:right"></div>
+          <label class="column-6" style="float:right"> Department: </label>
+        </div>
+        <div class="row">
+          <label class="column-6">Date of diagnosis: </label>
+          <input class="column-6" placeholder="dd/mm/yy" required="" pattern="[0-9][0-9]/[0-1][0-9]/[0-9][0-9]" minlength="8" maxlength="8" id="diagnosisDate">
+          <!-- <input style="float:right" class="column-6" placeholder="dd/mm/yy" required pattern="[0-9][0-9]/[0-1][0-9]/[0-9][0-9]" required
+            minlength="8" maxlength="8" id="prescriptionEndDate">
+          <label style="float:right" class="column-6">End date of prescription: </label> -->
+        </div>
+        <div class="row">
+          <label class="column-6"> Description of diagnosis: </label>
+          <textarea class="column-3" style="resize:none" required="" placeholder="Enter a description" cols="80" rows="10" id="newDiagnosisDescription"></textarea>
+        </div>
+        <button type="submit" class="green-button" id="saveDiagnosisDetailsButton"> Save Diagnosis details to
+          pod </button>
       </div>
     </form>
   </div>

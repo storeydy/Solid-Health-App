@@ -45,7 +45,7 @@ import { Session, getDefaultSession, fetch } from "@inrupt/solid-client-authn-br
 import { SCHEMA_INRUPT, VCARD, FOAF, RDF } from "@inrupt/vocab-common-rdf";
 import { departments } from "./healthcareDepartments";
 import { checkIfDatasetExists, checkIfAdministrator, getDepartments, getFilesInDataset } from "./podReader";
-import { writeAppointment, createDepartmentDataset, storeMedicalInsitutionInformation } from "./podWriter";
+import { writeAppointment, createDepartmentDataset, storeMedicalInsitutionInformation, uploadMedicalRecord, grantAccessToDataset } from "./podWriter";
 //import fetch from 'unfetch';
 
 // If your Pod is *not* on `solidcommunity.net`, change this to your identity provider.
@@ -77,6 +77,16 @@ async function login() {
     }
 }
 
+async function logout(){
+    document.getElementById("webID").value = "";
+    document.getElementById("loginButtonDiv").style.display = "block"
+    document.getElementById("btnLogout").style.display = "none"
+    document.getElementById("labelStatus").innerHTML = ""
+    resetCurrentPodSession(true)
+    await session.logout();
+    document.getElementById("accessingPod").style.display = "none"
+}
+
 // 1b. Login Redirect. Call session.handleIncomingRedirect() function.
 // When redirected after login, finish the process by retrieving session information.
 async function handleRedirectAfterLogin() {
@@ -88,6 +98,7 @@ async function handleRedirectAfterLogin() {
         ).innerHTML = `Your session is logged in with the WebID [<a target="_blank" href="${session.info.webId}">${session.info.webId}</a>].`;
         document.getElementById("labelStatus").setAttribute("role", "alert");
         document.getElementById("webID").value = session.info.webId;
+        document.getElementById("btnLogout").style.display = "block"
         document.getElementById("loginButtonDiv").style.display = "none"
         document.getElementById("accessingPod").style.display = "block"
         checkMedicalInstitutionStatus();
@@ -169,8 +180,10 @@ function resetCurrentPodSession(completelyReset) {
     }
     document.getElementById("medicalRecordTypeSelection").style.display = "block"
     document.getElementById("createNewGeneralRecordDiv").style.display = "none";
+    createNewPrescriptionDiv
+    document.getElementById("createNewPrescriptionDiv").style.display = "none";
     document.getElementById("medicalRecordTypeSelection").style.display = "block"
-    if(document.getElementById("selectedDepartment")) document.getElementById("selectedDepartment").remove()
+    if (document.getElementById("selectedDepartment")) document.getElementById("selectedDepartment").remove()
 }
 
 async function registerNewMedicalInstitution() {
@@ -216,7 +229,7 @@ async function saveNewAppointment() {
     await writeAppointment(session, appointmentDetails)
 }
 
-async function getPatientDepartmentsAndDisplay(locationForDropdown) {
+async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdown) {
     let healthDataContainerDatasetUrl = accessedPodOwnerBaseUrl + "/healthData2/"
     let departments = await getDepartments(session, healthDataContainerDatasetUrl)
     console.log(departments)
@@ -228,21 +241,18 @@ async function getPatientDepartmentsAndDisplay(locationForDropdown) {
         let departmentListForm = ""
 
         // document.getElementById("accessingRecordsDiv").style.display = "block"
-      
 
-        if(locationForDropdown == "uploadingNewRecord")
-        {
-            console.log("made it")
-            departmentListForm = document.getElementById("newRecordDepartmentPlaceholderDiv")
+
+        if (useOfDropdown == "uploadingNewRecord") {
+            departmentListForm = document.getElementById(locationForDropdown)
         }
-        else if(locationForDropdown == "accessingRecords")
-        {
+        else if (useOfDropdown == "accessingRecords") {
             departmentListForm = document.getElementById("departmentSelectionForm")
             document.getElementById("accessingRecordsDiv").style.display = "block"
             let selectAbleRecordType = document.createElement("select")
             selectAbleRecordType.id = "selectedRecordType"
             selectAbleRecordType.style.margin = "2%"
-    
+
             let appointmentOption = document.createElement("option")
             appointmentOption.innerHTML = "Appointments"
             selectAbleRecordType.appendChild(appointmentOption)
@@ -267,7 +277,7 @@ async function getPatientDepartmentsAndDisplay(locationForDropdown) {
             selectAbleDepartment.appendChild(newOption)
         }
         departmentListForm.appendChild(selectAbleDepartment)
-        if(locationForDropdown == "accessingRecords")  {
+        if (useOfDropdown == "accessingRecords") {
             let submitButton = document.createElement("button")
             submitButton.type = "submit"
             submitButton.innerHTML = "View records in selected department"
@@ -350,22 +360,93 @@ async function getPatientFilesAndDisplay(recordType, department) {
     }
 }
 
-async function saveGeneralRecordDetailsToPod(){
+async function saveGeneralRecordDetailsToPod() {
     let date = document.getElementById("generalRecordDate").value
     let title = document.getElementById("generalRecordTitle").value
     let description = document.getElementById("newGeneralRecordDescription").value
     let department = document.getElementById("selectedDepartment").value
 
     let generalRecordDetails = {
-        "https://schema.org/dateCreated": new Date().toDateString(),
-        "Record date ": date,
-        "https://schema.org/creator": accessedPodOwnerUrl,
+        "https://schema.org/dateCreated": new Date().toUTCString(),
+        "https://schema.org/startDate": date,
+        "https://schema.org/creator": session.info.webId,
         "https://schema.org/title": title,
         "https://schema.org/description": description,
         "https://schema.org/department": department,
     }
-    await uploadMedicalRecord(session, generalRecordDetails)
+    let urlOfDatasetToUploadFileTo = accessedPodOwnerBaseUrl + "/healthData2/" + department + "/Records"
+    let uploadResult = await uploadMedicalRecord(session, urlOfDatasetToUploadFileTo, generalRecordDetails)
+    if (uploadResult) {
+        alert("General record uploaded successfully to pod")
+    }
+    else {
+        alert("Error uploading general record to pod")
+    }
+    document.getElementById("newGeneralRecordForm").reset();
 }
+
+async function savePrescriptionDetailsToPod() {
+    let startDate = document.getElementById("prescriptionStartDate").value
+    let endDate = document.getElementById("prescriptionEndDate").value
+    let title = document.getElementById("prescriptionTitle").value
+    let description = document.getElementById("newPrescriptionDescription").value
+    let department = document.getElementById("selectedDepartment").value
+
+    let prescriptionDetails = {
+        "https://schema.org/dateCreated": new Date().toUTCString(),
+        "https://schema.org/startDate": startDate,
+        "https://schema.org/endDate": endDate,
+        "https://schema.org/creator": session.info.webId,
+        "https://schema.org/title": title,
+        "https://schema.org/description": description,
+        "https://schema.org/department": department,
+    }
+    let urlOfDatasetToUploadFileTo = accessedPodOwnerBaseUrl + "/healthData2/" + department + "/Prescriptions"
+    let uploadResult = await uploadMedicalRecord(session, urlOfDatasetToUploadFileTo, prescriptionDetails)
+    if (uploadResult) {
+        alert("Prescription uploaded successfully to pod")
+    }
+    else {
+        alert("Error uploading prescription to pod")
+    }
+    let pharmacistToFillPrescription = document.getElementById("prescriptionPharmacist").value
+    if(pharmacistToFillPrescription != ""){
+        try{
+        await grantAccessToDataset(session, pharmacistToFillPrescription, urlOfDatasetToUploadFileTo, {read: true, write: false, append: false, control: false}, false)
+        console.log("permission granted to ", pharmacistToFillPrescription, " successfully." )
+        }
+        catch(err){
+            console.log(err)
+        }
+    }
+    document.getElementById("newPrescriptionForm").reset();
+}
+
+async function saveDiagnosisDetailsToPod() {
+    let date = document.getElementById("diagnosisDate").value
+    let title = document.getElementById("diagnosisTitle").value
+    let description = document.getElementById("newDiagnosisDescription").value
+    let department = document.getElementById("selectedDepartment").value
+
+    let diagnosisDetails = {
+        "https://schema.org/dateCreated": new Date().toUTCString(),
+        "https://schema.org/startDate": date,
+        "https://schema.org/creator": session.info.webId,
+        "https://schema.org/title": title,
+        "https://schema.org/description": description,
+        "https://schema.org/department": department,
+    }
+    let urlOfDatasetToUploadFileTo = accessedPodOwnerBaseUrl + "/healthData2/" + department + "/Diagnoses"
+    let uploadResult = await uploadMedicalRecord(session, urlOfDatasetToUploadFileTo, diagnosisDetails)
+    if (uploadResult) {
+        alert("Diagnosis uploaded successfully to pod")
+    }
+    else {
+        alert("Error uploading diagnosis to pod")
+    }
+    document.getElementById("newDiagnosisForm").reset();
+}
+
 // 2. Create new dataset with a file in it
 async function writeProfile() {
 
@@ -606,7 +687,7 @@ async function uploadFile() {
     const name = getStringNoLocale(profile, VCARD.fn)
     const role = getStringNoLocale(profile, VCARD.role);
     console.log(role)
-    const date = new Date().toDateString()
+    const date = new Date().toUTCString()
     console.log(date)
 
     let myDataset = await getSolidDataset("https://testuser1.solidcommunity.net/healthDataDataset1", { fetch: session.fetch });
@@ -716,6 +797,10 @@ buttonLogin.onclick = function () {
     login();
 };
 
+btnLogout.onclick = function(){
+    logout();
+}
+
 returnFromAccessingRecords.onclick = function () {
     resetCurrentPodSession(false)
 }
@@ -758,11 +843,20 @@ registerNewAppointmentForm.addEventListener("submit", (event) => {
     document.getElementById("uploadNewAppointmentDetails").style.display = "block"
 })
 
-newGeneralRecordForm.addEventListener("submit", (event)=> {
+newGeneralRecordForm.addEventListener("submit", (event) => {
     event.preventDefault();
     saveGeneralRecordDetailsToPod();
 })
 
+newPrescriptionForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    savePrescriptionDetailsToPod();
+})
+
+newDiagnosisForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    saveDiagnosisDetailsToPod();
+})
 selectedDepartmentForm.addEventListener("submit", (event) => {
     event.preventDefault();
     onDropdownClick();
@@ -831,7 +925,7 @@ accessMedicalRecordsForm.addEventListener("submit", (event) => {
     document.getElementById("accessMedicalRecordsButton").disabled = true
     document.getElementById("uploadMedicalRecordsButton").disabled = true;
     document.getElementById("accessMedicalRecordsButton").classList.add("clicked-button")
-    getPatientDepartmentsAndDisplay("accessingRecords");
+    getPatientDepartmentsAndDisplay("accessingRecords", "");
 })
 
 uploadMedicalRecordsForm.addEventListener("submit", (event) => {
@@ -845,21 +939,21 @@ uploadMedicalRecordsForm.addEventListener("submit", (event) => {
 
 continueWithSelectedRecordTypeButton.addEventListener("click", (event) => {
     event.preventDefault();
-    document.getElementById("medicalRecordTypeSelection").style.display = "none"
-    getPatientDepartmentsAndDisplay("uploadingNewRecord")
-    // let patientsDepartments = await getDepartments(session, accessedPodOwnerBaseUrl + "/healthData2/")
-    console.log
     if (document.getElementById("diagnosisCheckbox").checked) {
-        // displayDiagnosisForm();
-        document.getElementById("createNewGeneralRecordDiv").style.display = "block"
+        document.getElementById("medicalRecordTypeSelection").style.display = "none"
+        getPatientDepartmentsAndDisplay("uploadingNewRecord", "newDiagnosisDepartmentPlaceholderDiv")
+        document.getElementById("createNewDiagnosisDiv").style.display = "block"
         return;
     }
     if (document.getElementById("prescriptionCheckbox").checked) {
-        displayPrescriptionForm();
+        document.getElementById("medicalRecordTypeSelection").style.display = "none"
+        getPatientDepartmentsAndDisplay("uploadingNewRecord", "newPrescriptionDepartmentPlaceholderDiv")
+        document.getElementById("createNewPrescriptionDiv").style.display = "block";
         return;
     }
     if (document.getElementById("recordCheckbox").checked) {
-        // displayRecordForm();
+        document.getElementById("medicalRecordTypeSelection").style.display = "none"
+        getPatientDepartmentsAndDisplay("uploadingNewRecord", "newRecordDepartmentPlaceholderDiv")
         document.getElementById("createNewGeneralRecordDiv").style.display = "block"
         return;
     }

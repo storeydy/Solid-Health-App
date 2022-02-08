@@ -144,10 +144,18 @@
 }
 .red-button{
   border-radius: 20px;
-  padding: 1%;
+  padding: 0.5%;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   font-size: medium;
   background-color:#e21313;
+  color: #e6f4f9
+}
+.orange-button{
+  border-radius: 20px;
+  padding: 0.5%;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  font-size: medium;
+  background-color:#e67011;
   color: #e6f4f9
 }
 .selection-div{

@@ -14,7 +14,9 @@ import {
     getResourceInfoWithAcl,
     setAgentResourceAccess,
     setAgentDefaultAccess,
-    saveAclFor
+    saveAclFor,
+    addStringNoLocale,
+    addUrl
 
 } from "@inrupt/solid-client"
 import { SCHEMA_INRUPT, VCARD, FOAF, RDF } from "@inrupt/vocab-common-rdf";
@@ -30,7 +32,6 @@ export async function writeAppointment(session, appointmentDetails) {
         await createDepartmentDataset(session, departmentDatasetUrl, appointmentDetails.podOwnerBaseUrl, appointmentDetails.appointmentDepartment)
     }
 
-    // console.log("about to call")
     let expectedDoctorPermissionSet = { read: true, write: true, append: true, controlRead: true, controlWrite: true }
     let doctorHasAccess = await checkIfPersonHasAccess(session, departmentDatasetUrl + "/Appointments", appointmentDetails.appointmentDoctor, expectedDoctorPermissionSet)
     if (doctorHasAccess == false) {
@@ -52,7 +53,7 @@ export async function writeAppointment(session, appointmentDetails) {
         .build();
 
     departmentAppointmentDataset = setThing(departmentAppointmentDataset, appointmentDetailsFile)
-    await saveSolidDatasetAt(appointmentDetails.podOwnerBaseUrl + "/healthData2/" + appointmentDetails.appointmentDepartment + "/Appointments", departmentAppointmentDataset, {fetch: session.fetch})
+    await saveSolidDatasetAt(appointmentDetails.podOwnerBaseUrl + "/healthData2/" + appointmentDetails.appointmentDepartment + "/Appointments", departmentAppointmentDataset, { fetch: session.fetch })
     console.log("appointment details saved to pod")
 }
 
@@ -99,7 +100,7 @@ export async function grantAccessToDataset(session, personWebID, datasetUrl, per
 }
 
 export async function storeMedicalInsitutionInformation(session, healthDataDatasetUrl, institutionDetails) {
-    const date = new Date().toDateString()
+    const date = new Date().toUTCString()
 
     let healthDataDataset = createSolidDataset();
     let healthDataContainer = createContainerAt(healthDataDatasetUrl, { fetch: session.fetch });
@@ -162,5 +163,31 @@ export async function storeMedicalInsitutionInformation(session, healthDataDatas
     }
     catch (err) {
         console.log(err)
+    }
+}
+
+export async function uploadMedicalRecord(session, healthDataDatasetUrl, fileDetails) {
+    try {
+        let datasetToUploadTo = await getSolidDataset(healthDataDatasetUrl, { fetch: session.fetch })
+        console.log(datasetToUploadTo)
+        console.log(fileDetails)
+        console.log(fileDetails["https://schema.org/title"])
+        let thingToAdd = createThing({ name: fileDetails["https://schema.org/title"] });
+        for (const [property, propertyValue] of Object.entries(fileDetails)) {
+            // thingToAdd = addStringNoLocale(thingToAdd, property, propertyValue);
+            // thingToAdd.build();
+            thingToAdd = addStringNoLocale(thingToAdd, property, propertyValue)
+        }
+        thingToAdd = addUrl(thingToAdd, RDF.type, "https://schema.org/TextDigitalDocument")
+        // thingToAdd.build();
+
+        console.log(thingToAdd)
+        datasetToUploadTo = setThing(datasetToUploadTo, thingToAdd);
+        await saveSolidDatasetAt(healthDataDatasetUrl, datasetToUploadTo, { fetch: session.fetch })
+        return true;
+    }
+    catch (ex) {
+        console.log(ex)
+        return false;
     }
 }
