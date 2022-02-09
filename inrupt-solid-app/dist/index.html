@@ -64,6 +64,9 @@
             Upload medical records </button>
         </form>
       </div>
+      <div class="row">
+        <button class="white-button column-5" id="modifyAccessToDataButton" style="margin: 2%;">Manage access to data</button>
+      </div>
     </div>
 
     <div id="noInstitutionInformation" style="display:none">
@@ -132,10 +135,11 @@
       <button id="returnFromAccessingRecords" class="red-button" style="float: right; position: inherit; align-self: flex-end; top: 5%"> Go
         back </button>
       <form id="departmentSelectionForm">
-        <h2 style="text-align: center;"> Select a department to access record types within that department </h2>
+        <h2 style="text-align: center;"> Select a department to access record types within that department, or manage the access to it </h2>
         <!-- <button type="submit"> View records in selected department </button> -->
       </form>
       <!-- <div id = "displayMedicalRecordsDiv" class = "panel" s> -->
+      <button id="viewAccessButton"> Manage access to selected dataset </button>
 
     </div>
   </div>
@@ -205,7 +209,7 @@
         </div>
         <button type="submit" class="green-button" id="savePrescriptionDetailsButton"> Save prescription details to
           pod </button>
-      </div>
+      </div>containerForDisplayedRecords
     </form>
     <form id="newDiagnosisForm">
       <div id="createNewDiagnosisDiv" style="display:none">
@@ -231,6 +235,11 @@
           pod </button>
       </div>
     </form>
+  </div>
+
+  <div id="manageAccessToDataDiv" class="panel" style="display: none">
+    <h2 style="text-align: center;">Manage access to data in selected user's pod </h2>
+
   </div>
 
   <script>function disableOtherCheckboxes(checkboxToDisable1, checkboxToDisable2) {

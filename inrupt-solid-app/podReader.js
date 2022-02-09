@@ -9,7 +9,7 @@ import {
     getContentType,
     getThingAll
 } from "@inrupt/solid-client";
-import { getAgentAccess } from "@inrupt/solid-client/dist/access/universal_v1";
+import { getAccessForAll, getAgentAccess } from "@inrupt/solid-client/dist/access/universal_v1";
 import { storeMedicalInsitutionInformation } from "./podWriter";
 
 export async function checkIfDatasetExists(session, datasetUrl) {
@@ -56,6 +56,14 @@ export async function getFilesInDataset(session, resourceUrl)
     let filesInDataset = await getThingAll(selectedDataset, {fetch: session.fetch})
     console.log(filesInDataset)
     return filesInDataset
+}
+
+export async function getAccessToDataset(session, resourceUrl)
+{
+    // const resourceInfo = await getResourceInfo(resourceUrl, {fetch: session.fetch})
+    console.log(resourceUrl)
+    const resourceInfo = await getAccessForAll(resourceUrl, "agent", {fetch: session.fetch})
+    return resourceInfo
 }
 
 // export async function checkIfHealthDataExists(session, healthDataUrl) {

@@ -44,7 +44,7 @@ import {
 import { Session, getDefaultSession, fetch } from "@inrupt/solid-client-authn-browser";
 import { SCHEMA_INRUPT, VCARD, FOAF, RDF } from "@inrupt/vocab-common-rdf";
 import { departments } from "./healthcareDepartments";
-import { checkIfDatasetExists, checkIfAdministrator, getDepartments, getFilesInDataset } from "./podReader";
+import { checkIfDatasetExists, checkIfAdministrator, getDepartments, getFilesInDataset, getAccessToDataset } from "./podReader";
 import { writeAppointment, createDepartmentDataset, storeMedicalInsitutionInformation, uploadMedicalRecord, grantAccessToDataset } from "./podWriter";
 //import fetch from 'unfetch';
 
@@ -65,7 +65,7 @@ const readForm = document.getElementById("readForm");
 var accessedPodOwnerUrl = ""
 var accessedPodOwnerBaseUrl = ""
 var medicalInstitutionRegistered = Boolean(0);
-
+var initialStateOfDatasetAccess = {}
 // 1a. Start Login Process. Call session.login() function.
 async function login() {
     if (!session.info.isLoggedIn) {
@@ -77,7 +77,7 @@ async function login() {
     }
 }
 
-async function logout(){
+async function logout() {
     document.getElementById("webID").value = "";
     document.getElementById("loginButtonDiv").style.display = "block"
     document.getElementById("btnLogout").style.display = "none"
@@ -85,6 +85,13 @@ async function logout(){
     resetCurrentPodSession(true)
     await session.logout();
     document.getElementById("accessingPod").style.display = "none"
+    localStorage.clear()
+    let authCookie = document.cookie;
+    console.log(authCookie)
+    // browser.cookies.remove(*)
+    // document.cookie = "authCookie=; expires = Thu, 01 Jan 1970 00:00:00 UTC; path=/;"
+    const cookies = document.cookie.split(";")
+    console.log(cookies)
 }
 
 // 1b. Login Redirect. Call session.handleIncomingRedirect() function.
@@ -167,13 +174,16 @@ function resetCurrentPodSession(completelyReset) {
     document.getElementById("uploadNewMedicalRecordDiv").style.display = "none";
     let buttonForAppointment = document.getElementById("registerNewAppointmentButton")
     buttonForAppointment.classList.remove("clicked-button")
-    buttonForAppointment.disabled = false
+    buttonForAppointment.style.display = "block"
     let buttonForReadingFiles = document.getElementById("accessMedicalRecordsButton")
     buttonForReadingFiles.classList.remove("clicked-button")
-    buttonForReadingFiles.disabled = false
+    buttonForReadingFiles.style.display = "block"
     let buttonForUploadingFiles = document.getElementById("uploadMedicalRecordsButton")
     buttonForUploadingFiles.classList.remove("clicked-button")
-    buttonForUploadingFiles.disabled = false
+    buttonForUploadingFiles.style.display = "block"
+    let buttonForManagingAccess = document.getElementById("modifyAccessToDataButton")
+    buttonForManagingAccess.classList.remove("clicked-button")
+    buttonForManagingAccess.style.display = "block"
     let departmentSelectionForm = document.getElementById("departmentSelectionForm")
     while (departmentSelectionForm.children.length > 1) {
         departmentSelectionForm.removeChild(departmentSelectionForm.lastChild);
@@ -182,6 +192,7 @@ function resetCurrentPodSession(completelyReset) {
     document.getElementById("createNewGeneralRecordDiv").style.display = "none";
     createNewPrescriptionDiv
     document.getElementById("createNewPrescriptionDiv").style.display = "none";
+    document.getElementById("manageAccessToDataDiv").style.display = "none";
     document.getElementById("medicalRecordTypeSelection").style.display = "block"
     if (document.getElementById("selectedDepartment")) document.getElementById("selectedDepartment").remove()
 }
@@ -278,10 +289,20 @@ async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdow
         }
         departmentListForm.appendChild(selectAbleDepartment)
         if (useOfDropdown == "accessingRecords") {
-            let submitButton = document.createElement("button")
-            submitButton.type = "submit"
-            submitButton.innerHTML = "View records in selected department"
-            departmentListForm.appendChild(submitButton)
+            let submitButtonToView = document.createElement("button")
+            submitButtonToView.type = "submit"
+            submitButtonToView.id = "viewRecordsButton"
+            submitButtonToView.innerHTML = "View records in selected dataset"
+            submitButtonToView.style.margin = "2%"
+            departmentListForm.appendChild(submitButtonToView)
+
+            let submitButtonToManageAccess = document.getElementById("viewAccessButton")
+            departmentListForm.appendChild(submitButtonToManageAccess)
+            // submitButtonToManageAccess.id = "viewAccessButton"
+            // submitButtonToManageAccess.innerHTML = "Manage access to selected dataset"
+            // // submitButtonToManageAccess.onclick = getAccessAndDisplay("1", "2")
+            // // submitButtonToManageAccess.preventDefault()
+            // departmentListForm.appendChild(submitButtonToManageAccess)
         }
 
     }
@@ -360,6 +381,102 @@ async function getPatientFilesAndDisplay(recordType, department) {
     }
 }
 
+async function getAccessAndDisplay(recordType, department) {
+    let urlOfSelectedDataset = accessedPodOwnerBaseUrl + "/healthData2/" + department + "/" + recordType
+    let access = await getAccessToDataset(session, urlOfSelectedDataset)
+
+    if (Object.entries(access).length > 0) {
+        let existingDisplayedAccess = document.getElementById("containerForRecordAccess")
+        if (existingDisplayedAccess) existingDisplayedAccess.remove();
+
+        let containerDivForAccess = document.createElement("div")
+        containerDivForAccess.id = "containerForRecordAccess"
+        containerDivForAccess.className = "panel"
+
+        let index = 0
+        for (const [person, personsAccess] of Object.entries(access)) {
+            console.log(person, personsAccess, index)
+            let accessDisplayObj = document.createElement("div")
+            accessDisplayObj.id = "displayedAccess" + index
+            accessDisplayObj.className = "panel"
+            let individualsName = document.createElement("h3")
+            individualsName.innerHTML = "Individual's name: <u>" + person + "</u>" 
+            individualsName.style.textAlign = "center"
+
+            let readAccessCheckbox = document.createElement("input")
+            readAccessCheckbox.type = "checkbox"
+            readAccessCheckbox.id = "readAccessFor" + index
+            if(personsAccess.read) readAccessCheckbox.checked = true
+
+            let readAccessLabel = document.createElement("label")
+            readAccessLabel.htmlFor = document.getElementById("readAccessFor" + index)
+            readAccessLabel.innerHTML = "Read"
+            readAccessLabel.style.marginRight = "2%"
+
+            let writeAccessCheckbox = document.createElement("input")
+            writeAccessCheckbox.type = "checkbox"
+            writeAccessCheckbox.id = "writeAccessFor" + index
+            // writeAccessCheckbox.addEventListener("click" , (event) => {
+            //     event.preventDefault()
+            //     console.log(index)
+            //     document.getElementById("updateAccessFor"+index).style.display = "block"
+            // })
+            if(personsAccess.write) writeAccessCheckbox.checked = true
+
+            let writeAccessLabel = document.createElement("label")
+            writeAccessLabel.htmlFor = document.getElementById("writeAccessFor" + index)
+            writeAccessLabel.innerHTML = "Write"
+            writeAccessLabel.style.marginRight = "2%"
+
+            let appendAccessCheckbox = document.createElement("input")
+            appendAccessCheckbox.type = "checkbox"
+            appendAccessCheckbox.id = "appendAccessFor" + index
+            if(personsAccess.append) appendAccessCheckbox.checked = true
+
+            let appendAccessLabel = document.createElement("label")
+            appendAccessLabel.htmlFor = document.getElementById("appendAccessFor" + index)
+            appendAccessLabel.innerHTML = "Append"
+            appendAccessLabel.style.marginRight = "2%"
+
+            let controlAccessCheckbox = document.createElement("input")
+            controlAccessCheckbox.type = "checkbox"
+            controlAccessCheckbox.id = "controlAccessFor" + index
+            if(personsAccess.control) controlAccessCheckbox.checked = true
+
+            let controlAccessLabel = document.createElement("label")
+            controlAccessLabel.htmlFor = document.getElementById("controlAccessFor" + index)
+            controlAccessLabel.innerHTML = "Control"
+            controlAccessLabel.style.marginRight = "2%"
+
+            let updateAccessButton = document.createElement("button")
+            updateAccessButton.style.float = "right"
+            updateAccessButton.style.display = "none"
+            updateAccessButton.id = "updateAccessFor"+index
+            updateAccessButton.innerHTML = "Make changes to access"
+
+
+            accessDisplayObj.appendChild(individualsName)
+            accessDisplayObj.appendChild(readAccessCheckbox)
+            accessDisplayObj.appendChild(readAccessLabel)
+            accessDisplayObj.appendChild(writeAccessCheckbox)
+            accessDisplayObj.appendChild(writeAccessLabel)
+            accessDisplayObj.appendChild(appendAccessCheckbox)
+            accessDisplayObj.appendChild(appendAccessLabel)
+            accessDisplayObj.appendChild(controlAccessCheckbox)
+            accessDisplayObj.appendChild(controlAccessLabel)
+            accessDisplayObj.appendChild(updateAccessButton)
+
+            containerDivForAccess.appendChild(accessDisplayObj)
+            index++
+        }
+        let medicalRecordsDiv = document.getElementById("accessingRecordsDiv")
+        medicalRecordsDiv.appendChild(containerDivForAccess)
+        
+    } else {
+        alert("Nobody has been granted access to the selected dataset.")
+    }
+}
+
 async function saveGeneralRecordDetailsToPod() {
     let date = document.getElementById("generalRecordDate").value
     let title = document.getElementById("generalRecordTitle").value
@@ -410,12 +527,12 @@ async function savePrescriptionDetailsToPod() {
         alert("Error uploading prescription to pod")
     }
     let pharmacistToFillPrescription = document.getElementById("prescriptionPharmacist").value
-    if(pharmacistToFillPrescription != ""){
-        try{
-        await grantAccessToDataset(session, pharmacistToFillPrescription, urlOfDatasetToUploadFileTo, {read: true, write: false, append: false, control: false}, false)
-        console.log("permission granted to ", pharmacistToFillPrescription, " successfully." )
+    if (pharmacistToFillPrescription != "") {
+        try {
+            await grantAccessToDataset(session, pharmacistToFillPrescription, urlOfDatasetToUploadFileTo, { read: true, write: false, append: false, control: false }, false)
+            console.log("permission granted to ", pharmacistToFillPrescription, " successfully.")
         }
-        catch(err){
+        catch (err) {
             console.log(err)
         }
     }
@@ -797,7 +914,7 @@ buttonLogin.onclick = function () {
     login();
 };
 
-btnLogout.onclick = function(){
+btnLogout.onclick = function () {
     logout();
 }
 
@@ -818,6 +935,13 @@ departmentSelectionForm.addEventListener("submit", (event) => {
     getPatientFilesAndDisplay(selectedRecordType, selectedDepartment);
 })
 
+document.getElementById("viewAccessButton").addEventListener("click", (event) => {
+    event.preventDefault();
+    let selectedDepartment = document.getElementById("selectedDepartment").value
+    let selectedRecordType = document.getElementById("selectedRecordType").value
+    getAccessAndDisplay(selectedRecordType, selectedDepartment)
+})
+
 
 myPodButton.addEventListener('click', (event) => {
     event.preventDefault();
@@ -834,14 +958,6 @@ institutionInformationForm.addEventListener("submit", (event) => {
     resetCurrentPodSession(true);
 })
 
-registerNewAppointmentForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    document.getElementById("registerNewAppointmentButton").disabled = true
-    document.getElementById("accessMedicalRecordsButton").disabled = true
-    document.getElementById("uploadMedicalRecordsButton").disabled = true;
-    document.getElementById("registerNewAppointmentButton").classList.add("clicked-button")
-    document.getElementById("uploadNewAppointmentDetails").style.display = "block"
-})
 
 newGeneralRecordForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -916,23 +1032,41 @@ uploadFileForm.addEventListener("submit", (event) => {
 deleteFileForm.addEventListener("submit", (event) => {
     event.preventDefault();
     deleteFileFromUrl();
-    //deleteDataset();
 })
+
+registerNewAppointmentForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    document.getElementById("accessMedicalRecordsButton").style.display = "none";
+    document.getElementById("uploadMedicalRecordsButton").style.display = "none";
+    document.getElementById("modifyAccessToDataButton").style.display = "none";
+    document.getElementById("registerNewAppointmentButton").classList.add("clicked-button")
+    document.getElementById("uploadNewAppointmentDetails").style.display = "block"
+})
+
 
 accessMedicalRecordsForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    document.getElementById("registerNewAppointmentButton").disabled = true
-    document.getElementById("accessMedicalRecordsButton").disabled = true
-    document.getElementById("uploadMedicalRecordsButton").disabled = true;
+    document.getElementById("uploadMedicalRecordsButton").style.display = "none";
+    document.getElementById("registerNewAppointmentButton").style.display = "none";
+    document.getElementById("modifyAccessToDataButton").style.display = "none";
     document.getElementById("accessMedicalRecordsButton").classList.add("clicked-button")
     getPatientDepartmentsAndDisplay("accessingRecords", "");
 })
 
+modifyAccessToDataButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    document.getElementById("accessMedicalRecordsButton").style.display = "none";
+    document.getElementById("registerNewAppointmentButton").style.display = "none";
+    document.getElementById("uploadMedicalRecordsButton").style.display = "none";
+    document.getElementById("modifyAccessToDataButton").classList.add("clicked-button")
+    document.getElementById("manageAccessToDataDiv").style.display = "block"
+})
+
 uploadMedicalRecordsForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    document.getElementById("uploadMedicalRecordsButton").disabled = true;
-    document.getElementById("accessMedicalRecordsButton").disabled = true;
-    document.getElementById("registerNewAppointmentButton").disabled = true;
+    document.getElementById("accessMedicalRecordsButton").style.display = "none";
+    document.getElementById("registerNewAppointmentButton").style.display = "none";
+    document.getElementById("modifyAccessToDataButton").style.display = "none";
     document.getElementById("uploadMedicalRecordsButton").classList.add("clicked-button")
     document.getElementById("uploadNewMedicalRecordDiv").style.display = "block"
 })
