@@ -71620,6 +71620,10 @@ async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdow
   }
 }
 
+async function updateDatasetAccess(accessPosition) {
+  console.log(accessPosition);
+}
+
 async function getPatientFilesAndDisplay(recordType, department) {
   let urlOfSelectedDataset = accessedPodOwnerBaseUrl + "/healthData2/" + department + "/" + recordType;
   console.log(urlOfSelectedDataset);
@@ -71690,7 +71694,7 @@ async function getPatientFilesAndDisplay(recordType, department) {
 
     let medicalRecordsDiv = document.getElementById("accessingRecordsDiv");
     console.log(medicalRecordsDiv);
-    medicalRecordsDiv.appendChild(containerDivForFiles); // console.log(totalFileObjs)
+    medicalRecordsDiv.appendChild(containerDivForFiles);
   } else {
     alert("No files found in the chosen patient's pod of the selected record type.");
   }
@@ -71719,22 +71723,17 @@ async function getAccessAndDisplay(recordType, department) {
       let readAccessCheckbox = document.createElement("input");
       readAccessCheckbox.type = "checkbox";
       readAccessCheckbox.id = "readAccessFor" + index;
+      readAccessCheckbox.style.marginBottom = "5%"; //To make space for button in DOM
+
       if (personsAccess.read) readAccessCheckbox.checked = true;
       let readAccessLabel = document.createElement("label");
-      readAccessLabel.htmlFor = document.getElementById("readAccessFor" + index);
       readAccessLabel.innerHTML = "Read";
       readAccessLabel.style.marginRight = "2%";
       let writeAccessCheckbox = document.createElement("input");
       writeAccessCheckbox.type = "checkbox";
-      writeAccessCheckbox.id = "writeAccessFor" + index; // writeAccessCheckbox.addEventListener("click" , (event) => {
-      //     event.preventDefault()
-      //     console.log(index)
-      //     document.getElementById("updateAccessFor"+index).style.display = "block"
-      // })
-
+      writeAccessCheckbox.id = "writeAccessFor" + index;
       if (personsAccess.write) writeAccessCheckbox.checked = true;
       let writeAccessLabel = document.createElement("label");
-      writeAccessLabel.htmlFor = document.getElementById("writeAccessFor" + index);
       writeAccessLabel.innerHTML = "Write";
       writeAccessLabel.style.marginRight = "2%";
       let appendAccessCheckbox = document.createElement("input");
@@ -71742,7 +71741,6 @@ async function getAccessAndDisplay(recordType, department) {
       appendAccessCheckbox.id = "appendAccessFor" + index;
       if (personsAccess.append) appendAccessCheckbox.checked = true;
       let appendAccessLabel = document.createElement("label");
-      appendAccessLabel.htmlFor = document.getElementById("appendAccessFor" + index);
       appendAccessLabel.innerHTML = "Append";
       appendAccessLabel.style.marginRight = "2%";
       let controlAccessCheckbox = document.createElement("input");
@@ -71750,12 +71748,12 @@ async function getAccessAndDisplay(recordType, department) {
       controlAccessCheckbox.id = "controlAccessFor" + index;
       if (personsAccess.control) controlAccessCheckbox.checked = true;
       let controlAccessLabel = document.createElement("label");
-      controlAccessLabel.htmlFor = document.getElementById("controlAccessFor" + index);
       controlAccessLabel.innerHTML = "Control";
       controlAccessLabel.style.marginRight = "2%";
       let updateAccessButton = document.createElement("button");
       updateAccessButton.style.float = "right";
       updateAccessButton.style.display = "none";
+      updateAccessButton.style.margin = "5%";
       updateAccessButton.id = "updateAccessFor" + index;
       updateAccessButton.innerHTML = "Make changes to access";
       accessDisplayObj.appendChild(individualsName);
@@ -71774,6 +71772,28 @@ async function getAccessAndDisplay(recordType, department) {
 
     let medicalRecordsDiv = document.getElementById("accessingRecordsDiv");
     medicalRecordsDiv.appendChild(containerDivForAccess);
+    let renderedObj = document.getElementById("containerForRecordAccess");
+
+    for (var i = 0; i < renderedObj.childNodes.length; i++) //Each individual with access
+    {
+      console.log(renderedObj.childNodes[i].childNodes);
+
+      for (var j = 0; j < renderedObj.childNodes[i].childNodes.length; j++) {
+        if (renderedObj.childNodes[i].childNodes[j].nodeName == "LABEL") renderedObj.childNodes[i].childNodes[j].htmlFor = renderedObj.childNodes[i].childNodes[j - 1].id;else if (renderedObj.childNodes[i].childNodes[j].nodeName == "INPUT") {
+          let buttonId = "updateAccessFor" + i;
+
+          renderedObj.childNodes[i].childNodes[j].onchange = function () {
+            document.getElementById(buttonId).style.display = "block";
+          };
+        } else if (renderedObj.childNodes[i].childNodes[j].nodeName == "BUTTON") {
+          let button = renderedObj.childNodes[i].childNodes[j];
+
+          renderedObj.childNodes[i].childNodes[j].onclick = function () {
+            updateDatasetAccess(button.id);
+          };
+        }
+      }
+    }
   } else {
     alert("Nobody has been granted access to the selected dataset.");
   }
