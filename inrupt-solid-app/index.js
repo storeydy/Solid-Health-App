@@ -38,7 +38,8 @@ import {
     getDatetime,
     getStringNoLocaleAll,
     isContainer,
-    getContainedResourceUrlAll
+    getContainedResourceUrlAll,
+    UrlString
 } from "@inrupt/solid-client";
 
 import { Session, getDefaultSession, fetch } from "@inrupt/solid-client-authn-browser";
@@ -46,6 +47,7 @@ import { SCHEMA_INRUPT, VCARD, FOAF, RDF } from "@inrupt/vocab-common-rdf";
 import { departments } from "./healthcareDepartments";
 import { checkIfDatasetExists, checkIfAdministrator, getDepartments, getFilesInDataset, getAccessToDataset } from "./podReader";
 import { writeAppointment, createDepartmentDataset, storeMedicalInsitutionInformation, uploadMedicalRecord, grantAccessToDataset } from "./podWriter";
+import * as _ from 'lodash'
 //import fetch from 'unfetch';
 
 // If your Pod is *not* on `solidcommunity.net`, change this to your identity provider.
@@ -66,6 +68,7 @@ var accessedPodOwnerUrl = ""
 var accessedPodOwnerBaseUrl = ""
 var medicalInstitutionRegistered = Boolean(0);
 var initialStateOfDatasetAccess = {}
+var currentlyAccessedDatasetUrl = ""
 // 1a. Start Login Process. Call session.login() function.
 async function login() {
     if (!session.info.isLoggedIn) {
@@ -214,17 +217,17 @@ async function registerNewMedicalInstitution() {
 }
 
 async function saveNewAppointment() {
-    // let department = document.getElementById("selectedAppointmentDepartmentDropdown").value
-    // let timeOfAppointment = document.getElementById("newAppointmentTime").value;
-    // let dateOfAppointment = document.getElementById("newAppointmentDate").value;
-    // let doctorWebID = document.getElementById("newAppointmentDoctor").value;
-    // let notes = document.getElementById("newAppointmentNotes").value;
+    let department = document.getElementById("selectedAppointmentDepartmentDropdown").value
+    let timeOfAppointment = document.getElementById("newAppointmentTime").value;
+    let dateOfAppointment = document.getElementById("newAppointmentDate").value;
+    let doctorWebID = document.getElementById("newAppointmentDoctor").value;
+    let notes = document.getElementById("newAppointmentNotes").value;
 
-    let department = "Cardiology"
-    let timeOfAppointment = "12:33"
-    let dateOfAppointment = "22/11/22"
-    let doctorWebID = "https://testuser2.solidcommunity.net/profile/card#me"
-    let notes = "Some notes for appointment"
+    // let department = "Cardiology"
+    // let timeOfAppointment = "12:33"
+    // let dateOfAppointment = "22/11/22"
+    // let doctorWebID = "https://testuser2.solidcommunity.net/profile/card#me"
+    // let notes = "Some notes for appointment"
 
     let appointmentDateAsString = "20" + dateOfAppointment.substring(0, 2) + "-" + dateOfAppointment.substring(3, 5) + "-" + dateOfAppointment.substring(6, 8) + " " + timeOfAppointment
     console.log(appointmentDateAsString)
@@ -308,8 +311,52 @@ async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdow
     }
 }
 
-async function updateDatasetAccess(accessPosition){
-    console.log(accessPosition)
+async function updateDatasetAccess(accessPerson) {
+    console.log(accessPerson)
+    let indexOfAccessPerson = accessPerson.substring(accessPerson.length - 1, accessPerson.length)
+    console.log(indexOfAccessPerson)
+    console.log(initialStateOfDatasetAccess)
+    let previousAccessKey = Object.keys(initialStateOfDatasetAccess)[indexOfAccessPerson]
+    let previousAccessValue = initialStateOfDatasetAccess[previousAccessKey]
+    console.log(previousAccessValue)
+    let currentAccess = {
+        read: document.getElementById("readAccessFor" + indexOfAccessPerson).checked,
+        write: document.getElementById("writeAccessFor" + indexOfAccessPerson).checked,
+        append: document.getElementById("appendAccessFor" + indexOfAccessPerson).checked,
+        controlRead: document.getElementById("controlAccessFor" + indexOfAccessPerson).checked,
+        controlWrite: document.getElementById("controlAccessFor" + indexOfAccessPerson).checked
+    }
+    console.log(currentAccess)
+    if(_.isEqual(currentAccess, previousAccessValue)){
+        alert("No change detected from initial access level. Change the values of checkboxes to make updates.")
+        return
+    }
+    else{
+        console.log(previousAccessKey)
+        console.log(currentlyAccessedDatasetUrl)
+        try{
+        let isOwner = false
+        if(previousAccessKey == accessedPodOwnerUrl) isOwner = true
+        let controlValue = currentAccess.controlRead
+        delete currentAccess.controlRead; delete currentAccess.controlWrite //Control value is read back in 2 separate values
+        currentAccess.control = controlValue    //but written in one value
+
+        let currentDepartment = document.getElementById("selectedDepartment").value
+        let currentRecordType = document.getElementById("selectedRecordType").value
+        console.log(currentAccess)
+        console.log(currentlyAccessedDatasetUrl)
+        console.log(previousAccessKey)
+        console.log(isOwner)
+        console.log(typeof(previousAccessKey))
+        await grantAccessToDataset(session, previousAccessKey, currentlyAccessedDatasetUrl, currentAccess, isOwner)
+        // getAccessAndDisplay(currentRecordType, currentDepartment)
+        return
+        }
+        catch(err){
+            console.log(err)
+        }
+    }
+    if(currentAccess == previousAccessValue) console.log("they are the same")
 }
 
 async function getPatientFilesAndDisplay(recordType, department) {
@@ -317,6 +364,7 @@ async function getPatientFilesAndDisplay(recordType, department) {
     console.log(urlOfSelectedDataset)
     let filesInSelectedDataset = await getFilesInDataset(session, urlOfSelectedDataset)
     console.log(filesInSelectedDataset)
+    currentlyAccessedDatasetUrl = urlOfSelectedDataset
     if (filesInSelectedDataset.length > 0) {
         let totalFileObjs = []
         for (var i = 0; i <= filesInSelectedDataset.length - 1; i++) {
@@ -342,6 +390,8 @@ async function getPatientFilesAndDisplay(recordType, department) {
             }
             totalFileObjs.push(fileObj)
         }
+        let existingDisplayedAccess = document.getElementById("containerForRecordAccess")
+        if (existingDisplayedAccess) existingDisplayedAccess.remove();
         let existingDisplayedFiles = document.getElementById("containerForDisplayedRecords")
         if (existingDisplayedFiles) existingDisplayedFiles.remove();
         let containerDivForFiles = document.createElement("div")
@@ -387,8 +437,12 @@ async function getPatientFilesAndDisplay(recordType, department) {
 async function getAccessAndDisplay(recordType, department) {
     let urlOfSelectedDataset = accessedPodOwnerBaseUrl + "/healthData2/" + department + "/" + recordType
     let access = await getAccessToDataset(session, urlOfSelectedDataset)
-
+    console.log(access)
+    initialStateOfDatasetAccess = { ...access }
+    currentlyAccessedDatasetUrl = urlOfSelectedDataset
     if (Object.entries(access).length > 0) {
+        let existingDisplayedFiles = document.getElementById("containerForDisplayedRecords")
+        if (existingDisplayedFiles) existingDisplayedFiles.remove();
         let existingDisplayedAccess = document.getElementById("containerForRecordAccess")
         if (existingDisplayedAccess) existingDisplayedAccess.remove();
 
@@ -403,14 +457,14 @@ async function getAccessAndDisplay(recordType, department) {
             accessDisplayObj.id = "displayedAccess" + index
             accessDisplayObj.className = "panel"
             let individualsName = document.createElement("h3")
-            individualsName.innerHTML = "Individual's name: <u>" + person + "</u>" 
+            individualsName.innerHTML = "Individual's name: <u>" + person + "</u>"
             individualsName.style.textAlign = "center"
 
             let readAccessCheckbox = document.createElement("input")
             readAccessCheckbox.type = "checkbox"
             readAccessCheckbox.id = "readAccessFor" + index
             readAccessCheckbox.style.marginBottom = "5%"      //To make space for button in DOM
-            if(personsAccess.read) readAccessCheckbox.checked = true
+            if (personsAccess.read) readAccessCheckbox.checked = true
 
             let readAccessLabel = document.createElement("label")
             readAccessLabel.innerHTML = "Read"
@@ -419,7 +473,7 @@ async function getAccessAndDisplay(recordType, department) {
             let writeAccessCheckbox = document.createElement("input")
             writeAccessCheckbox.type = "checkbox"
             writeAccessCheckbox.id = "writeAccessFor" + index
-            if(personsAccess.write) writeAccessCheckbox.checked = true
+            if (personsAccess.write) writeAccessCheckbox.checked = true
 
             let writeAccessLabel = document.createElement("label")
             writeAccessLabel.innerHTML = "Write"
@@ -428,7 +482,7 @@ async function getAccessAndDisplay(recordType, department) {
             let appendAccessCheckbox = document.createElement("input")
             appendAccessCheckbox.type = "checkbox"
             appendAccessCheckbox.id = "appendAccessFor" + index
-            if(personsAccess.append) appendAccessCheckbox.checked = true
+            if (personsAccess.append) appendAccessCheckbox.checked = true
 
             let appendAccessLabel = document.createElement("label")
             appendAccessLabel.innerHTML = "Append"
@@ -437,7 +491,7 @@ async function getAccessAndDisplay(recordType, department) {
             let controlAccessCheckbox = document.createElement("input")
             controlAccessCheckbox.type = "checkbox"
             controlAccessCheckbox.id = "controlAccessFor" + index
-            if(personsAccess.control) controlAccessCheckbox.checked = true
+            if (personsAccess.controlRead && personsAccess.controlWrite) controlAccessCheckbox.checked = true
 
             let controlAccessLabel = document.createElement("label")
             controlAccessLabel.innerHTML = "Control"
@@ -446,8 +500,8 @@ async function getAccessAndDisplay(recordType, department) {
             let updateAccessButton = document.createElement("button")
             updateAccessButton.style.float = "right"
             updateAccessButton.style.display = "none"
-            updateAccessButton.style.margin = "5%"
-            updateAccessButton.id = "updateAccessFor"+index
+            updateAccessButton.style.marginTop = "5%"
+            updateAccessButton.id = "updateAccessFor" + index
             updateAccessButton.innerHTML = "Make changes to access"
 
 
@@ -470,19 +524,18 @@ async function getAccessAndDisplay(recordType, department) {
 
         let renderedObj = document.getElementById("containerForRecordAccess")
 
-        for(var i = 0; i < renderedObj.childNodes.length; i++)  //Each individual with access
+        for (var i = 0; i < renderedObj.childNodes.length; i++)  //Each individual with access
         {
             console.log(renderedObj.childNodes[i].childNodes)
-            for(var j = 0; j < renderedObj.childNodes[i].childNodes.length; j++)
-            {
-                if(renderedObj.childNodes[i].childNodes[j].nodeName == "LABEL") renderedObj.childNodes[i].childNodes[j].htmlFor = renderedObj.childNodes[i].childNodes[j-1].id
-                else if(renderedObj.childNodes[i].childNodes[j].nodeName == "INPUT"){
-                    let buttonId = "updateAccessFor"+i
-                    renderedObj.childNodes[i].childNodes[j].onchange = function(){document.getElementById(buttonId).style.display = "block"}
+            for (var j = 0; j < renderedObj.childNodes[i].childNodes.length; j++) {
+                if (renderedObj.childNodes[i].childNodes[j].nodeName == "LABEL") renderedObj.childNodes[i].childNodes[j].htmlFor = renderedObj.childNodes[i].childNodes[j - 1].id //label is for previous element which is the checkbox
+                else if (renderedObj.childNodes[i].childNodes[j].nodeName == "INPUT") {
+                    let buttonId = "updateAccessFor" + i
+                    renderedObj.childNodes[i].childNodes[j].onchange = function () { document.getElementById(buttonId).style.display = "block" }
                 }
-                else if(renderedObj.childNodes[i].childNodes[j].nodeName == "BUTTON"){
+                else if (renderedObj.childNodes[i].childNodes[j].nodeName == "BUTTON") {
                     let button = renderedObj.childNodes[i].childNodes[j]
-                    renderedObj.childNodes[i].childNodes[j].onclick = function(){updateDatasetAccess(button.id)}
+                    renderedObj.childNodes[i].childNodes[j].onclick = function () { updateDatasetAccess(button.id) }
                 }
             }
         }
