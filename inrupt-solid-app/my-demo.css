@@ -21,9 +21,9 @@
    border-radius: 4px;
    box-shadow: rgb(184, 196, 194) 0px 4px 10px -4px;
    box-sizing: border-box;
-
    padding: 1rem 1.5rem;
    margin: 1rem 1.2rem 1rem 1.2rem;
+   overflow-y: auto;
  }
 
  #login {
@@ -133,6 +133,14 @@
   font-size: large;
   background-color:#e6f4f9;
   color:#005b81
+}
+.addNewButton{
+  float: right;
+  margin-right: 10%;
+  /* margin-bottom: 10%; */
+  /* margin-top: 10%; */
+  background-image: url('plus.png');
+  position: float;
 }
 .green-button{
   border-radius: 20px;

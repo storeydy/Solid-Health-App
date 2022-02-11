@@ -522,6 +522,31 @@ async function getAccessAndDisplay(recordType, department) {
         let medicalRecordsDiv = document.getElementById("accessingRecordsDiv")
         medicalRecordsDiv.appendChild(containerDivForAccess)
 
+
+
+        let buttonToAddNew = document.createElement("button")
+        // buttonToAddNew.className = "row"
+        buttonToAddNew.innerHTML = "+"
+        // buttonToAddNew.style.float = "right"
+        // buttonToAddNew.style.marginRight = "10%"
+        buttonToAddNew.className = "addNewButton"
+        let buttonImage = document.createElement("img")
+        // buttonImage.src = "./plus.png"
+        // /buttonImage.title = "Plus icons created by kliwir art - Flaticon"
+        buttonToAddNew.appendChild(buttonImage)
+        buttonToAddNew.onclick = function(){
+            // document.getElementById("addNewAccessDiv").style.display = "block"
+            let addingNewAccess = document.createElement("div")
+            addingNewAccess.id = "grantingNewAccessDiv"
+            let testerTitle = document.createElement("h5")
+            testerTitle.innerHTML = "Some text"
+            addingNewAccess.appendChild(testerTitle)
+
+            document.getElementById("containerForRecordAccess").appendChild(addingNewAccess)
+        }
+
+        document.getElementById("containerForRecordAccess").appendChild(buttonToAddNew)
+
         let renderedObj = document.getElementById("containerForRecordAccess")
 
         for (var i = 0; i < renderedObj.childNodes.length; i++)  //Each individual with access
