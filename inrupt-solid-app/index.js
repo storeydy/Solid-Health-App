@@ -48,7 +48,6 @@ import { departments } from "./healthcareDepartments";
 import { checkIfDatasetExists, checkIfAdministrator, getDepartments, getFilesInDataset, getAccessToDataset } from "./podReader";
 import { writeAppointment, createDepartmentDataset, storeMedicalInsitutionInformation, uploadMedicalRecord, grantAccessToDataset } from "./podWriter";
 import * as _ from 'lodash'
-import { inputAdornmentClasses } from "@mui/material";
 //import fetch from 'unfetch';
 
 // If your Pod is *not* on `solidcommunity.net`, change this to your identity provider.
@@ -124,7 +123,6 @@ async function checkMedicalInstitutionStatus(podOwner) {
         var webID;
         if (podOwner == "signedInUser") webID = session.info.webId
         else if (podOwner == "specifiedUser") webID = document.getElementById("podOwner").value;
-        //const webID = session.info.webId
         accessedPodOwnerUrl = webID;
         accessedPodOwnerBaseUrl = webID.substring(0, (webID.length - 16))
         var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/healthData2/Info"  // https://testuser1.solidcommunity.net/profile/card#me
@@ -166,7 +164,6 @@ function resetCurrentPodSession(completelyReset) {
     }
     let recordsContainer = document.getElementById("containerForDisplayedRecords");
     if (recordsContainer) recordsContainer.remove();
-    // let appointmentsContainer = document.getElementById("uploadNewAppointmentDetails")
     document.getElementById("uploadNewAppointmentDetails").style.display = "none"
     document.getElementById("accessingRecordsDiv").style.display = "none";
     document.getElementById("uploadNewMedicalRecordDiv").style.display = "none";
@@ -279,7 +276,6 @@ async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdow
             let selectAbleDepartment = document.createElement("select")
             selectAbleDepartment.id = "selectedDepartment"
             selectAbleDepartment.style.margin = "2%"
-            // departmentsListForm.appendChild(selectable)
             for (var i = 0; i <= departments.length - 1; i++) {
                 let newOption = document.createElement("option")
                 newOption.innerHTML = departments[i].substring(departments[i].lastIndexOf("healthData2/") + 12, departments[i].length - 1)
@@ -345,15 +341,12 @@ async function updateDatasetAccess(accessPerson) {
             delete currentAccess.controlRead; delete currentAccess.controlWrite //Control value is read back in 2 separate values
             currentAccess.control = controlValue    //but written in one value
 
-            let currentDepartment = document.getElementById("selectedDepartment").value
-            let currentRecordType = document.getElementById("selectedRecordType").value
-            console.log(currentAccess)
-            console.log(currentlyAccessedDatasetUrl)
-            console.log(previousAccessKey)
-            console.log(isOwner)
-            console.log(typeof (previousAccessKey))
             await grantAccessToDataset(session, previousAccessKey, currentlyAccessedDatasetUrl, currentAccess, isOwner)
-            // getAccessAndDisplay(currentRecordType, currentDepartment)
+            alert("Individual's access updated successfully.")
+            let selectedDepartment = document.getElementById("selectedDepartment").value
+            let selectedRecordType = document.getElementById("selectedRecordType").value
+
+            getAccessAndDisplay(selectedRecordType, selectedDepartment)
             return
         }
         catch (err) {
@@ -399,10 +392,20 @@ async function getPatientFilesAndDisplay(recordType, department) {
         let containerDivForFiles = document.createElement("div")
         containerDivForFiles.id = "containerForDisplayedRecords"
         containerDivForFiles.className = "panel"
+
+        let headerOfContainer = document.createElement("h3")
+        headerOfContainer.innerHTML = "Files in current dataset"
+        headerOfContainer.className = "section-header"
+        containerDivForFiles.appendChild(headerOfContainer)
+
         for (var k = 0; k < totalFileObjs.length; k++) {
             let fileDisplayObj = document.createElement("div")
             fileDisplayObj.id = "displayedFile" + k
             fileDisplayObj.className = "panel"
+            if(k % 2 == 1) {
+                console.log("is odd")
+                fileDisplayObj.classList.add("alt-color")
+            }
             let titleOfFile = document.createElement("h3")
             titleOfFile.innerHTML = "Title: " + totalFileObjs[k].title
             titleOfFile.style.textAlign = "center"
@@ -411,13 +414,14 @@ async function getPatientFilesAndDisplay(recordType, department) {
             let detailsOfFile = document.createElement("div")
             for (const [key, value] of Object.entries(totalFileObjs[k].details)) {
                 let fileProperty = document.createElement("p")
-                fileProperty.innerHTML = key + ": " + value
+                let indexOfLastDivider = key.lastIndexOf("#")
+                if(indexOfLastDivider < key.lastIndexOf("/") ) indexOfLastDivider = key.lastIndexOf("/")
+                fileProperty.innerHTML = "<u>" + key.substring(indexOfLastDivider + 1, key.length ) + "</u>: " + value
+                fileProperty.classList.add("fileProperty")
                 detailsOfFile.appendChild(fileProperty)
             }
 
-            fileDisplayObj.appendChild(titleOfFile)
-            fileDisplayObj.appendChild(urlOfFile)
-            fileDisplayObj.appendChild(detailsOfFile)
+            fileDisplayObj.append(titleOfFile, urlOfFile, detailsOfFile )
 
             containerDivForFiles.appendChild(fileDisplayObj)
         }
@@ -443,6 +447,13 @@ async function getAccessAndDisplay(recordType, department) {
         let containerDivForAccess = document.createElement("div")
         containerDivForAccess.id = "containerForRecordAccess"
         containerDivForAccess.className = "panel"
+        // containerDivForAccess.style.backgroundColor = "white"
+
+
+        let headerOfContainer = document.createElement("h3")
+        headerOfContainer.innerHTML = "Currently permitted individuals of the selected dataset"
+        headerOfContainer.className = "section-header"
+        containerDivForAccess.appendChild(headerOfContainer)
 
         let index = 0
         let readAccessCheckbox = document.createElement("input")
@@ -458,6 +469,7 @@ async function getAccessAndDisplay(recordType, department) {
             let accessDisplayObj = document.createElement("div")
             accessDisplayObj.id = "displayedAccess" + index
             accessDisplayObj.className = "panel"
+            if(index % 2 == 1) accessDisplayObj.classList.add("alt-color")
             let individualsName = document.createElement("h3")
             individualsName.innerHTML = "Individual's name: <u>" + person + "</u>"
             individualsName.style.textAlign = "center"
@@ -507,7 +519,7 @@ async function getAccessAndDisplay(recordType, department) {
             updateAccessButton.id = "updateAccessFor" + index
             updateAccessButton.innerHTML = "Make changes to access"
 
-            accessDisplayObj.append(individualsName, readAccessCheckbox, readAccessLabel, writeAccessCheckbox, writeAccessLabel, appendAccessCheckbox, appendAccessLabel, controlAccessCheckbox, controlAccessLabel)
+            accessDisplayObj.append(individualsName, readAccessCheckbox, readAccessLabel, writeAccessCheckbox, writeAccessLabel, appendAccessCheckbox, appendAccessLabel, controlAccessCheckbox, controlAccessLabel, updateAccessButton)
 
             containerDivForAccess.appendChild(accessDisplayObj)
             index++
@@ -523,7 +535,10 @@ async function getAccessAndDisplay(recordType, department) {
                 if (renderedObj.childNodes[i].childNodes[j].nodeName == "LABEL") renderedObj.childNodes[i].childNodes[j].htmlFor = renderedObj.childNodes[i].childNodes[j - 1].id //label is for previous element which is the checkbox
                 else if (renderedObj.childNodes[i].childNodes[j].nodeName == "INPUT") {
                     let buttonId = "updateAccessFor" + i
-                    renderedObj.childNodes[i].childNodes[j].onchange = function () { document.getElementById(buttonId).style.display = "block" }
+                    renderedObj.childNodes[i].childNodes[j].onchange = function () { 
+
+                        document.getElementById(buttonId).style.display = "block" 
+                    }
                 }
                 else if (renderedObj.childNodes[i].childNodes[j].nodeName == "BUTTON") {
                     let button = renderedObj.childNodes[i].childNodes[j]
@@ -554,6 +569,7 @@ async function getAccessAndDisplay(recordType, department) {
             let newAgentWebID = document.createElement("input")
             newAgentWebID.type = "url"
             newAgentWebID.placeholder = "Enter a new user's WebID"
+            newAgentWebID.id = "webIDNewAccess"
             newAgentWebID.className = "column-3"
             newAgentWebID.style.marginTop = "2.5%"
             newAgentWebID.style.float = "left"
@@ -596,6 +612,8 @@ async function getAccessAndDisplay(recordType, department) {
             submitButton.id = "submitAccessButtonForNew"
             submitButton.style.float = "right"
             submitButton.style.marginTop = "5%"
+            submitButton.style.marginRight = "2.5%"
+            submitButton.classList.add("green-button")
             submitButton.onclick = function () { grantNewAccess() }
 
             let cancelButton = document.createElement("button")
@@ -603,6 +621,7 @@ async function getAccessAndDisplay(recordType, department) {
             cancelButton.id = "cancelAccessButtonForNew"
             cancelButton.style.float = "right"
             cancelButton.style.marginTop = "5%"
+            cancelButton.classList.add("red-button")
             cancelButton.onclick = function () {
                 document.getElementById("grantingNewAccessDiv").remove()
                 document.getElementById("addNewAccessButton").style.display = "block"
@@ -620,6 +639,24 @@ async function getAccessAndDisplay(recordType, department) {
 
 async function grantNewAccess() {
     console.log("testssdas")
+    let newAgentWebID = document.getElementById("webIDNewAccess").value
+    let selectedReadAccess = document.getElementById("readAccessForNew").checked
+    let selectedWriteAccess = document.getElementById("writeAccessForNew").checked
+    let selectedAppendAccess = document.getElementById("appendAccessForNew").checked
+    let selectedControlAccess = document.getElementById("controlAccessForNew").checked
+
+    if(initialStateOfDatasetAccess.hasOwnProperty(newAgentWebID)){
+        alert("Individual has already been granted access.")
+        document.getElementById("webIDNewAccess").value = ""
+        return
+    }
+    let accessObject = {read: selectedReadAccess, write: selectedWriteAccess, append: selectedAppendAccess, controlRead: selectedControlAccess, controlWrite: selectedControlAccess}
+    await grantAccessToDataset(session, newAgentWebID, currentlyAccessedDatasetUrl, accessObject, false)
+    alert('Access granted to new individual successfully.')
+    let selectedDepartment = document.getElementById("selectedDepartment").value
+    let selectedRecordType = document.getElementById("selectedRecordType").value
+    getAccessAndDisplay(selectedRecordType, selectedDepartment)
+
 }
 
 async function saveGeneralRecordDetailsToPod() {

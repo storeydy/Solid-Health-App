@@ -17,7 +17,11 @@ import {
     saveAclFor,
     addStringNoLocale,
     addUrl,
-    SolidDataset
+    SolidDataset,
+    hasResourceAcl,
+    hasAccessibleAcl,
+    hasFallbackAcl,
+    createAclFromFallbackAcl
 
 } from "@inrupt/solid-client"
 import { SCHEMA_INRUPT, VCARD, FOAF, RDF } from "@inrupt/vocab-common-rdf";
@@ -84,7 +88,20 @@ export async function createDepartmentDataset(session, datasetUrl, podOwnerBaseU
 
 export async function grantAccessToDataset(session, personWebID, datasetUrl, permissionSet, isOwner) {
     const myDatasetWithAcl = await getResourceInfoWithAcl(datasetUrl, { fetch: session.fetch })
-    const myDatasetsAcl = createAcl(myDatasetWithAcl)
+
+    let myDatasetsAcl;
+    if(!hasResourceAcl(myDatasetWithAcl)){
+        if(!hasAccessibleAcl(myDatasetWithAcl)){
+            alert("The current user does not have permission to change access rights to this resource.")
+        };
+        if(!hasFallbackAcl(myDatasetWithAcl)){
+            alert("The current user does not have permission to see who currently has access to this resource.")
+        }
+        myDatasetsAcl = createAclFromFallbackAcl(myDatasetWithAcl)
+    }
+    else myDatasetsAcl = getResourceAcl(myDatasetWithAcl)
+
+    // const myDatasetsAcl = createAcl(myDatasetWithAcl)
     let updatedAcl = setAgentResourceAccess(
         myDatasetsAcl,
         personWebID,

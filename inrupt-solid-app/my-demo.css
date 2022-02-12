@@ -142,9 +142,6 @@
   padding-right: 1%;
   padding-left: 1%;
   font-family:Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif;
-  /* margin-bottom: 10%; */
-  /* margin-top: 10%; */
-  /* background-image: url('plus.png'); */
   position: float;
 }
 .addingAccess{
@@ -160,11 +157,17 @@
 }
 .red-button{
   border-radius: 20px;
-  padding: 0.5%;
+  padding: 1%;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   font-size: medium;
   background-color:#e21313;
   color: #e6f4f9
+}
+.fileProperty{
+  border: 2px solid white;
+  border-radius: 7px 7px 7px 7px;
+  margin: 2%;
+  padding: 1%;
 }
 .orange-button{
   border-radius: 20px;
@@ -212,6 +215,19 @@
   /* background-color: #593359; */
   /* background-color: #005b81; */
   /* font-size: x-large; */
+}
+.section-header{
+  text-align: center;
+  font-size: x-large;
+  background-color: #0878b9;
+  color: #ddd;
+  padding-top: 2.5%;
+  padding-bottom: 2.5%;
+  border-radius: 7px 7px 7px 7px;
+  border: 2px solid #ddd
+}
+.alt-color{
+  background-color: #78cafa;
 }
 .column-5{
   float: left;
