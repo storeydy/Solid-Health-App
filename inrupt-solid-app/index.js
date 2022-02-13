@@ -176,9 +176,9 @@ function resetCurrentPodSession(completelyReset) {
     let buttonForUploadingFiles = document.getElementById("uploadMedicalRecordsButton")
     buttonForUploadingFiles.classList.remove("clicked-button")
     buttonForUploadingFiles.style.display = "block"
-    let buttonForManagingAccess = document.getElementById("modifyAccessToDataButton")
-    buttonForManagingAccess.classList.remove("clicked-button")
-    buttonForManagingAccess.style.display = "block"
+    let buttonForInsurance = document.getElementById("initiateInsuranceRequestButton")
+    buttonForInsurance.classList.remove("clicked-button")
+    buttonForInsurance.style.display = "block"
     let departmentSelectionForm = document.getElementById("departmentSelectionForm")
     while (departmentSelectionForm.children.length > 1) {
         let nextNode = departmentSelectionForm.lastChild
@@ -188,7 +188,7 @@ function resetCurrentPodSession(completelyReset) {
     document.getElementById("createNewGeneralRecordDiv").style.display = "none";
     createNewPrescriptionDiv
     document.getElementById("createNewPrescriptionDiv").style.display = "none";
-    document.getElementById("manageAccessToDataDiv").style.display = "none";
+    document.getElementById("insuranceDiv").style.display = "none";
     document.getElementById("medicalRecordTypeSelection").style.display = "block"
     if (document.getElementById("selectedDepartment")) document.getElementById("selectedDepartment").remove()
     if (document.getElementById("containerForRecordAccess")) document.getElementById("containerForRecordAccess").remove()
@@ -746,6 +746,27 @@ async function saveDiagnosisDetailsToPod() {
     document.getElementById("newDiagnosisForm").reset();
 }
 
+async function shareAccessForInsurance(insurerWebID){
+    let departments = document.getElementById("insuranceDiv").getElementsByTagName("li")
+    let departmentNames = []
+    for (var i = 0; i < departments.length; i++){
+        departmentNames.push(departments[i].innerText)
+    }
+    console.log(departmentNames)
+
+    for(var i = 0; i < departmentNames.length; i++)
+    {
+
+    let urlOfDiagnosisDataset = accessedPodOwnerBaseUrl + "/healthData2/" + departmentNames[i] + "/Diagnoses"
+    // let exists = 
+    if (await checkIfDatasetExists(session, urlOfDiagnosisDataset)){    //Diagnoses in the current department
+        let files = await getFilesInDataset(session, urlOfDiagnosisDataset)
+        console.log(files)
+    }
+    // console.log(departmentNames[i], exists)
+    }
+}
+
 // 2. Create new dataset with a file in it
 async function writeProfile() {
 
@@ -1109,6 +1130,9 @@ returnFromUploadingAppointment.onclick = function () {
 returnFromUploadingMedicalRecord.onclick = function () {
     resetCurrentPodSession(false);
 }
+returnFromInsurance.onclick = function () {
+    resetCurrentPodSession(false);
+}
 
 departmentSelectionForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -1122,6 +1146,12 @@ document.getElementById("viewAccessButton").addEventListener("click", (event) =>
     let selectedDepartment = document.getElementById("selectedDepartment").value
     let selectedRecordType = document.getElementById("selectedRecordType").value
     getAccessAndDisplay(selectedRecordType, selectedDepartment)
+})
+
+document.getElementById("submitInsuranceRequestButton").addEventListener("click", (event) =>{
+    event.preventDefault();
+    let insurerWebID = document.getElementById("insurerWebID").value
+    shareAccessForInsurance(insurerWebID);
 })
 
 
@@ -1220,7 +1250,7 @@ registerNewAppointmentForm.addEventListener("submit", (event) => {
     event.preventDefault();
     document.getElementById("accessMedicalRecordsButton").style.display = "none";
     document.getElementById("uploadMedicalRecordsButton").style.display = "none";
-    document.getElementById("modifyAccessToDataButton").style.display = "none";
+    document.getElementById("initiateInsuranceRequestButton").style.display = "none";
     document.getElementById("registerNewAppointmentButton").classList.add("clicked-button")
     document.getElementById("uploadNewAppointmentDetails").style.display = "block"
 })
@@ -1230,25 +1260,24 @@ accessMedicalRecordsForm.addEventListener("submit", (event) => {
     event.preventDefault();
     document.getElementById("uploadMedicalRecordsButton").style.display = "none";
     document.getElementById("registerNewAppointmentButton").style.display = "none";
-    document.getElementById("modifyAccessToDataButton").style.display = "none";
+    document.getElementById("initiateInsuranceRequestButton").style.display = "none";
     document.getElementById("accessMedicalRecordsButton").classList.add("clicked-button")
     getPatientDepartmentsAndDisplay("accessingRecords", "");
 })
 
-modifyAccessToDataButton.addEventListener("click", (event) => {
-    event.preventDefault();
+initiateInsuranceRequestButton.addEventListener("click", (event) => {
     document.getElementById("accessMedicalRecordsButton").style.display = "none";
     document.getElementById("registerNewAppointmentButton").style.display = "none";
     document.getElementById("uploadMedicalRecordsButton").style.display = "none";
-    document.getElementById("modifyAccessToDataButton").classList.add("clicked-button")
-    document.getElementById("manageAccessToDataDiv").style.display = "block"
+    document.getElementById("initiateInsuranceRequestButton").classList.add("clicked-button")
+    document.getElementById("insuranceDiv").style.display = "block"
 })
 
 uploadMedicalRecordsForm.addEventListener("submit", (event) => {
     event.preventDefault();
     document.getElementById("accessMedicalRecordsButton").style.display = "none";
     document.getElementById("registerNewAppointmentButton").style.display = "none";
-    document.getElementById("modifyAccessToDataButton").style.display = "none";
+    document.getElementById("initiateInsuranceRequestButton").style.display = "none";
     document.getElementById("uploadMedicalRecordsButton").classList.add("clicked-button")
     document.getElementById("uploadNewMedicalRecordDiv").style.display = "block"
 })

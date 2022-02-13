@@ -66,7 +66,7 @@
         </form>
       </div>
       <div class = "row">
-        <button class = "white-button column-5" id = "modifyAccessToDataButton" style = "margin: 2%;">Manage access to data</button>
+        <button class = "white-button column-5" id = "initiateInsuranceRequestButton" style = "margin: 2%;">Make insurance request</button>
       </div>
     </div>
 
@@ -260,9 +260,24 @@
     </form>
   </div>
 
-  <div id = "manageAccessToDataDiv" class = "panel" style = "display: none">
-    <h2 style="text-align: center;">Manage access to data in selected user's pod </h2>
-
+  <div id = "insuranceDiv" class = "panel" style = "display: none">
+    <button id="returnFromInsurance" class="red-button"
+    style="float: right; position: inherit; align-self: flex-end; top: 5%"> Go back </button>
+    <h2 class = "section-header" style="text-align: center; margin-top: 5%;">Share medical records for health/life insurance</h2>
+    <h4>In order to get a quote for life insurance, insurance companies must be aware of any ongoing health conditions of the insured. <br><br>
+      This is done by a process called underwriting, and it determines how much of a risk the individual is to cover. <br><br>
+       By using this feature you will be providing all of the required data to a specified insurer, including any diagnoses dated in the last 5 years from the following departments:</h4>
+       <ul>
+         <li>Cardiology</li>
+         <li>Oncology</li>
+         <li>Haematology</li>
+         <li>Oncology</li>
+         <li>Psychiatry</li>
+         <li>Rheumatology</li>
+       </ul>
+      <h4><br><br>Enter below the WebID of the insurer, which will allow them to view these records that are stored in your pod. </h4>
+      <input type = "url" placeholder="Insurer WebID" id = "insurerWebID">
+       <button id = "submitInsuranceRequestButton" style="margin-left:70px" class = "green-button">Submit </button>
   </div>
 
   <script>

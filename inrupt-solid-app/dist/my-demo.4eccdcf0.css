@@ -100,7 +100,8 @@
   display: none;
   position: absolute;
   background-color: #f6f6f6;
-  overflow: auto;
+  overflow-y: scroll;
+  max-height: 300px;
   border: 1px solid #ddd;
   z-index: 1;
 }

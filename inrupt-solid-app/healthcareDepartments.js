@@ -1,9 +1,23 @@
 export const departments = [
     {label: 'Audiology'},
     {label: 'Cardiology'},
+    {label: 'Dermatology'},
     {label: 'Ear nose and throat (ENT)'},
+    {label: 'Endocrinology'},
+    {label: 'Endoscopy'},
     {label: 'Gastroenterology'},
     {label: 'Gynaecology'},
     {label: 'Haematology'},
-    {label: 'Microbiology'}
+    {label: 'Hepatology'},
+    {label: 'Histopathology'},
+    {label: 'Microbiology'},
+    {label: 'Oncology'},
+    {label: 'Ophthalmology'},
+    {label: 'Phlebotomy'},
+    {label: 'Psychiatry'},
+    {label: 'Psychology'},
+    {label: 'Radiology'},
+    {label: 'Rheumatology'},
+    {label: 'Urology'},
+
 ];
