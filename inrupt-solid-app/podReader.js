@@ -11,6 +11,8 @@ import {
 } from "@inrupt/solid-client";
 import { getAccessForAll, getAgentAccess } from "@inrupt/solid-client/dist/access/universal_v1";
 import { storeMedicalInsitutionInformation } from "./podWriter";
+import * as _ from 'lodash'
+
 
 export async function checkIfDatasetExists(session, datasetUrl) {
     try {
@@ -51,19 +53,35 @@ export async function getDepartments(session, resourceUrl) {
 
 export async function getFilesInDataset(session, resourceUrl)
 {
+    try{
     const selectedDataset = await getSolidDataset(resourceUrl, {fetch:session.fetch})
-    console.log(selectedDataset)
+    // console.log(selectedDataset)
     let filesInDataset = await getThingAll(selectedDataset, {fetch: session.fetch})
-    console.log(filesInDataset)
+    // console.log(filesInDataset)
     return filesInDataset
+    }
+    catch(err){
+        if(err.response){
+            throw err.response.status
+        }
+        return false
+    }
 }
 
 export async function getAccessToDataset(session, resourceUrl)
 {
     // const resourceInfo = await getResourceInfo(resourceUrl, {fetch: session.fetch})
     console.log(resourceUrl)
+    try{
     const resourceInfo = await getAccessForAll(resourceUrl, "agent", {fetch: session.fetch})
     return resourceInfo
+    }
+    catch(err){
+        if(err.response){
+            throw err.response.status
+        }
+        return false
+    }
 }
 
 // export async function checkIfHealthDataExists(session, healthDataUrl) {
@@ -118,7 +136,7 @@ export async function checkIfPersonHasAccess(session, departmentDatasetUrl, pers
     console.log(permissionSet)
     const access = await getAgentAccess(departmentDatasetUrl, personWebID, { fetch: session.fetch });
     console.log(access)
-    if (access == permissionSet) return true;
+    if (_.isEqual(access,permissionSet)) return true;
     else return false
 }
 

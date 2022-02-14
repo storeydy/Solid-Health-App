@@ -45,8 +45,8 @@ import {
 import { Session, getDefaultSession, fetch } from "@inrupt/solid-client-authn-browser";
 import { SCHEMA_INRUPT, VCARD, FOAF, RDF } from "@inrupt/vocab-common-rdf";
 import { departments } from "./healthcareDepartments";
-import { checkIfDatasetExists, checkIfAdministrator, getDepartments, getFilesInDataset, getAccessToDataset } from "./podReader";
-import { writeAppointment, createDepartmentDataset, storeMedicalInsitutionInformation, uploadMedicalRecord, grantAccessToDataset } from "./podWriter";
+import { checkIfDatasetExists, checkIfAdministrator, getDepartments, getFilesInDataset, getAccessToDataset, checkIfPersonHasAccess } from "./podReader";
+import { writeAppointment, createDepartmentDataset, storeMedicalInsitutionInformation, uploadMedicalRecord, grantAccessToDataset, createInsuranceDiagnosesDataset, addThingToDataset } from "./podWriter";
 import * as _ from 'lodash'
 //import fetch from 'unfetch';
 
@@ -176,9 +176,13 @@ function resetCurrentPodSession(completelyReset) {
     let buttonForUploadingFiles = document.getElementById("uploadMedicalRecordsButton")
     buttonForUploadingFiles.classList.remove("clicked-button")
     buttonForUploadingFiles.style.display = "block"
-    let buttonForInsurance = document.getElementById("initiateInsuranceRequestButton")
-    buttonForInsurance.classList.remove("clicked-button")
-    buttonForInsurance.style.display = "block"
+    let buttonForInitiatingInsurance = document.getElementById("initiateInsuranceRequestButton")
+    buttonForInitiatingInsurance.classList.remove("clicked-button")
+    buttonForInitiatingInsurance.style.display = "block"
+    let buttonForViewingInsuranceDiagnoses = document.getElementById("viewInsuranceDiagnosesButton")
+    buttonForViewingInsuranceDiagnoses.classList.remove("clicked-button")
+    buttonForViewingInsuranceDiagnoses.style.display = "block"
+
     let departmentSelectionForm = document.getElementById("departmentSelectionForm")
     while (departmentSelectionForm.children.length > 1) {
         let nextNode = departmentSelectionForm.lastChild
@@ -358,7 +362,14 @@ async function updateDatasetAccess(accessPerson) {
 
 async function getPatientFilesAndDisplay(recordType, department) {
     let urlOfSelectedDataset = accessedPodOwnerBaseUrl + "/healthData2/" + department + "/" + recordType
-    let filesInSelectedDataset = await getFilesInDataset(session, urlOfSelectedDataset)
+    let filesInSelectedDataset = ""
+    try{
+    filesInSelectedDataset = await getFilesInDataset(session, urlOfSelectedDataset)
+    }
+    catch(errorCode){
+        if(errorCode == 403) alert('You have not been authorized to view the selected record type in the selected department. Contact the pod owner to request access')
+        else if(errorCode == 404) alert('The selected record type and department combination does not exist.')
+    }
     currentlyAccessedDatasetUrl = urlOfSelectedDataset
     if (filesInSelectedDataset.length > 0) {
         let totalFileObjs = []
@@ -428,14 +439,18 @@ async function getPatientFilesAndDisplay(recordType, department) {
         let medicalRecordsDiv = document.getElementById("accessingRecordsDiv")
         medicalRecordsDiv.appendChild(containerDivForFiles)
     }
-    else {
-        alert("No files found in the chosen patient's pod of the selected record type.")
-    }
 }
 
 async function getAccessAndDisplay(recordType, department) {
     let urlOfSelectedDataset = accessedPodOwnerBaseUrl + "/healthData2/" + department + "/" + recordType
-    let access = await getAccessToDataset(session, urlOfSelectedDataset)
+    let access = ""
+    try{
+    access = await getAccessToDataset(session, urlOfSelectedDataset)
+    }
+    catch(err){
+        if(err == 403) alert('You have not been granted permission to view who can access this dataset. Contact the pod owner to request access')
+        else if(err == 404) alert('No access has been established for the current dataset.')
+    }
     initialStateOfDatasetAccess = { ...access }
     currentlyAccessedDatasetUrl = urlOfSelectedDataset
     if (Object.entries(access).length > 0) {
@@ -447,8 +462,6 @@ async function getAccessAndDisplay(recordType, department) {
         let containerDivForAccess = document.createElement("div")
         containerDivForAccess.id = "containerForRecordAccess"
         containerDivForAccess.className = "panel"
-        // containerDivForAccess.style.backgroundColor = "white"
-
 
         let headerOfContainer = document.createElement("h3")
         headerOfContainer.innerHTML = "Currently permitted individuals of the selected dataset"
@@ -553,8 +566,6 @@ async function getAccessAndDisplay(recordType, department) {
         buttonToAddNew.id = "addNewAccessButton"
         buttonToAddNew.onclick = function () {
 
-            let buttonJustClicked = document.getElementById("addNewAccessButton").style.display = "none"
-
             let addingNewAccess = document.createElement("div")
             addingNewAccess.id = "grantingNewAccessDiv"
             addingNewAccess.classList.add("panel", "addingAccess")
@@ -632,13 +643,10 @@ async function getAccessAndDisplay(recordType, department) {
         }
 
         document.getElementById("containerForRecordAccess").appendChild(buttonToAddNew)
-    } else {
-        alert("Nobody has been granted access to the selected dataset.")
     }
 }
 
 async function grantNewAccess() {
-    console.log("testssdas")
     let newAgentWebID = document.getElementById("webIDNewAccess").value
     let selectedReadAccess = document.getElementById("readAccessForNew").checked
     let selectedWriteAccess = document.getElementById("writeAccessForNew").checked
@@ -754,14 +762,39 @@ async function shareAccessForInsurance(insurerWebID){
     }
     console.log(departmentNames)
 
+    let permissionSetForInsurer = {read: true, write: false, append: false, controlRead: false, controlWrite: false}
     for(var i = 0; i < departmentNames.length; i++)
     {
-
     let urlOfDiagnosisDataset = accessedPodOwnerBaseUrl + "/healthData2/" + departmentNames[i] + "/Diagnoses"
-    // let exists = 
     if (await checkIfDatasetExists(session, urlOfDiagnosisDataset)){    //Diagnoses in the current department
         let files = await getFilesInDataset(session, urlOfDiagnosisDataset)
         console.log(files)
+        for(var i  = 0; i < files.length; i++){
+            console.log(i)
+            var startDateOfDiagnosis = getStringNoLocale(files[i], "https://schema.org/startDate")
+            console.log(startDateOfDiagnosis)
+            var dateAsTimestamp = Date.parse(startDateOfDiagnosis)
+            console.log(dateAsTimestamp)
+            console.log(Date.now())
+            if(Date.now() - dateAsTimestamp <= 157709247)   //Timestamp for 5 years
+            {
+                console.log(files[i], "is in range ")
+                //Grant access to health data dataset first, or check to see if user has been granted access to any container within the health data container
+                let existingDiagnosesForInsurance = await checkIfDatasetExists(session, accessedPodOwnerBaseUrl+"/healthData2/InsuranceDiagnoses1")
+                if(existingDiagnosesForInsurance == false){
+                    await createInsuranceDiagnosesDataset(session, accessedPodOwnerBaseUrl + "/healthData2/InsuranceDiagnoses1" , accessedPodOwnerUrl)
+                }
+                let insurerHasAccess = await checkIfPersonHasAccess(session, accessedPodOwnerBaseUrl + "/healthData2/InsuranceDiagnoses1", insurerWebID, permissionSetForInsurer )
+                if(insurerHasAccess == false){
+                    console.log("granting access")
+                    await grantAccessToDataset(session, insurerWebID, accessedPodOwnerBaseUrl + "/healthData2/", permissionSetForInsurer, false)
+                    await grantAccessToDataset(session, insurerWebID, accessedPodOwnerBaseUrl + "/healthData2/Info", permissionSetForInsurer, false)
+                    await grantAccessToDataset(session, insurerWebID, accessedPodOwnerBaseUrl + "/healthData2/InsuranceDiagnoses1", permissionSetForInsurer, false)
+                }
+
+                await addThingToDataset(session, accessedPodOwnerBaseUrl + "/healthData2/InsuranceDiagnoses1", files[i])
+            }
+        }
     }
     // console.log(departmentNames[i], exists)
     }
@@ -1251,6 +1284,7 @@ registerNewAppointmentForm.addEventListener("submit", (event) => {
     document.getElementById("accessMedicalRecordsButton").style.display = "none";
     document.getElementById("uploadMedicalRecordsButton").style.display = "none";
     document.getElementById("initiateInsuranceRequestButton").style.display = "none";
+    document.getElementById("viewInsuranceDiagnosesButton").style.display = "none";    
     document.getElementById("registerNewAppointmentButton").classList.add("clicked-button")
     document.getElementById("uploadNewAppointmentDetails").style.display = "block"
 })
@@ -1261,16 +1295,32 @@ accessMedicalRecordsForm.addEventListener("submit", (event) => {
     document.getElementById("uploadMedicalRecordsButton").style.display = "none";
     document.getElementById("registerNewAppointmentButton").style.display = "none";
     document.getElementById("initiateInsuranceRequestButton").style.display = "none";
+    document.getElementById("viewInsuranceDiagnosesButton").style.display = "none";    
     document.getElementById("accessMedicalRecordsButton").classList.add("clicked-button")
     getPatientDepartmentsAndDisplay("accessingRecords", "");
 })
 
 initiateInsuranceRequestButton.addEventListener("click", (event) => {
+    event.preventDefault();
     document.getElementById("accessMedicalRecordsButton").style.display = "none";
     document.getElementById("registerNewAppointmentButton").style.display = "none";
     document.getElementById("uploadMedicalRecordsButton").style.display = "none";
+    document.getElementById("viewInsuranceDiagnosesButton").style.display = "none";    
     document.getElementById("initiateInsuranceRequestButton").classList.add("clicked-button")
     document.getElementById("insuranceDiv").style.display = "block"
+})
+
+viewInsuranceDiagnosesButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    document.getElementById("accessMedicalRecordsButton").style.display = "none";
+    document.getElementById("registerNewAppointmentButton").style.display = "none";
+    document.getElementById("uploadMedicalRecordsButton").style.display = "none";
+    document.getElementById("initiateInsuranceRequestButton").style.display = "none";    
+    document.getElementById("viewInsuranceDiagnosesButton").classList.add("clicked-button")
+    // document.getElementById("insuranceDiv").style.display = "block"
+
+
+    ///////// TO DO: DISPLAY RELEVANT FILES  - just do this in 'access medical records' with a checkbox for 'as insurer'
 })
 
 uploadMedicalRecordsForm.addEventListener("submit", (event) => {
@@ -1278,6 +1328,7 @@ uploadMedicalRecordsForm.addEventListener("submit", (event) => {
     document.getElementById("accessMedicalRecordsButton").style.display = "none";
     document.getElementById("registerNewAppointmentButton").style.display = "none";
     document.getElementById("initiateInsuranceRequestButton").style.display = "none";
+    document.getElementById("viewInsuranceDiagnosesButton").style.display = "none";    
     document.getElementById("uploadMedicalRecordsButton").classList.add("clicked-button")
     document.getElementById("uploadNewMedicalRecordDiv").style.display = "block"
 })
