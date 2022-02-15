@@ -71188,12 +71188,16 @@ async function storeMedicalInsitutionInformation(session, healthDataDatasetUrl, 
     write: true,
     control: true
   });
-  updatedContainerAcl = (0, _solidClient.setAgentResourceAccess)(updatedContainerAcl, institutionDetails.administrator, {
-    read: true,
-    append: true,
-    write: true,
-    control: true
-  });
+
+  if (institutionDetails.administrator) {
+    updatedContainerAcl = (0, _solidClient.setAgentResourceAccess)(updatedContainerAcl, institutionDetails.administrator, {
+      read: true,
+      append: true,
+      write: true,
+      control: true
+    });
+  }
+
   updatedContainerAcl = (0, _solidClient.setAgentDefaultAccess)(updatedContainerAcl, session.info.webId, {
     read: true,
     append: true,
@@ -71211,12 +71215,16 @@ async function storeMedicalInsitutionInformation(session, healthDataDatasetUrl, 
     write: true,
     control: true
   });
-  updatedAcl = (0, _solidClient.setAgentResourceAccess)(updatedAcl, institutionDetails.administrator, {
-    read: true,
-    append: true,
-    write: true,
-    control: true
-  });
+
+  if (institutionDetails.administrator) {
+    updatedAcl = (0, _solidClient.setAgentResourceAccess)(updatedAcl, institutionDetails.administrator, {
+      read: true,
+      append: true,
+      write: true,
+      control: true
+    });
+  }
+
   updatedAcl = (0, _solidClient.setAgentDefaultAccess)(updatedAcl, session.info.webId, {
     read: true,
     append: true,
@@ -88760,8 +88768,7 @@ async function handleRedirectAfterLogin() {
     document.getElementById("webID").value = session.info.webId;
     document.getElementById("btnLogout").style.display = "block";
     document.getElementById("loginButtonDiv").style.display = "none";
-    document.getElementById("accessingPod").style.display = "block";
-    checkMedicalInstitutionStatus();
+    document.getElementById("accessingPod").style.display = "block"; // checkMedicalInstitutionStatus();
   }
 }
 
@@ -88817,6 +88824,7 @@ function resetCurrentPodSession(completelyReset) {
   document.getElementById("uploadNewAppointmentDetails").style.display = "none";
   document.getElementById("accessingRecordsDiv").style.display = "none";
   document.getElementById("uploadNewMedicalRecordDiv").style.display = "none";
+  document.getElementById("registerNewMedicalInstitution").style.display = "none";
   let buttonForAppointment = document.getElementById("registerNewAppointmentButton");
   buttonForAppointment.classList.remove("clicked-button");
   buttonForAppointment.style.display = "block";
@@ -88850,11 +88858,14 @@ function resetCurrentPodSession(completelyReset) {
 }
 
 async function registerNewMedicalInstitution() {
+  const institutionType = document.getElementById("institutionType").value; // console.log(institutionType)
+
   const institutionName = document.getElementById("institutionName").value;
   const institutionAddress = document.getElementById("institutionAddress").value;
-  const administratorWebID = document.getElementById("institutionSysAdmin").value;
+  let administratorWebID = document.getElementById("institutionSysAdmin").value;
+  if (administratorWebID == "") administratorWebID = null;
   const webID = session.info.webId;
-  var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/healthData2"; // https://testuser1.solidcommunity.net/profile/card#me
+  var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/" + institutionType + "HealthData2"; // https://testuser1.solidcommunity.net/profile/card#me
 
   let institutionDetails = {
     name: institutionName,
@@ -89846,6 +89857,10 @@ returnFromUploadingMedicalRecord.onclick = function () {
 
 returnFromInsurance.onclick = function () {
   resetCurrentPodSession(false);
+};
+
+cancelRegisterNewInsitutionButton.onclick = function () {
+  resetCurrentPodSession(true);
 };
 
 departmentSelectionForm.addEventListener("submit", event => {

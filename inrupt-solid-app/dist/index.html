@@ -79,25 +79,34 @@
       </form>
     </div>
 
-    <div id="registerNewMedicalInstitution" style="display:none">
+    <div id="registerNewMedicalInstitution" style="display:none" class="panel">
       <form id="newMedicalInstitutionForm">
+        <h2 class="section-header" style="text-align: center; margin-top: 5%;"> Register new medical institution </h2>
+        <div class="row newField">
+          <label id="institutionTypeLabel"> Type of medical institution: </label>
+          <select name="institutionType" id="institutionType">
+            <option value="public"> Public </option>
+            <option value="private"> Private </option>
+            <option value="GP">General Practitioner (GP)</option>
+          </select>
+        </div>
         <div class="row newField">
           <label id="institutionNameLabel"> Name of medical institution: </label>
-          <input type="text" id="institutionName" placeholder="Enter name of new medical institution" size="70">
+          <input type="text" id="institutionName" placeholder="Enter name of new medical institution" size="70" required="">
         </div>
         <div class="row newField">
           <label id="institutionAddressLabel"> Address of medical institution: </label>
-          <input type="text" id="institutionAddress" placeholder="Enter address of new medical institution" size="70">
+          <input type="text" id="institutionAddress" placeholder="Enter address of new medical institution" size="70" required="">
         </div>
         <div class="row newField">
-          <label id="institutionSysAdminLabel"> WebID of medical institution administrator: </label>
-          <input type="url" id="institutionSysAdmin" placeholder="Enter webID of medical institution administrator" size="70">
+          <label id="institutionSysAdminLabel"> WebID of medical institution administrator (optional): </label>
+          <input type="url" id="institutionSysAdmin" placeholder="Enter webID of medical institution administrator" size="70" value="">
           <p><b> Note: The individual associated with this WebID will be able to organise appointments on your behalf
               and grant other users access to your health records, so it is important to ensure that the correct WebID
               is entered </b></p>
         </div>
-        <button type="submit"> Save institution details to pod </button>
-        <button type="reset"> Cancel changes </button>
+        <button type="submit" class="green-button"> Save institution details to pod </button>
+        <button type="reset" id="cancelRegisterNewInsitutionButton" class="red-button"> Cancel changes </button>
       </form>
     </div>
 

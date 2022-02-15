@@ -38,14 +38,14 @@ export async function writeAppointment(session, appointmentDetails) {
     }
 
     let overallDatasetUrl = appointmentDetails.podOwnerBaseUrl + "/healthData2/"
-    let expectedOverallPermissionSet = {read: true, write: false, append: false, controlRead: false, controlWrite: false}
-    let doctorHasAccessToOverall = await checkIfPersonHasAccess(session, overallDatasetUrl, appointmentDetails.appointmentDoctor, expectedOverallPermissionSet )
-    if(doctorHasAccessToOverall == false) await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, overallDatasetUrl, expectedOverallPermissionSet, false)
+    let expectedOverallPermissionSet = { read: true, write: false, append: false, controlRead: false, controlWrite: false }
+    let doctorHasAccessToOverall = await checkIfPersonHasAccess(session, overallDatasetUrl, appointmentDetails.appointmentDoctor, expectedOverallPermissionSet)
+    if (doctorHasAccessToOverall == false) await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, overallDatasetUrl, expectedOverallPermissionSet, false)
 
     let infoDatasetUrl = appointmentDetails.podOwnerBaseUrl + "/healthData2/Info"
-    let expectedInfoPermissionSet = {read: true, write: false, append: false, controlRead: false, controlWrite: false}
-    let doctorHasAccessToInfo = await checkIfPersonHasAccess(session, infoDatasetUrl, appointmentDetails.appointmentDoctor, expectedInfoPermissionSet )
-    if(doctorHasAccessToInfo == false) await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, infoDatasetUrl, expectedInfoPermissionSet, false)
+    let expectedInfoPermissionSet = { read: true, write: false, append: false, controlRead: false, controlWrite: false }
+    let doctorHasAccessToInfo = await checkIfPersonHasAccess(session, infoDatasetUrl, appointmentDetails.appointmentDoctor, expectedInfoPermissionSet)
+    if (doctorHasAccessToInfo == false) await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, infoDatasetUrl, expectedInfoPermissionSet, false)
 
     let expectedDoctorPermissionSet = { read: true, write: true, append: true, controlRead: true, controlWrite: true }
     let doctorHasAccessToDepartment = await checkIfPersonHasAccess(session, departmentDatasetUrl + "/Appointments", appointmentDetails.appointmentDoctor, expectedDoctorPermissionSet)
@@ -100,11 +100,11 @@ export async function grantAccessToDataset(session, personWebID, datasetUrl, per
     const myDatasetWithAcl = await getResourceInfoWithAcl(datasetUrl, { fetch: session.fetch })
 
     let myDatasetsAcl;
-    if(!hasResourceAcl(myDatasetWithAcl)){
-        if(!hasAccessibleAcl(myDatasetWithAcl)){
+    if (!hasResourceAcl(myDatasetWithAcl)) {
+        if (!hasAccessibleAcl(myDatasetWithAcl)) {
             alert("The current user does not have permission to change access rights to this resource.")
         };
-        if(!hasFallbackAcl(myDatasetWithAcl)){
+        if (!hasFallbackAcl(myDatasetWithAcl)) {
             alert("The current user does not have permission to see who currently has access to this resource.")
         }
         myDatasetsAcl = createAclFromFallbackAcl(myDatasetWithAcl)
@@ -154,11 +154,13 @@ export async function storeMedicalInsitutionInformation(session, healthDataDatas
         session.info.webId,
         { read: true, append: true, write: true, control: true }
     )
-    updatedContainerAcl = setAgentResourceAccess(
-        updatedContainerAcl,
-        institutionDetails.administrator,
-        { read: true, append: true, write: true, control: true }
-    )
+    if (institutionDetails.administrator) {
+        updatedContainerAcl = setAgentResourceAccess(
+            updatedContainerAcl,
+            institutionDetails.administrator,
+            { read: true, append: true, write: true, control: true }
+        )
+    }
     updatedContainerAcl = setAgentDefaultAccess(
         updatedContainerAcl,
         session.info.webId,
@@ -174,11 +176,13 @@ export async function storeMedicalInsitutionInformation(session, healthDataDatas
         session.info.webId,
         { read: true, append: true, write: true, control: true }
     )
-    updatedAcl = setAgentResourceAccess(
-        updatedAcl,
-        institutionDetails.administrator,
-        { read: true, append: true, write: true, control: true }
-    )
+    if (institutionDetails.administrator) {
+        updatedAcl = setAgentResourceAccess(
+            updatedAcl,
+            institutionDetails.administrator,
+            { read: true, append: true, write: true, control: true }
+        )
+    }
     updatedAcl = setAgentDefaultAccess(
         updatedAcl,
         session.info.webId,
@@ -220,15 +224,15 @@ export async function uploadMedicalRecord(session, healthDataDatasetUrl, fileDet
     }
 }
 
-export async function createInsuranceDiagnosesDataset(session, insuranceDatasetUrl, podOwnerUrl){
+export async function createInsuranceDiagnosesDataset(session, insuranceDatasetUrl, podOwnerUrl) {
     let insuranceDiagnosesDataset = createSolidDataset();
     await saveSolidDatasetAt(
         insuranceDatasetUrl,
         insuranceDiagnosesDataset,
-        {fetch: session.fetch}
+        { fetch: session.fetch }
     )
-    let permissionSetForOwner = {read: true, write: true, append: true, control: true}
-    await grantAccessToDataset(session, podOwnerUrl, insuranceDatasetUrl+"1", permissionSetForOwner, true )
+    let permissionSetForOwner = { read: true, write: true, append: true, control: true }
+    await grantAccessToDataset(session, podOwnerUrl, insuranceDatasetUrl + "1", permissionSetForOwner, true)
     // const insuranceDiagnosesDatasetWithAcl = await getResourceInfoWithAcl(insuranceDatasetUrl, {fetch: session.fetch})
     // const insuranceDiagnosesDatasetAcl = createAcl(insuranceDiagnosesDatasetWithAcl)
     // let updatedInsuranceDiagnosesDatasetAcl = setAgentResourceAccess(insuranceDiagnosesDatasetAcl, podOwnerUrl, {read: true, append: true, write: true, control: true })
@@ -236,8 +240,8 @@ export async function createInsuranceDiagnosesDataset(session, insuranceDatasetU
     // await saveAclFor(insuranceDiagnosesDatasetWithAcl, updatedInsuranceDiagnosesDatasetAcl, {fetch: session.fetch})
 }
 
-export async function addThingToDataset(session, datasetUrl, thing){
-    let datasetToAddTo = await getSolidDataset(datasetUrl, {fetch:session.fetch})
+export async function addThingToDataset(session, datasetUrl, thing) {
+    let datasetToAddTo = await getSolidDataset(datasetUrl, { fetch: session.fetch })
     datasetToAddTo = setThing(datasetToAddTo, thing)
-    await saveSolidDatasetAt(datasetUrl, datasetToAddTo, {fetch: session.fetch})
+    await saveSolidDatasetAt(datasetUrl, datasetToAddTo, { fetch: session.fetch })
 }
