@@ -606,12 +606,14 @@ async function getAccessAndDisplay(recordType, department) {
 
         let renderedObj = document.getElementById("containerForRecordAccess")
 
+        console.log(renderedObj.childNodes.length)
+        console.log(renderedObj)
         for (var i = 0; i < renderedObj.childNodes.length; i++)  //Each individual with access
         {
             for (var j = 0; j < renderedObj.childNodes[i].childNodes.length; j++) {
                 if (renderedObj.childNodes[i].childNodes[j].nodeName == "LABEL") renderedObj.childNodes[i].childNodes[j].htmlFor = renderedObj.childNodes[i].childNodes[j - 1].id //label is for previous element which is the checkbox
                 else if (renderedObj.childNodes[i].childNodes[j].nodeName == "INPUT") {
-                    let buttonId = "updateAccessFor" + i
+                    let buttonId = "updateAccessFor" + (i - 1)  //First child node is h3 tag, first person with access will be at pos. 1 with an id of updateAccessFor0
                     renderedObj.childNodes[i].childNodes[j].onchange = function () {
 
                         document.getElementById(buttonId).style.display = "block"
@@ -731,6 +733,7 @@ async function grantNewAccess() {
     alert('Access granted to new individual successfully.')
     let selectedDepartment = document.getElementById("selectedDepartment").value
     let selectedRecordType = document.getElementById("selectedRecordType").value
+    document.getElementById("grantingNewAccessDiv").remove();
     getAccessAndDisplay(selectedRecordType, selectedDepartment)
 
 }
