@@ -41,11 +41,18 @@
           </div>
         </div>
       </form>
+      <form id = "accessHealthDataForm" style="display: none" class = "row">
+        <h3> Choose the type of Health Data in the designated pod that you would like to access: </h3>
+        <input type = "button" value = "public" class="light-blue-button column-5" id = "publicButton" disabled = "true">
+        <input type = "button" value = "private" class="light-blue-button column-5" id = "privateButton" disabled = "true">
+        <input type = "button" value = "GP" class="light-blue-button column-5" id = "GPButton" disabled = "true">
+      </form>
     </div>
 
     <div id="institutionInformation" class="podSelector" style="display:none">
       <div class="row">
         <form id="institutionInformationForm">
+          <h3 id ="typeOfAccessedHealthData" class = "section-header"></h3>
           <h3 id="ownerOfPod"></h3>
           <h3 id="nameOfInstitution"></h3>
           <h3 id="addressOfInstitution"></h3>

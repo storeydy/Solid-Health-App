@@ -88727,6 +88727,7 @@ const writeForm = document.getElementById("writeForm");
 const readForm = document.getElementById("readForm");
 var accessedPodOwnerUrl = "";
 var accessedPodOwnerBaseUrl = "";
+var accessedHealthDataContainerUrl = "";
 var medicalInstitutionRegistered = Boolean(0);
 var initialStateOfDatasetAccess = {};
 var currentlyAccessedDatasetUrl = ""; // 1a. Start Login Process. Call session.login() function.
@@ -88780,25 +88781,41 @@ async function checkMedicalInstitutionStatus(podOwner) {
     if (podOwner == "signedInUser") webID = session.info.webId;else if (podOwner == "specifiedUser") webID = document.getElementById("podOwner").value;
     accessedPodOwnerUrl = webID;
     accessedPodOwnerBaseUrl = webID.substring(0, webID.length - 16);
-    var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/healthData2/Info"; // https://testuser1.solidcommunity.net/profile/card#me
-
     let healthDataExists = await (0, _podReader.checkIfDatasetExists)(session, healthDataDatasetUrl); // https://testuser1.solidcommunity.net/profile/card#me
 
-    if (healthDataExists == true) {
-      const healthDataDataset = await (0, _solidClient.getSolidDataset)(healthDataDatasetUrl, {
-        fetch: session.fetch
-      });
-      const institutionDetails = await (0, _solidClient.getThing)(healthDataDataset, healthDataDatasetUrl + "#medicalInstitutionDetails");
-      let literalName = await (0, _solidClient.getStringNoLocale)(institutionDetails, "http://schema.org/name");
-      let literalAddress = await (0, _solidClient.getStringNoLocale)(institutionDetails, "http://schema.org/address");
-      document.getElementById("ownerOfPod").innerHTML = "Currently accessing the pod belonging to: " + webID;
-      document.getElementById("nameOfInstitution").innerHTML = "Who receives care at: " + literalName;
-      document.getElementById("addressOfInstitution").innerHTML = "Which is located at: " + literalAddress;
-      document.getElementById("accessingPod").style.display = "none";
-      document.getElementById("institutionInformation").style.display = 'block';
-      (0, _podReader.checkIfAdministrator)(session, accessedPodOwnerBaseUrl + "/healthData2"); // await saveNewAppointment()
-      //await storeMedicalInsitutionInformation(session, accessedPodOwnerBaseUrl + "/healthData2", {administrator: "https://testuser2.solidcommunity.net/profile/card#me"} )
-    } else {
+    let typesOfHealthData = ['public', 'private', 'GP'];
+    let typesOfHealthDataExists = [false, false, false];
+    let accessTypeOfHealthDataForm = document.getElementById("accessHealthDataForm");
+    console.log(accessTypeOfHealthDataForm.childNodes.length);
+
+    for (var i = 0; i < typesOfHealthData.length; i++) {
+      var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/" + typesOfHealthData[i] + "HealthData2/Info";
+      let healthDataExists = await (0, _podReader.checkIfDatasetExists)(session, healthDataDatasetUrl);
+      let selectableHealthDataType = document.getElementById(typesOfHealthData[i] + "Button"); // let selectableHealthDataType = document.createElement("input")
+      // selectableHealthDataType.type = "button"
+      // selectableHealthDataType.value = typesOfHealthData[i]
+      // selectableHealthDataType.classList.add("light-blue-button", "column-5")
+      // selectableHealthDataType.id = typesOfHealthData[i] + "Button"
+      // selectableHealthDataType.disabled = true
+
+      if (healthDataExists == true) {
+        selectableHealthDataType.onclick = async function () {
+          selectTypeOfHealthData(selectableHealthDataType.id.substring(0, selectableHealthDataType.id.indexOf("Button")));
+        };
+
+        selectableHealthDataType.disabled = false;
+        typesOfHealthDataExists[i] = true;
+      } // accessTypeOfHealthDataForm.appendChild(selectableHealthDataType)
+
+    }
+
+    document.getElementById("accessPodForm").style.display = "none";
+    accessTypeOfHealthDataForm.style.display = "block";
+    console.log(typesOfHealthDataExists);
+    console.log(accessTypeOfHealthDataForm.childNodes.length);
+
+    if (!typesOfHealthDataExists.includes(true)) {
+      //Means no health data exists
       if (podOwner == "signedInUser") {
         alert("You have not created a dataset in your Solid pod to hold medical record information. Please create one by following the steps below.");
         medicalInstitutionRegistered = false;
@@ -88813,10 +88830,33 @@ async function checkMedicalInstitutionStatus(podOwner) {
   }
 }
 
+async function selectTypeOfHealthData(healthDataType) {
+  console.log(healthDataType);
+  accessedHealthDataContainerUrl = accessedPodOwnerBaseUrl + "/" + healthDataType + "HealthData2/";
+  var accessedHealthDataInfoDatasetUrl = accessedHealthDataContainerUrl + "/Info";
+  console.log(accessedHealthDataContainerUrl);
+  document.getElementById("accessingPod").style.display = "none";
+  const healthDataInfoDataset = await (0, _solidClient.getSolidDataset)(accessedHealthDataInfoDatasetUrl, {
+    fetch: session.fetch
+  });
+  const institutionDetails = await (0, _solidClient.getThing)(healthDataInfoDataset, accessedHealthDataInfoDatasetUrl + "#medicalInstitutionDetails");
+  let literalName = await (0, _solidClient.getStringNoLocale)(institutionDetails, "http://schema.org/name");
+  let literalAddress = await (0, _solidClient.getStringNoLocale)(institutionDetails, "http://schema.org/address");
+  document.getElementById("typeOfAccessedHealthData").innerHTML = "<u>Accessing Health Data of type</u>: " + healthDataType;
+  document.getElementById("ownerOfPod").innerHTML = "<u>Currently accessing the pod belonging to</u>: " + accessedPodOwnerUrl;
+  document.getElementById("nameOfInstitution").innerHTML = "<u>Who receives care at</u>: " + literalName;
+  document.getElementById("addressOfInstitution").innerHTML = "<u>Which is located at</u>: " + literalAddress;
+  document.getElementById("accessingPod").style.display = "none";
+  document.getElementById("institutionInformation").style.display = 'block';
+  (0, _podReader.checkIfAdministrator)(session, accessedHealthDataContainerUrl);
+}
+
 function resetCurrentPodSession(completelyReset) {
   if (completelyReset == true) {
     document.getElementById("institutionInformation").style.display = "none";
     document.getElementById("accessingPod").style.display = "block";
+    document.getElementById("accessHealthDataForm").style.display = "none";
+    document.getElementById("accessPodForm").style.display = "block";
   }
 
   let recordsContainer = document.getElementById("containerForDisplayedRecords");
@@ -88873,6 +88913,7 @@ async function registerNewMedicalInstitution() {
     administrator: administratorWebID
   };
   await (0, _podWriter.storeMedicalInsitutionInformation)(session, healthDataDatasetUrl, institutionDetails);
+  await checkMedicalInstitutionStatus();
 }
 
 async function saveNewAppointment() {
@@ -90054,7 +90095,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "55555" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "62925" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

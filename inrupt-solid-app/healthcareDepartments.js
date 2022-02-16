@@ -19,5 +19,4 @@ export const departments = [
     {label: 'Radiology'},
     {label: 'Rheumatology'},
     {label: 'Urology'},
-
 ];
