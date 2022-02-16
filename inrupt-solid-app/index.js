@@ -131,15 +131,9 @@ async function checkMedicalInstitutionStatus(podOwner) {
         let accessTypeOfHealthDataForm = document.getElementById("accessHealthDataForm")
         console.log(accessTypeOfHealthDataForm.childNodes.length)
         for (var i = 0; i < typesOfHealthData.length; i++) {
-            var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/" + typesOfHealthData[i] + "HealthData2/Info"
+            var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/" + typesOfHealthData[i] + "HealthData3/Info"
             let healthDataExists = await checkIfDatasetExists(session, healthDataDatasetUrl)
             let selectableHealthDataType = document.getElementById(typesOfHealthData[i] + "Button")
-            // let selectableHealthDataType = document.createElement("input")
-            // selectableHealthDataType.type = "button"
-            // selectableHealthDataType.value = typesOfHealthData[i]
-            // selectableHealthDataType.classList.add("light-blue-button", "column-5")
-            // selectableHealthDataType.id = typesOfHealthData[i] + "Button"
-            // selectableHealthDataType.disabled = true
             if (healthDataExists == true) {
                 selectableHealthDataType.onclick = async function () {
                     selectTypeOfHealthData(selectableHealthDataType.id.substring(0, selectableHealthDataType.id.indexOf("Button")))
@@ -147,7 +141,6 @@ async function checkMedicalInstitutionStatus(podOwner) {
                 selectableHealthDataType.disabled = false
                 typesOfHealthDataExists[i] = true
             }
-            // accessTypeOfHealthDataForm.appendChild(selectableHealthDataType)
         }
         document.getElementById("accessPodForm").style.display = "none"
         accessTypeOfHealthDataForm.style.display = "block"
@@ -171,7 +164,7 @@ async function checkMedicalInstitutionStatus(podOwner) {
 
 async function selectTypeOfHealthData(healthDataType) {
     console.log(healthDataType)
-    accessedHealthDataContainerUrl = accessedPodOwnerBaseUrl + "/" + healthDataType + "HealthData2/"
+    accessedHealthDataContainerUrl = accessedPodOwnerBaseUrl + "/" + healthDataType + "HealthData3/"
     var accessedHealthDataInfoDatasetUrl = accessedHealthDataContainerUrl + "/Info" 
     console.log(accessedHealthDataContainerUrl)
     document.getElementById("accessingPod").style.display = "none"
@@ -242,14 +235,14 @@ async function registerNewMedicalInstitution() {
     let administratorWebID = document.getElementById("institutionSysAdmin").value;
     if (administratorWebID == "") administratorWebID = null
     const webID = session.info.webId
-    var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/" + institutionType + "HealthData2"  // https://testuser1.solidcommunity.net/profile/card#me
+    var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/" + institutionType + "HealthData3"  // https://testuser1.solidcommunity.net/profile/card#me
     let institutionDetails = {
         name: institutionName,
         address: institutionAddress,
         administrator: administratorWebID
     }
     await storeMedicalInsitutionInformation(session, healthDataDatasetUrl, institutionDetails)
-    await checkMedicalInstitutionStatus();
+    await checkMedicalInstitutionStatus("signedInUser");
 }
 
 async function saveNewAppointment() {
@@ -274,14 +267,17 @@ async function saveNewAppointment() {
         appointmentDoctor: doctorWebID,
         appointmentNotes: notes
     }
-    await writeAppointment(session, appointmentDetails)
+    await writeAppointment(session, accessedHealthDataContainerUrl, appointmentDetails)
+    document.getElementById("saveNewAppointmentDetailsForm").reset();
+    alert("Appointment details saved successfully to pod")
 }
 
 async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdown) {
-    let healthDataContainerDatasetUrl = accessedPodOwnerBaseUrl + "/healthData2/"
-    let departments = await getDepartments(session, healthDataContainerDatasetUrl)
+    
+    let departments = await getDepartments(session, accessedHealthDataContainerUrl)
     if (departments.length == 0) {
         alert("The currently accessed pod owner has no medical records stored in their pod.")
+        resetCurrentPodSession(false)
         return
     }
     else {
@@ -316,12 +312,13 @@ async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdow
         }
 
         if (departmentListForm.childNodes.length < 5) {
+            console.log(departments)
             let selectAbleDepartment = document.createElement("select")
             selectAbleDepartment.id = "selectedDepartment"
             selectAbleDepartment.style.margin = "2%"
             for (var i = 0; i <= departments.length - 1; i++) {
                 let newOption = document.createElement("option")
-                newOption.innerHTML = departments[i].substring(departments[i].lastIndexOf("healthData2/") + 12, departments[i].length - 1)
+                newOption.innerHTML = departments[i].substring(departments[i].lastIndexOf("HealthData3/") + 12, departments[i].length - 1)
                 selectAbleDepartment.appendChild(newOption)
             }
             departmentListForm.appendChild(selectAbleDepartment)
@@ -423,11 +420,11 @@ async function getPatientFilesAndDisplay(recordType, department, isForInsurer) {
     let urlOfSelectedDataset = ""
     if (isForInsurer == false) {
         console.log("now its here");
-        urlOfSelectedDataset = accessedPodOwnerBaseUrl + "/healthData2/" + department + "/" + recordType
+        urlOfSelectedDataset = accessedHealthDataContainerUrl + department + "/" + recordType
     }
     else {
         console.log("made it here")
-        urlOfSelectedDataset = accessedPodOwnerBaseUrl + "/healthData2/InsuranceDiagnoses1"
+        urlOfSelectedDataset = accessedHealthDataContainerUrl + "InsuranceDiagnoses1"
     }
     let filesInSelectedDataset = ""
     try {
@@ -482,7 +479,6 @@ async function getPatientFilesAndDisplay(recordType, department, isForInsurer) {
             fileDisplayObj.id = "displayedFile" + k
             fileDisplayObj.className = "panel"
             if (k % 2 == 1) {
-                console.log("is odd")
                 fileDisplayObj.classList.add("alt-color")
             }
             let titleOfFile = document.createElement("h3")
@@ -510,7 +506,7 @@ async function getPatientFilesAndDisplay(recordType, department, isForInsurer) {
 }
 
 async function getAccessAndDisplay(recordType, department) {
-    let urlOfSelectedDataset = accessedPodOwnerBaseUrl + "/healthData2/" + department + "/" + recordType
+    let urlOfSelectedDataset = accessedHealthDataContainerUrl + department + "/" + recordType
     let access = ""
     try {
         access = await getAccessToDataset(session, urlOfSelectedDataset)
@@ -634,6 +630,8 @@ async function getAccessAndDisplay(recordType, department) {
         buttonToAddNew.id = "addNewAccessButton"
         buttonToAddNew.onclick = function () {
 
+            buttonToAddNew.style.display = "none"
+
             let addingNewAccess = document.createElement("div")
             addingNewAccess.id = "grantingNewAccessDiv"
             addingNewAccess.classList.add("panel", "addingAccess")
@@ -703,11 +701,13 @@ async function getAccessAndDisplay(recordType, department) {
             cancelButton.classList.add("red-button")
             cancelButton.onclick = function () {
                 document.getElementById("grantingNewAccessDiv").remove()
+                // document.getElementById("cancelAccessButtonForNew").style.display = "none"
                 document.getElementById("addNewAccessButton").style.display = "block"
             }
             addingNewAccess.append(webIDDiv, clonedReadCheckbox, clonedReadLabel, clonedWriteCheckbox, clonedWriteLabel, clonedAppendCheckbox, clonedAppendLabel, clonedControlCheckbox, clonedControlLabel, cancelButton, submitButton)
 
             document.getElementById("containerForRecordAccess").appendChild(addingNewAccess)
+            document.getElementById("grantingNewAccessDiv").scrollIntoView()
         }
 
         document.getElementById("containerForRecordAccess").appendChild(buttonToAddNew)
@@ -1311,6 +1311,75 @@ newMedicalInstitutionForm.addEventListener("submit", (event) => {
     registerNewMedicalInstitution();
 })
 
+registerNewAppointmentButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    document.getElementById("accessMedicalRecordsButton").style.display = "none";
+    document.getElementById("uploadMedicalRecordsButton").style.display = "none";
+    document.getElementById("initiateInsuranceRequestButton").style.display = "none";
+    // document.getElementById("viewInsuranceDiagnosesButton").style.display = "none";    
+    document.getElementById("registerNewAppointmentButton").classList.add("clicked-button")
+    document.getElementById("uploadNewAppointmentDetails").style.display = "block"
+})
+
+accessMedicalRecordsButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    document.getElementById("uploadMedicalRecordsButton").style.display = "none";
+    document.getElementById("registerNewAppointmentButton").style.display = "none";
+    document.getElementById("initiateInsuranceRequestButton").style.display = "none";
+    // document.getElementById("viewInsuranceDiagnosesButton").style.display = "none";    
+    document.getElementById("accessMedicalRecordsButton").classList.add("clicked-button")
+    getPatientDepartmentsAndDisplay("accessingRecords", "");
+});
+
+initiateInsuranceRequestButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    document.getElementById("accessMedicalRecordsButton").style.display = "none";
+    document.getElementById("registerNewAppointmentButton").style.display = "none";
+    document.getElementById("uploadMedicalRecordsButton").style.display = "none";
+    // document.getElementById("viewInsuranceDiagnosesButton").style.display = "none";    
+    document.getElementById("initiateInsuranceRequestButton").classList.add("clicked-button")
+    document.getElementById("insuranceDiv").style.display = "block"
+})
+
+
+uploadMedicalRecordsButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    document.getElementById("accessMedicalRecordsButton").style.display = "none";
+    document.getElementById("registerNewAppointmentButton").style.display = "none";
+    document.getElementById("initiateInsuranceRequestButton").style.display = "none";
+    // document.getElementById("viewInsuranceDiagnosesButton").style.display = "none";    
+    document.getElementById("uploadMedicalRecordsButton").classList.add("clicked-button")
+    document.getElementById("uploadNewMedicalRecordDiv").style.display = "block"
+})
+
+
+continueWithSelectedRecordTypeButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    if (document.getElementById("diagnosisCheckbox").checked) {
+        document.getElementById("medicalRecordTypeSelection").style.display = "none"
+        getPatientDepartmentsAndDisplay("uploadingNewRecord", "newDiagnosisDepartmentPlaceholderDiv")
+        document.getElementById("createNewDiagnosisDiv").style.display = "block"
+        return;
+    }
+    if (document.getElementById("prescriptionCheckbox").checked) {
+        document.getElementById("medicalRecordTypeSelection").style.display = "none"
+        getPatientDepartmentsAndDisplay("uploadingNewRecord", "newPrescriptionDepartmentPlaceholderDiv")
+        document.getElementById("createNewPrescriptionDiv").style.display = "block";
+        return;
+    }
+    if (document.getElementById("recordCheckbox").checked) {
+        document.getElementById("medicalRecordTypeSelection").style.display = "none"
+        getPatientDepartmentsAndDisplay("uploadingNewRecord", "newRecordDepartmentPlaceholderDiv")
+        document.getElementById("createNewGeneralRecordDiv").style.display = "block"
+        return;
+    }
+    alert('No record type to upload has been selected. Please select one to continue.')
+})
+
+
+
+// ////////////////////////////////////////////////////////////
+
 writeForm.addEventListener("submit", (event) => {
     event.preventDefault();
     writeProfile();
@@ -1349,82 +1418,5 @@ uploadFileForm.addEventListener("submit", (event) => {
 deleteFileForm.addEventListener("submit", (event) => {
     event.preventDefault();
     deleteFileFromUrl();
-})
-
-registerNewAppointmentForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    document.getElementById("accessMedicalRecordsButton").style.display = "none";
-    document.getElementById("uploadMedicalRecordsButton").style.display = "none";
-    document.getElementById("initiateInsuranceRequestButton").style.display = "none";
-    // document.getElementById("viewInsuranceDiagnosesButton").style.display = "none";    
-    document.getElementById("registerNewAppointmentButton").classList.add("clicked-button")
-    document.getElementById("uploadNewAppointmentDetails").style.display = "block"
-})
-
-
-accessMedicalRecordsForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    document.getElementById("uploadMedicalRecordsButton").style.display = "none";
-    document.getElementById("registerNewAppointmentButton").style.display = "none";
-    document.getElementById("initiateInsuranceRequestButton").style.display = "none";
-    // document.getElementById("viewInsuranceDiagnosesButton").style.display = "none";    
-    document.getElementById("accessMedicalRecordsButton").classList.add("clicked-button")
-    getPatientDepartmentsAndDisplay("accessingRecords", "");
-})
-
-initiateInsuranceRequestButton.addEventListener("click", (event) => {
-    event.preventDefault();
-    document.getElementById("accessMedicalRecordsButton").style.display = "none";
-    document.getElementById("registerNewAppointmentButton").style.display = "none";
-    document.getElementById("uploadMedicalRecordsButton").style.display = "none";
-    // document.getElementById("viewInsuranceDiagnosesButton").style.display = "none";    
-    document.getElementById("initiateInsuranceRequestButton").classList.add("clicked-button")
-    document.getElementById("insuranceDiv").style.display = "block"
-})
-
-// viewInsuranceDiagnosesButton.addEventListener("click", (event) => {
-//     event.preventDefault();
-//     document.getElementById("accessMedicalRecordsButton").style.display = "none";
-//     document.getElementById("registerNewAppointmentButton").style.display = "none";
-//     document.getElementById("uploadMedicalRecordsButton").style.display = "none";
-//     document.getElementById("initiateInsuranceRequestButton").style.display = "none";    
-//     // document.getElementById("viewInsuranceDiagnosesButton").classList.add("clicked-button")
-//     // document.getElementById("insuranceDiv").style.display = "block"
-
-
-//     ///////// TO DO: DISPLAY RELEVANT FILES  - just do this in 'access medical records' with a checkbox for 'as insurer'
-// })
-
-uploadMedicalRecordsForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    document.getElementById("accessMedicalRecordsButton").style.display = "none";
-    document.getElementById("registerNewAppointmentButton").style.display = "none";
-    document.getElementById("initiateInsuranceRequestButton").style.display = "none";
-    // document.getElementById("viewInsuranceDiagnosesButton").style.display = "none";    
-    document.getElementById("uploadMedicalRecordsButton").classList.add("clicked-button")
-    document.getElementById("uploadNewMedicalRecordDiv").style.display = "block"
-})
-
-continueWithSelectedRecordTypeButton.addEventListener("click", (event) => {
-    event.preventDefault();
-    if (document.getElementById("diagnosisCheckbox").checked) {
-        document.getElementById("medicalRecordTypeSelection").style.display = "none"
-        getPatientDepartmentsAndDisplay("uploadingNewRecord", "newDiagnosisDepartmentPlaceholderDiv")
-        document.getElementById("createNewDiagnosisDiv").style.display = "block"
-        return;
-    }
-    if (document.getElementById("prescriptionCheckbox").checked) {
-        document.getElementById("medicalRecordTypeSelection").style.display = "none"
-        getPatientDepartmentsAndDisplay("uploadingNewRecord", "newPrescriptionDepartmentPlaceholderDiv")
-        document.getElementById("createNewPrescriptionDiv").style.display = "block";
-        return;
-    }
-    if (document.getElementById("recordCheckbox").checked) {
-        document.getElementById("medicalRecordTypeSelection").style.display = "none"
-        getPatientDepartmentsAndDisplay("uploadingNewRecord", "newRecordDepartmentPlaceholderDiv")
-        document.getElementById("createNewGeneralRecordDiv").style.display = "block"
-        return;
-    }
-    alert('No record type to upload has been selected. Please select one to continue.')
 })
 

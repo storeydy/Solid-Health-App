@@ -71025,10 +71025,10 @@ var _vocabCommonRdf = require("@inrupt/vocab-common-rdf");
 
 var _podReader = require("./podReader");
 
-async function writeAppointment(session, appointmentDetails) {
+async function writeAppointment(session, healthDataContainerUrl, appointmentDetails) {
   console.log(session);
   console.log(appointmentDetails);
-  let departmentDatasetUrl = appointmentDetails.podOwnerBaseUrl + "/healthData2/" + appointmentDetails.appointmentDepartment;
+  let departmentDatasetUrl = healthDataContainerUrl + appointmentDetails.appointmentDepartment;
   let datasetExists = await (0, _podReader.checkIfDatasetExists)(session, departmentDatasetUrl);
 
   if (datasetExists == false) {
@@ -71036,7 +71036,6 @@ async function writeAppointment(session, appointmentDetails) {
     await createDepartmentDataset(session, departmentDatasetUrl, appointmentDetails.podOwnerBaseUrl, appointmentDetails.appointmentDepartment);
   }
 
-  let overallDatasetUrl = appointmentDetails.podOwnerBaseUrl + "/healthData2/";
   let expectedOverallPermissionSet = {
     read: true,
     write: false,
@@ -71044,9 +71043,9 @@ async function writeAppointment(session, appointmentDetails) {
     controlRead: false,
     controlWrite: false
   };
-  let doctorHasAccessToOverall = await (0, _podReader.checkIfPersonHasAccess)(session, overallDatasetUrl, appointmentDetails.appointmentDoctor, expectedOverallPermissionSet);
-  if (doctorHasAccessToOverall == false) await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, overallDatasetUrl, expectedOverallPermissionSet, false);
-  let infoDatasetUrl = appointmentDetails.podOwnerBaseUrl + "/healthData2/Info";
+  let doctorHasAccessToOverall = await (0, _podReader.checkIfPersonHasAccess)(session, healthDataContainerUrl, appointmentDetails.appointmentDoctor, expectedOverallPermissionSet);
+  if (doctorHasAccessToOverall == false) await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, healthDataContainerUrl, expectedOverallPermissionSet, false);
+  let infoDatasetUrl = healthDataContainerUrl + "Info";
   let expectedInfoPermissionSet = {
     read: true,
     write: false,
@@ -71073,13 +71072,13 @@ async function writeAppointment(session, appointmentDetails) {
       control: true
     };
     console.log("giving doctor access");
-    await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, appointmentDetails.podOwnerBaseUrl + "/healthData2/" + appointmentDetails.appointmentDepartment + "/Appointments", doctorPermissionSet, false);
-    await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, appointmentDetails.podOwnerBaseUrl + "/healthData2/" + appointmentDetails.appointmentDepartment + "/Records", doctorPermissionSet, false);
-    await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, appointmentDetails.podOwnerBaseUrl + "/healthData2/" + appointmentDetails.appointmentDepartment + "/Diagnoses", doctorPermissionSet, false);
-    await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, appointmentDetails.podOwnerBaseUrl + "/healthData2/" + appointmentDetails.appointmentDepartment + "/Prescriptions", doctorPermissionSet, false);
+    await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, departmentDatasetUrl + "/Appointments", doctorPermissionSet, false);
+    await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, departmentDatasetUrl + "/Records", doctorPermissionSet, false);
+    await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, departmentDatasetUrl + "/Diagnoses", doctorPermissionSet, false);
+    await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, departmentDatasetUrl + "/Prescriptions", doctorPermissionSet, false);
   }
 
-  let departmentAppointmentDataset = await (0, _solidClient.getSolidDataset)(appointmentDetails.podOwnerBaseUrl + "/healthData2/" + appointmentDetails.appointmentDepartment + "/Appointments", {
+  let departmentAppointmentDataset = await (0, _solidClient.getSolidDataset)(departmentDatasetUrl + "/Appointments", {
     fetch: session.fetch
   });
   let appointmentFileName = "Appointment @ " + appointmentDetails.appointmentTime.toDateString();
@@ -71087,13 +71086,13 @@ async function writeAppointment(session, appointmentDetails) {
     name: appointmentFileName
   })).addStringNoLocale("https://schema.org/startDate", appointmentDetails.appointmentTime).addStringNoLocale("https://schema.org/organizer", appointmentDetails.appointmentDoctor).addStringNoLocale("https://schema.org/about", appointmentDetails.appointmentNotes).addUrl(_vocabCommonRdf.RDF.type, "https://schema.org/Event").build();
   departmentAppointmentDataset = (0, _solidClient.setThing)(departmentAppointmentDataset, appointmentDetailsFile);
-  await (0, _solidClient.saveSolidDatasetAt)(appointmentDetails.podOwnerBaseUrl + "/healthData2/" + appointmentDetails.appointmentDepartment + "/Appointments", departmentAppointmentDataset, {
+  await (0, _solidClient.saveSolidDatasetAt)(departmentDatasetUrl + "/Appointments", departmentAppointmentDataset, {
     fetch: session.fetch
   });
   console.log("appointment details saved to pod");
 }
 
-async function createDepartmentDataset(session, datasetUrl, podOwnerBaseUrl, departmentName) {
+async function createDepartmentDataset(session, departmentDatasetUrl, podOwnerBaseUrl, departmentName) {
   let newDepartmentAppointmentsDataset = (0, _solidClient.createSolidDataset)();
   let newDepartmentRecordsDataset = (0, _solidClient.createSolidDataset)();
   let newDepartmentDiagnosesDataset = (0, _solidClient.createSolidDataset)();
@@ -71104,32 +71103,32 @@ async function createDepartmentDataset(session, datasetUrl, podOwnerBaseUrl, dep
     append: true,
     write: true,
     control: true
-  };
-  await (0, _solidClient.saveSolidDatasetAt)(podOwnerBaseUrl + "/healthData2/" + departmentName + "/Appointments", newDepartmentAppointmentsDataset, {
+  }; //This works and not controlRead, controlWrite
+
+  let ownerOfPodIsAppointmentCreator = false;
+  if (session.info.webId == podOwnerWebID) ownerOfPodIsAppointmentCreator = true; //Make sure pod owner has access
+
+  await (0, _solidClient.saveSolidDatasetAt)(departmentDatasetUrl + "/Appointments", newDepartmentAppointmentsDataset, {
     fetch: session.fetch
   }); // await grantAccessToDataset(session, session.info.webId, podOwnerBaseUrl + "/healthData2/" + departmentName, permissionSetForCreator, false ) //MESSES UP WHOLE DATASET
 
-  await grantAccessToDataset(session, session.info.webId, podOwnerBaseUrl + "/healthData2/" + departmentName + "/Appointments", permissionSetForCreator, false);
-  await (0, _solidClient.saveSolidDatasetAt)(podOwnerBaseUrl + "/healthData2/" + departmentName + "/Records", newDepartmentRecordsDataset, {
+  await grantAccessToDataset(session, session.info.webId, departmentDatasetUrl + "/Appointments", permissionSetForCreator, ownerOfPodIsAppointmentCreator);
+  await (0, _solidClient.saveSolidDatasetAt)(departmentDatasetUrl + "/Records", newDepartmentRecordsDataset, {
     fetch: session.fetch
   });
-  await grantAccessToDataset(session, session.info.webId, podOwnerBaseUrl + "/healthData2/" + departmentName + "/Records", permissionSetForCreator, false);
-  await (0, _solidClient.saveSolidDatasetAt)(podOwnerBaseUrl + "/healthData2/" + departmentName + "/Diagnoses", newDepartmentDiagnosesDataset, {
+  await grantAccessToDataset(session, session.info.webId, departmentDatasetUrl + "/Records", permissionSetForCreator, ownerOfPodIsAppointmentCreator);
+  await (0, _solidClient.saveSolidDatasetAt)(departmentDatasetUrl + "/Diagnoses", newDepartmentDiagnosesDataset, {
     fetch: session.fetch
   });
-  await grantAccessToDataset(session, session.info.webId, podOwnerBaseUrl + "/healthData2/" + departmentName + "/Diagnoses", permissionSetForCreator, false);
-  await (0, _solidClient.saveSolidDatasetAt)(podOwnerBaseUrl + "/healthData2/" + departmentName + "/Prescriptions", newDepartmentPrescriptionsDataset, {
+  await grantAccessToDataset(session, session.info.webId, departmentDatasetUrl + "/Diagnoses", permissionSetForCreator, ownerOfPodIsAppointmentCreator);
+  await (0, _solidClient.saveSolidDatasetAt)(departmentDatasetUrl + "/Prescriptions", newDepartmentPrescriptionsDataset, {
     fetch: session.fetch
   });
-  await grantAccessToDataset(session, session.info.webId, podOwnerBaseUrl + "/healthData2/" + departmentName + "/Prescriptions", permissionSetForCreator, false);
-
-  if (session.info.webId == podOwnerWebID) {
-    //Make sure pod owner has access
-    await grantAccessToDataset(session, session.info.webId, podOwnerBaseUrl + "/healthData2/" + departmentName + "/Appointments", permissionSetForCreator, true);
-    await grantAccessToDataset(session, session.info.webId, podOwnerBaseUrl + "/healthData2/" + departmentName + "/Records", permissionSetForCreator, true);
-    await grantAccessToDataset(session, session.info.webId, podOwnerBaseUrl + "/healthData2/" + departmentName + "/Diagnoses", permissionSetForCreator, true);
-    await grantAccessToDataset(session, session.info.webId, podOwnerBaseUrl + "/healthData2/" + departmentName + "/Prescriptions", permissionSetForCreator, true);
-  }
+  await grantAccessToDataset(session, session.info.webId, departmentDatasetUrl + "/Prescriptions", permissionSetForCreator, ownerOfPodIsAppointmentCreator);
+  await grantAccessToDataset(session, podOwnerWebID, departmentDatasetUrl + "/Appointments", permissionSetForCreator, true);
+  await grantAccessToDataset(session, podOwnerWebID, departmentDatasetUrl + "/Records", permissionSetForCreator, true);
+  await grantAccessToDataset(session, podOwnerWebID, departmentDatasetUrl + "/Diagnoses", permissionSetForCreator, true);
+  await grantAccessToDataset(session, podOwnerWebID, departmentDatasetUrl + "/Prescriptions", permissionSetForCreator, true);
 }
 
 async function grantAccessToDataset(session, personWebID, datasetUrl, permissionSet, isOwner) {
@@ -88789,14 +88788,9 @@ async function checkMedicalInstitutionStatus(podOwner) {
     console.log(accessTypeOfHealthDataForm.childNodes.length);
 
     for (var i = 0; i < typesOfHealthData.length; i++) {
-      var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/" + typesOfHealthData[i] + "HealthData2/Info";
+      var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/" + typesOfHealthData[i] + "HealthData3/Info";
       let healthDataExists = await (0, _podReader.checkIfDatasetExists)(session, healthDataDatasetUrl);
-      let selectableHealthDataType = document.getElementById(typesOfHealthData[i] + "Button"); // let selectableHealthDataType = document.createElement("input")
-      // selectableHealthDataType.type = "button"
-      // selectableHealthDataType.value = typesOfHealthData[i]
-      // selectableHealthDataType.classList.add("light-blue-button", "column-5")
-      // selectableHealthDataType.id = typesOfHealthData[i] + "Button"
-      // selectableHealthDataType.disabled = true
+      let selectableHealthDataType = document.getElementById(typesOfHealthData[i] + "Button");
 
       if (healthDataExists == true) {
         selectableHealthDataType.onclick = async function () {
@@ -88805,8 +88799,7 @@ async function checkMedicalInstitutionStatus(podOwner) {
 
         selectableHealthDataType.disabled = false;
         typesOfHealthDataExists[i] = true;
-      } // accessTypeOfHealthDataForm.appendChild(selectableHealthDataType)
-
+      }
     }
 
     document.getElementById("accessPodForm").style.display = "none";
@@ -88832,7 +88825,7 @@ async function checkMedicalInstitutionStatus(podOwner) {
 
 async function selectTypeOfHealthData(healthDataType) {
   console.log(healthDataType);
-  accessedHealthDataContainerUrl = accessedPodOwnerBaseUrl + "/" + healthDataType + "HealthData2/";
+  accessedHealthDataContainerUrl = accessedPodOwnerBaseUrl + "/" + healthDataType + "HealthData3/";
   var accessedHealthDataInfoDatasetUrl = accessedHealthDataContainerUrl + "/Info";
   console.log(accessedHealthDataContainerUrl);
   document.getElementById("accessingPod").style.display = "none";
@@ -88905,7 +88898,7 @@ async function registerNewMedicalInstitution() {
   let administratorWebID = document.getElementById("institutionSysAdmin").value;
   if (administratorWebID == "") administratorWebID = null;
   const webID = session.info.webId;
-  var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/" + institutionType + "HealthData2"; // https://testuser1.solidcommunity.net/profile/card#me
+  var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/" + institutionType + "HealthData3"; // https://testuser1.solidcommunity.net/profile/card#me
 
   let institutionDetails = {
     name: institutionName,
@@ -88913,7 +88906,7 @@ async function registerNewMedicalInstitution() {
     administrator: administratorWebID
   };
   await (0, _podWriter.storeMedicalInsitutionInformation)(session, healthDataDatasetUrl, institutionDetails);
-  await checkMedicalInstitutionStatus();
+  await checkMedicalInstitutionStatus("signedInUser");
 }
 
 async function saveNewAppointment() {
@@ -88936,15 +88929,17 @@ async function saveNewAppointment() {
     appointmentDoctor: doctorWebID,
     appointmentNotes: notes
   };
-  await (0, _podWriter.writeAppointment)(session, appointmentDetails);
+  await (0, _podWriter.writeAppointment)(session, accessedHealthDataContainerUrl, appointmentDetails);
+  document.getElementById("saveNewAppointmentDetailsForm").reset();
+  alert("Appointment details saved successfully to pod");
 }
 
 async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdown) {
-  let healthDataContainerDatasetUrl = accessedPodOwnerBaseUrl + "/healthData2/";
-  let departments = await (0, _podReader.getDepartments)(session, healthDataContainerDatasetUrl);
+  let departments = await (0, _podReader.getDepartments)(session, accessedHealthDataContainerUrl);
 
   if (departments.length == 0) {
     alert("The currently accessed pod owner has no medical records stored in their pod.");
+    resetCurrentPodSession(false);
     return;
   } else {
     let departmentListForm = "";
@@ -88976,13 +88971,14 @@ async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdow
     }
 
     if (departmentListForm.childNodes.length < 5) {
+      console.log(departments);
       let selectAbleDepartment = document.createElement("select");
       selectAbleDepartment.id = "selectedDepartment";
       selectAbleDepartment.style.margin = "2%";
 
       for (var i = 0; i <= departments.length - 1; i++) {
         let newOption = document.createElement("option");
-        newOption.innerHTML = departments[i].substring(departments[i].lastIndexOf("healthData2/") + 12, departments[i].length - 1);
+        newOption.innerHTML = departments[i].substring(departments[i].lastIndexOf("HealthData3/") + 12, departments[i].length - 1);
         selectAbleDepartment.appendChild(newOption);
       }
 
@@ -89089,10 +89085,10 @@ async function getPatientFilesAndDisplay(recordType, department, isForInsurer) {
 
   if (isForInsurer == false) {
     console.log("now its here");
-    urlOfSelectedDataset = accessedPodOwnerBaseUrl + "/healthData2/" + department + "/" + recordType;
+    urlOfSelectedDataset = accessedHealthDataContainerUrl + department + "/" + recordType;
   } else {
     console.log("made it here");
-    urlOfSelectedDataset = accessedPodOwnerBaseUrl + "/healthData2/InsuranceDiagnoses1";
+    urlOfSelectedDataset = accessedHealthDataContainerUrl + "InsuranceDiagnoses1";
   }
 
   let filesInSelectedDataset = "";
@@ -89150,7 +89146,6 @@ async function getPatientFilesAndDisplay(recordType, department, isForInsurer) {
       fileDisplayObj.className = "panel";
 
       if (k % 2 == 1) {
-        console.log("is odd");
         fileDisplayObj.classList.add("alt-color");
       }
 
@@ -89180,7 +89175,7 @@ async function getPatientFilesAndDisplay(recordType, department, isForInsurer) {
 }
 
 async function getAccessAndDisplay(recordType, department) {
-  let urlOfSelectedDataset = accessedPodOwnerBaseUrl + "/healthData2/" + department + "/" + recordType;
+  let urlOfSelectedDataset = accessedHealthDataContainerUrl + department + "/" + recordType;
   let access = "";
 
   try {
@@ -89295,6 +89290,7 @@ async function getAccessAndDisplay(recordType, department) {
     buttonToAddNew.id = "addNewAccessButton";
 
     buttonToAddNew.onclick = function () {
+      buttonToAddNew.style.display = "none";
       let addingNewAccess = document.createElement("div");
       addingNewAccess.id = "grantingNewAccessDiv";
       addingNewAccess.classList.add("panel", "addingAccess");
@@ -89356,12 +89352,14 @@ async function getAccessAndDisplay(recordType, department) {
       cancelButton.classList.add("red-button");
 
       cancelButton.onclick = function () {
-        document.getElementById("grantingNewAccessDiv").remove();
+        document.getElementById("grantingNewAccessDiv").remove(); // document.getElementById("cancelAccessButtonForNew").style.display = "none"
+
         document.getElementById("addNewAccessButton").style.display = "block";
       };
 
       addingNewAccess.append(webIDDiv, clonedReadCheckbox, clonedReadLabel, clonedWriteCheckbox, clonedWriteLabel, clonedAppendCheckbox, clonedAppendLabel, clonedControlCheckbox, clonedControlLabel, cancelButton, submitButton);
       document.getElementById("containerForRecordAccess").appendChild(addingNewAccess);
+      document.getElementById("grantingNewAccessDiv").scrollIntoView();
     };
 
     document.getElementById("containerForRecordAccess").appendChild(buttonToAddNew);
@@ -89963,39 +89961,7 @@ newMedicalInstitutionForm.addEventListener("submit", event => {
   event.preventDefault();
   registerNewMedicalInstitution();
 });
-writeForm.addEventListener("submit", event => {
-  event.preventDefault();
-  writeProfile();
-});
-createAclForm.addEventListener("submit", event => {
-  event.preventDefault();
-  createAclForDataset();
-});
-readAgentAccessForm.addEventListener("submit", event => {
-  event.preventDefault();
-  readAgentAccess();
-});
-readDatasetForm.addEventListener("submit", event => {
-  event.preventDefault();
-  readDataset();
-});
-giveAccessForm.addEventListener("submit", event => {
-  event.preventDefault();
-  grantAccess();
-});
-readPrivateForm.addEventListener("submit", event => {
-  event.preventDefault();
-  readPrivateFile();
-});
-uploadFileForm.addEventListener("submit", event => {
-  event.preventDefault();
-  uploadFile();
-});
-deleteFileForm.addEventListener("submit", event => {
-  event.preventDefault();
-  deleteFileFromUrl();
-});
-registerNewAppointmentForm.addEventListener("submit", event => {
+registerNewAppointmentButton.addEventListener("click", event => {
   event.preventDefault();
   document.getElementById("accessMedicalRecordsButton").style.display = "none";
   document.getElementById("uploadMedicalRecordsButton").style.display = "none";
@@ -90004,7 +89970,7 @@ registerNewAppointmentForm.addEventListener("submit", event => {
   document.getElementById("registerNewAppointmentButton").classList.add("clicked-button");
   document.getElementById("uploadNewAppointmentDetails").style.display = "block";
 });
-accessMedicalRecordsForm.addEventListener("submit", event => {
+accessMedicalRecordsButton.addEventListener("click", event => {
   event.preventDefault();
   document.getElementById("uploadMedicalRecordsButton").style.display = "none";
   document.getElementById("registerNewAppointmentButton").style.display = "none";
@@ -90021,18 +89987,8 @@ initiateInsuranceRequestButton.addEventListener("click", event => {
 
   document.getElementById("initiateInsuranceRequestButton").classList.add("clicked-button");
   document.getElementById("insuranceDiv").style.display = "block";
-}); // viewInsuranceDiagnosesButton.addEventListener("click", (event) => {
-//     event.preventDefault();
-//     document.getElementById("accessMedicalRecordsButton").style.display = "none";
-//     document.getElementById("registerNewAppointmentButton").style.display = "none";
-//     document.getElementById("uploadMedicalRecordsButton").style.display = "none";
-//     document.getElementById("initiateInsuranceRequestButton").style.display = "none";    
-//     // document.getElementById("viewInsuranceDiagnosesButton").classList.add("clicked-button")
-//     // document.getElementById("insuranceDiv").style.display = "block"
-//     ///////// TO DO: DISPLAY RELEVANT FILES  - just do this in 'access medical records' with a checkbox for 'as insurer'
-// })
-
-uploadMedicalRecordsForm.addEventListener("submit", event => {
+});
+uploadMedicalRecordsButton.addEventListener("click", event => {
   event.preventDefault();
   document.getElementById("accessMedicalRecordsButton").style.display = "none";
   document.getElementById("registerNewAppointmentButton").style.display = "none";
@@ -90066,6 +90022,39 @@ continueWithSelectedRecordTypeButton.addEventListener("click", event => {
   }
 
   alert('No record type to upload has been selected. Please select one to continue.');
+}); // ////////////////////////////////////////////////////////////
+
+writeForm.addEventListener("submit", event => {
+  event.preventDefault();
+  writeProfile();
+});
+createAclForm.addEventListener("submit", event => {
+  event.preventDefault();
+  createAclForDataset();
+});
+readAgentAccessForm.addEventListener("submit", event => {
+  event.preventDefault();
+  readAgentAccess();
+});
+readDatasetForm.addEventListener("submit", event => {
+  event.preventDefault();
+  readDataset();
+});
+giveAccessForm.addEventListener("submit", event => {
+  event.preventDefault();
+  grantAccess();
+});
+readPrivateForm.addEventListener("submit", event => {
+  event.preventDefault();
+  readPrivateFile();
+});
+uploadFileForm.addEventListener("submit", event => {
+  event.preventDefault();
+  uploadFile();
+});
+deleteFileForm.addEventListener("submit", event => {
+  event.preventDefault();
+  deleteFileFromUrl();
 });
 },{"@inrupt/solid-client":"node_modules/@inrupt/solid-client/dist/index.es.js","@inrupt/solid-client-authn-browser":"node_modules/@inrupt/solid-client-authn-browser/dist/index.js","@inrupt/vocab-common-rdf":"node_modules/@inrupt/vocab-common-rdf/dist/index.es.js","./healthcareDepartments":"healthcareDepartments.js","./podReader":"podReader.js","./podWriter":"podWriter.js","lodash":"node_modules/lodash/lodash.js"}],"node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
