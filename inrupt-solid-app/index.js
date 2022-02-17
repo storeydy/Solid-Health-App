@@ -121,7 +121,7 @@ handleRedirectAfterLogin();
 async function checkMedicalInstitutionStatus(podOwner) {
     if (podOwner) {
         var webID;
-        if (podOwner == "signedInUser") webID = session.info.webId
+        if (podOwner.includes("signedInUser")) webID = session.info.webId
         else if (podOwner == "specifiedUser") webID = document.getElementById("podOwner").value;
         accessedPodOwnerUrl = webID;
         accessedPodOwnerBaseUrl = webID.substring(0, (webID.length - 16))
@@ -158,6 +158,24 @@ async function checkMedicalInstitutionStatus(podOwner) {
             }
             document.getElementById("podOwner").value = "";
         }
+        else {
+            let indexesOfExistingHealthData = typesOfHealthDataExists.reduce(
+                (out, bool, index) => bool ? out.concat(index) : out,
+                []
+            )
+            // console.log(indexesOfExistingHealthData)
+            if (podOwner == "signedInUserNew" && !document.getElementById("newInstitutionWarningMessage")) {
+                let existingHealthDataTypes = []
+                for (var i = 0; i < typesOfHealthData.length; i++) {
+                    if (typesOfHealthDataExists[i] == true) existingHealthDataTypes.push(typesOfHealthData[i])
+                }
+                let warningMessage = document.createElement("p")
+                warningMessage.style.color = "red"
+                warningMessage.id = "newInstitutionWarningMessage"
+                warningMessage.innerHTML = "You currently have health data containers saved for the following types: [" + existingHealthDataTypes + "], if you register a new institution of one of these types it will completely wipe all the data that is currently held in those containers."
+                document.getElementById("institutionTypeLabel").appendChild(warningMessage)
+            }
+        }
 
     }
 }
@@ -165,10 +183,10 @@ async function checkMedicalInstitutionStatus(podOwner) {
 async function selectTypeOfHealthData(healthDataType) {
     console.log(healthDataType)
     accessedHealthDataContainerUrl = accessedPodOwnerBaseUrl + "/" + healthDataType + "HealthData3/"
-    var accessedHealthDataInfoDatasetUrl = accessedHealthDataContainerUrl + "/Info" 
+    var accessedHealthDataInfoDatasetUrl = accessedHealthDataContainerUrl + "/Info"
     console.log(accessedHealthDataContainerUrl)
     document.getElementById("accessingPod").style.display = "none"
-    
+
     const healthDataInfoDataset = await getSolidDataset(accessedHealthDataInfoDatasetUrl, { fetch: session.fetch });
     const institutionDetails = await getThing(healthDataInfoDataset, accessedHealthDataInfoDatasetUrl + "#medicalInstitutionDetails")
     let literalName = await getStringNoLocale(institutionDetails, "http://schema.org/name")
@@ -196,6 +214,9 @@ function resetCurrentPodSession(completelyReset) {
     document.getElementById("accessingRecordsDiv").style.display = "none";
     document.getElementById("uploadNewMedicalRecordDiv").style.display = "none";
     document.getElementById("registerNewMedicalInstitution").style.display = "none";
+    document.getElementById("createNewDiagnosisDiv").style.display = "none";
+    document.getElementById("createNewPrescriptionDiv").style.display = "none";
+    document.getElementById("createNewGeneralRecordDiv").style.display = "none";
     let buttonForAppointment = document.getElementById("registerNewAppointmentButton")
     buttonForAppointment.classList.remove("clicked-button")
     buttonForAppointment.style.display = "block"
@@ -208,10 +229,9 @@ function resetCurrentPodSession(completelyReset) {
     let buttonForInitiatingInsurance = document.getElementById("initiateInsuranceRequestButton")
     buttonForInitiatingInsurance.classList.remove("clicked-button")
     buttonForInitiatingInsurance.style.display = "block"
-    // let buttonForViewingInsuranceDiagnoses = document.getElementById("viewInsuranceDiagnosesButton")
-    // buttonForViewingInsuranceDiagnoses.classList.remove("clicked-button")
-    // buttonForViewingInsuranceDiagnoses.style.display = "block"
-
+    let buttonForRegisteringNewInsitution = document.getElementById("registerNewMedicalInstitutionButton")
+    buttonForRegisteringNewInsitution.classList.remove("clicked-button")
+    buttonForRegisteringNewInsitution.style.display = "block"
     let departmentSelectionForm = document.getElementById("departmentSelectionForm")
     while (departmentSelectionForm.children.length > 1) {
         let nextNode = departmentSelectionForm.lastChild
@@ -243,6 +263,7 @@ async function registerNewMedicalInstitution() {
     }
     await storeMedicalInsitutionInformation(session, healthDataDatasetUrl, institutionDetails)
     await checkMedicalInstitutionStatus("signedInUser");
+    resetCurrentPodSession(false)
 }
 
 async function saveNewAppointment() {
@@ -252,11 +273,6 @@ async function saveNewAppointment() {
     let doctorWebID = document.getElementById("newAppointmentDoctor").value;
     let notes = document.getElementById("newAppointmentNotes").value;
 
-    // let department = "Cardiology"
-    // let timeOfAppointment = "12:33"
-    // let dateOfAppointment = "22/11/22"
-    // let doctorWebID = "https://testuser2.solidcommunity.net/profile/card#me"
-    // let notes = "Some notes for appointment"
 
     let appointmentDateAsString = "20" + dateOfAppointment.substring(0, 2) + "-" + dateOfAppointment.substring(3, 5) + "-" + dateOfAppointment.substring(6, 8) + " " + timeOfAppointment
     let appointmentFullTime = new Date(appointmentDateAsString)
@@ -273,7 +289,7 @@ async function saveNewAppointment() {
 }
 
 async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdown) {
-    
+
     let departments = await getDepartments(session, accessedHealthDataContainerUrl)
     if (departments.length == 0) {
         alert("The currently accessed pod owner has no medical records stored in their pod.")
@@ -429,6 +445,7 @@ async function getPatientFilesAndDisplay(recordType, department, isForInsurer) {
     let filesInSelectedDataset = ""
     try {
         filesInSelectedDataset = await getFilesInDataset(session, urlOfSelectedDataset)
+        console.log(filesInSelectedDataset)
     }
     catch (errorCode) {
         if (errorCode == 403) alert('You have not been authorized to view the chosen record type. Contact the pod owner to request access')
@@ -474,6 +491,7 @@ async function getPatientFilesAndDisplay(recordType, department, isForInsurer) {
         headerOfContainer.className = "section-header"
         containerDivForFiles.appendChild(headerOfContainer)
 
+
         for (var k = 0; k < totalFileObjs.length; k++) {
             let fileDisplayObj = document.createElement("div")
             fileDisplayObj.id = "displayedFile" + k
@@ -502,7 +520,10 @@ async function getPatientFilesAndDisplay(recordType, department, isForInsurer) {
         }
         let medicalRecordsDiv = document.getElementById("accessingRecordsDiv")
         medicalRecordsDiv.appendChild(containerDivForFiles)
+        containerDivForFiles.scrollIntoView()
+
     }
+    else alert('Dataset exists but no files are currently held in it.')
 }
 
 async function getAccessAndDisplay(recordType, department) {
@@ -752,7 +773,7 @@ async function saveGeneralRecordDetailsToPod() {
         "https://schema.org/description": description,
         "https://schema.org/department": department,
     }
-    let urlOfDatasetToUploadFileTo = accessedPodOwnerBaseUrl + "/healthData2/" + department + "/Records"
+    let urlOfDatasetToUploadFileTo = accessedHealthDataContainerUrl + department + "/Records"
     let uploadResult = await uploadMedicalRecord(session, urlOfDatasetToUploadFileTo, generalRecordDetails)
     if (uploadResult) {
         alert("General record uploaded successfully to pod")
@@ -779,7 +800,7 @@ async function savePrescriptionDetailsToPod() {
         "https://schema.org/description": description,
         "https://schema.org/department": department,
     }
-    let urlOfDatasetToUploadFileTo = accessedPodOwnerBaseUrl + "/healthData2/" + department + "/Prescriptions"
+    let urlOfDatasetToUploadFileTo = accessedHealthDataContainerUrl + department + "/Prescriptions"
     let uploadResult = await uploadMedicalRecord(session, urlOfDatasetToUploadFileTo, prescriptionDetails)
     if (uploadResult) {
         alert("Prescription uploaded successfully to pod")
@@ -814,7 +835,7 @@ async function saveDiagnosisDetailsToPod() {
         "https://schema.org/description": description,
         "https://schema.org/department": department,
     }
-    let urlOfDatasetToUploadFileTo = accessedPodOwnerBaseUrl + "/healthData2/" + department + "/Diagnoses"
+    let urlOfDatasetToUploadFileTo = accessedHealthDataContainerUrl + department + "/Diagnoses"
     let uploadResult = await uploadMedicalRecord(session, urlOfDatasetToUploadFileTo, diagnosisDetails)
     if (uploadResult) {
         alert("Diagnosis uploaded successfully to pod")
@@ -835,7 +856,7 @@ async function shareAccessForInsurance(insurerWebID) {
 
     let permissionSetForInsurer = { read: true, write: false, append: false, controlRead: false, controlWrite: false }
     for (var i = 0; i < departmentNames.length; i++) {
-        let urlOfDiagnosisDataset = accessedPodOwnerBaseUrl + "/healthData2/" + departmentNames[i] + "/Diagnoses"
+        let urlOfDiagnosisDataset = accessedHealthDataContainerUrl + departmentNames[i] + "/Diagnoses"
         if (await checkIfDatasetExists(session, urlOfDiagnosisDataset)) {    //Diagnoses in the current department
             let files = await getFilesInDataset(session, urlOfDiagnosisDataset)
             console.log(files)
@@ -850,19 +871,19 @@ async function shareAccessForInsurance(insurerWebID) {
                 {
                     console.log(files[i], "is in range ")
                     //Grant access to health data dataset first, or check to see if user has been granted access to any container within the health data container
-                    let existingDiagnosesForInsurance = await checkIfDatasetExists(session, accessedPodOwnerBaseUrl + "/healthData2/InsuranceDiagnoses1")
+                    let existingDiagnosesForInsurance = await checkIfDatasetExists(session, accessedHealthDataContainerUrl + "InsuranceDiagnoses1")
                     if (existingDiagnosesForInsurance == false) {
-                        await createInsuranceDiagnosesDataset(session, accessedPodOwnerBaseUrl + "/healthData2/InsuranceDiagnoses1", accessedPodOwnerUrl)
+                        await createInsuranceDiagnosesDataset(session, accessedHealthDataContainerUrl + "InsuranceDiagnoses1", accessedPodOwnerUrl)
                     }
-                    let insurerHasAccess = await checkIfPersonHasAccess(session, accessedPodOwnerBaseUrl + "/healthData2/InsuranceDiagnoses1", insurerWebID, permissionSetForInsurer)
+                    let insurerHasAccess = await checkIfPersonHasAccess(session, accessedHealthDataContainerUrl + "InsuranceDiagnoses1", insurerWebID, permissionSetForInsurer)
                     if (insurerHasAccess == false) {
                         console.log("granting access")
-                        await grantAccessToDataset(session, insurerWebID, accessedPodOwnerBaseUrl + "/healthData2/", permissionSetForInsurer, false)
-                        await grantAccessToDataset(session, insurerWebID, accessedPodOwnerBaseUrl + "/healthData2/Info", permissionSetForInsurer, false)
-                        await grantAccessToDataset(session, insurerWebID, accessedPodOwnerBaseUrl + "/healthData2/InsuranceDiagnoses1", permissionSetForInsurer, false)
+                        await grantAccessToDataset(session, insurerWebID, accessedHealthDataContainerUrl, permissionSetForInsurer, false)
+                        await grantAccessToDataset(session, insurerWebID, accessedHealthDataContainerUrl + "Info", permissionSetForInsurer, false)
+                        await grantAccessToDataset(session, insurerWebID, accessedHealthDataContainerUrl + "InsuranceDiagnoses1", permissionSetForInsurer, false)
                     }
 
-                    await addThingToDataset(session, accessedPodOwnerBaseUrl + "/healthData2/InsuranceDiagnoses1", files[i])
+                    await addThingToDataset(session, accessedHealthDataContainerUrl + "InsuranceDiagnoses1", files[i])
                 }
             }
         }
@@ -1319,9 +1340,12 @@ registerNewAppointmentButton.addEventListener("click", (event) => {
     document.getElementById("accessMedicalRecordsButton").style.display = "none";
     document.getElementById("uploadMedicalRecordsButton").style.display = "none";
     document.getElementById("initiateInsuranceRequestButton").style.display = "none";
+    document.getElementById("registerNewMedicalInstitutionButton").style.display = "none";
+
     // document.getElementById("viewInsuranceDiagnosesButton").style.display = "none";    
     document.getElementById("registerNewAppointmentButton").classList.add("clicked-button")
     document.getElementById("uploadNewAppointmentDetails").style.display = "block"
+    setTimeout(() => { window.scrollTo(0, document.body.scrollHeight) }, 500)    //Wait half a second then scroll to bottom of page
 })
 
 accessMedicalRecordsButton.addEventListener("click", (event) => {
@@ -1329,9 +1353,12 @@ accessMedicalRecordsButton.addEventListener("click", (event) => {
     document.getElementById("uploadMedicalRecordsButton").style.display = "none";
     document.getElementById("registerNewAppointmentButton").style.display = "none";
     document.getElementById("initiateInsuranceRequestButton").style.display = "none";
+    document.getElementById("registerNewMedicalInstitutionButton").style.display = "none";
+
     // document.getElementById("viewInsuranceDiagnosesButton").style.display = "none";    
     document.getElementById("accessMedicalRecordsButton").classList.add("clicked-button")
-    getPatientDepartmentsAndDisplay("accessingRecords", "");
+    getPatientDepartmentsAndDisplay("accessingRecords", "")
+    setTimeout(() => { window.scrollTo(0, document.body.scrollHeight) }, 500)    //Wait half a second then scroll to bottom of page
 });
 
 initiateInsuranceRequestButton.addEventListener("click", (event) => {
@@ -1339,9 +1366,12 @@ initiateInsuranceRequestButton.addEventListener("click", (event) => {
     document.getElementById("accessMedicalRecordsButton").style.display = "none";
     document.getElementById("registerNewAppointmentButton").style.display = "none";
     document.getElementById("uploadMedicalRecordsButton").style.display = "none";
+    document.getElementById("registerNewMedicalInstitutionButton").style.display = "none";
+
     // document.getElementById("viewInsuranceDiagnosesButton").style.display = "none";    
     document.getElementById("initiateInsuranceRequestButton").classList.add("clicked-button")
     document.getElementById("insuranceDiv").style.display = "block"
+    setTimeout(() => { window.scrollTo(0, document.body.scrollHeight) }, 500)    //Wait half a second then scroll to bottom of page
 })
 
 
@@ -1350,9 +1380,23 @@ uploadMedicalRecordsButton.addEventListener("click", (event) => {
     document.getElementById("accessMedicalRecordsButton").style.display = "none";
     document.getElementById("registerNewAppointmentButton").style.display = "none";
     document.getElementById("initiateInsuranceRequestButton").style.display = "none";
-    // document.getElementById("viewInsuranceDiagnosesButton").style.display = "none";    
+    document.getElementById("registerNewMedicalInstitutionButton").style.display = "none";
     document.getElementById("uploadMedicalRecordsButton").classList.add("clicked-button")
     document.getElementById("uploadNewMedicalRecordDiv").style.display = "block"
+    setTimeout(() => { window.scrollTo(0, document.body.scrollHeight) }, 500)    //Wait half a second then scroll to bottom of page
+})
+
+registerNewMedicalInstitutionButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    document.getElementById("accessMedicalRecordsButton").style.display = "none";
+    document.getElementById("registerNewAppointmentButton").style.display = "none";
+    document.getElementById("initiateInsuranceRequestButton").style.display = "none";
+    document.getElementById("uploadMedicalRecordsButton").style.display = "none";
+    document.getElementById("registerNewMedicalInstitutionButton").classList.add("clicked-button")
+    document.getElementById("registerNewMedicalInstitution").style.display = "block"
+    console.log("Getting called after clicking button");
+    checkMedicalInstitutionStatus("signedInUserNew")
+    setTimeout(() => { window.scrollTo(0, document.body.scrollHeight) }, 500)    //Wait half a second then scroll to bottom of page
 })
 
 
@@ -1362,6 +1406,7 @@ continueWithSelectedRecordTypeButton.addEventListener("click", (event) => {
         document.getElementById("medicalRecordTypeSelection").style.display = "none"
         getPatientDepartmentsAndDisplay("uploadingNewRecord", "newDiagnosisDepartmentPlaceholderDiv")
         document.getElementById("createNewDiagnosisDiv").style.display = "block"
+        document.getElementById("createNewDiagnosisDiv").scrollIntoView();
         return;
     }
     if (document.getElementById("prescriptionCheckbox").checked) {
@@ -1374,6 +1419,7 @@ continueWithSelectedRecordTypeButton.addEventListener("click", (event) => {
         document.getElementById("medicalRecordTypeSelection").style.display = "none"
         getPatientDepartmentsAndDisplay("uploadingNewRecord", "newRecordDepartmentPlaceholderDiv")
         document.getElementById("createNewGeneralRecordDiv").style.display = "block"
+        document.getElementById("createNewGeneralRecordDiv").scrollIntoView();
         return;
     }
     alert('No record type to upload has been selected. Please select one to continue.')
