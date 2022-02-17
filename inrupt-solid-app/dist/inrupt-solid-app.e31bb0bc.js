@@ -71014,6 +71014,7 @@ Object.defineProperty(exports, "__esModule", {
 exports.addThingToDataset = addThingToDataset;
 exports.createDepartmentDataset = createDepartmentDataset;
 exports.createInsuranceDiagnosesDataset = createInsuranceDiagnosesDataset;
+exports.deleteExistingHealthData = deleteExistingHealthData;
 exports.grantAccessToDataset = grantAccessToDataset;
 exports.storeMedicalInsitutionInformation = storeMedicalInsitutionInformation;
 exports.uploadMedicalRecord = uploadMedicalRecord;
@@ -71165,13 +71166,19 @@ async function grantAccessToDataset(session, personWebID, datasetUrl, permission
 
 async function storeMedicalInsitutionInformation(session, healthDataDatasetUrl, institutionDetails) {
   const date = new Date().toUTCString();
+
+  if (await (0, _podReader.checkIfDatasetExists)(session, healthDataDatasetUrl)) {
+    console.log("deleting existing");
+    await deleteExistingHealthData(session, healthDataDatasetUrl);
+  }
+
   let healthDataDataset = (0, _solidClient.createSolidDataset)();
   let healthDataContainer = (0, _solidClient.createContainerAt)(healthDataDatasetUrl, {
     fetch: session.fetch
   });
   const institutionDetailsFile = (0, _solidClient.buildThing)((0, _solidClient.createThing)({
     name: "medicalInstitutionDetails"
-  })).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.name, institutionDetails.name).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.address, institutionDetails.address).addStringNoLocale("https://schema.org/dateCreated", date).addUrl(_vocabCommonRdf.RDF.type, "https://schema.org/MedicalOrganization").build();
+  })).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.name, institutionDetails.name).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.address, institutionDetails.address).addStringNoLocale("https://schema.org/dateCreated", date).addUrl(_vocabCommonRdf.RDF.type, "https://schema.org/MedicalOrganization").addUrl("https://schema.org/member", institutionDetails.administrator).build();
   healthDataDataset = (0, _solidClient.setThing)(healthDataDataset, institutionDetailsFile);
   const savedPrivateInfoDataset = await (0, _solidClient.saveSolidDatasetAt)(healthDataDatasetUrl + "/Info", healthDataDataset, {
     fetch: session.fetch
@@ -71256,13 +71263,10 @@ async function uploadMedicalRecord(session, healthDataDatasetUrl, fileDetails) {
     });
 
     for (const [property, propertyValue] of Object.entries(fileDetails)) {
-      // thingToAdd = addStringNoLocale(thingToAdd, property, propertyValue);
-      // thingToAdd.build();
       thingToAdd = (0, _solidClient.addStringNoLocale)(thingToAdd, property, propertyValue);
     }
 
-    thingToAdd = (0, _solidClient.addUrl)(thingToAdd, _vocabCommonRdf.RDF.type, "https://schema.org/TextDigitalDocument"); // thingToAdd.build();
-
+    thingToAdd = (0, _solidClient.addUrl)(thingToAdd, _vocabCommonRdf.RDF.type, "https://schema.org/TextDigitalDocument");
     console.log(thingToAdd);
     datasetToUploadTo = (0, _solidClient.setThing)(datasetToUploadTo, thingToAdd);
     await (0, _solidClient.saveSolidDatasetAt)(healthDataDatasetUrl, datasetToUploadTo, {
@@ -71301,6 +71305,34 @@ async function addThingToDataset(session, datasetUrl, thing) {
   await (0, _solidClient.saveSolidDatasetAt)(datasetUrl, datasetToAddTo, {
     fetch: session.fetch
   });
+}
+
+async function deleteExistingHealthData(session, resourceUrl) {
+  try {
+    let datasetsWithinDepartment = ['Appointments', 'Diagnoses', 'Prescriptions', 'Records'];
+    let departmentsWithinHealthData = await (0, _podReader.getDepartments)(session, resourceUrl);
+
+    for (var i = 0; i < departmentsWithinHealthData.length; i++) {
+      for (var j = 0; j < datasetsWithinDepartment.length; j++) {
+        console.log("deleting ", departmentsWithinHealthData[i] + datasetsWithinDepartment[j]);
+        await (0, _solidClient.deleteSolidDataset)(departmentsWithinHealthData[i] + datasetsWithinDepartment[j], {
+          fetch: session.fetch
+        }); //Delete each of the 4 child datasets within a department container
+      }
+
+      await (0, _solidClient.deleteSolidDataset)(departmentsWithinHealthData[i], {
+        fetch: session.fetch
+      }); //Then delete the department container
+    }
+
+    await (0, _solidClient.deleteSolidDataset)(resourceUrl, {
+      fetch: session.fetch
+    }); //Then delete the overall dataset
+
+    console.log("deleted dataset");
+  } catch (err) {
+    console.log(err);
+  }
 }
 },{"@inrupt/solid-client":"node_modules/@inrupt/solid-client/dist/index.es.js","@inrupt/vocab-common-rdf":"node_modules/@inrupt/vocab-common-rdf/dist/index.es.js","./podReader":"podReader.js"}],"node_modules/lodash/lodash.js":[function(require,module,exports) {
 var global = arguments[3];
@@ -88851,10 +88883,12 @@ async function selectTypeOfHealthData(healthDataType) {
   const institutionDetails = await (0, _solidClient.getThing)(healthDataInfoDataset, accessedHealthDataInfoDatasetUrl + "#medicalInstitutionDetails");
   let literalName = await (0, _solidClient.getStringNoLocale)(institutionDetails, "http://schema.org/name");
   let literalAddress = await (0, _solidClient.getStringNoLocale)(institutionDetails, "http://schema.org/address");
+  let administrator = await (0, _solidClient.getUrl)(institutionDetails, "https://schema.org/member");
   document.getElementById("typeOfAccessedHealthData").innerHTML = "<u>Accessing Health Data of type</u>: " + healthDataType;
   document.getElementById("ownerOfPod").innerHTML = "<u>Currently accessing the pod belonging to</u>: " + accessedPodOwnerUrl;
   document.getElementById("nameOfInstitution").innerHTML = "<u>Who receives care at</u>: " + literalName;
   document.getElementById("addressOfInstitution").innerHTML = "<u>Which is located at</u>: " + literalAddress;
+  document.getElementById("administratorOfInstitution").innerHTML = "<u>And the organiser of appointments is</u>: " + administrator;
   document.getElementById("accessingPod").style.display = "none";
   document.getElementById("institutionInformation").style.display = 'block';
   (0, _podReader.checkIfAdministrator)(session, accessedHealthDataContainerUrl);

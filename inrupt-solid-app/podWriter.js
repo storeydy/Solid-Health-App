@@ -21,11 +21,13 @@ import {
     hasResourceAcl,
     hasAccessibleAcl,
     hasFallbackAcl,
-    createAclFromFallbackAcl
+    createAclFromFallbackAcl,
+    isContainer,
+    deleteSolidDataset
 
 } from "@inrupt/solid-client"
 import { SCHEMA_INRUPT, VCARD, FOAF, RDF } from "@inrupt/vocab-common-rdf";
-import { checkIfDatasetExists, checkIfPersonHasAccess } from "./podReader"
+import { checkIfDatasetExists, checkIfPersonHasAccess, getDepartments } from "./podReader"
 
 export async function writeAppointment(session, healthDataContainerUrl, appointmentDetails) {
     console.log(session)
@@ -132,6 +134,11 @@ export async function grantAccessToDataset(session, personWebID, datasetUrl, per
 export async function storeMedicalInsitutionInformation(session, healthDataDatasetUrl, institutionDetails) {
     const date = new Date().toUTCString()
 
+    if(await checkIfDatasetExists(session, healthDataDatasetUrl)) {
+        console.log("deleting existing")
+        await deleteExistingHealthData(session, healthDataDatasetUrl)
+    }
+
     let healthDataDataset = createSolidDataset();
     let healthDataContainer = createContainerAt(healthDataDatasetUrl, { fetch: session.fetch });
     const institutionDetailsFile = buildThing(createThing({ name: "medicalInstitutionDetails" }))
@@ -139,7 +146,9 @@ export async function storeMedicalInsitutionInformation(session, healthDataDatas
         .addStringNoLocale(SCHEMA_INRUPT.address, institutionDetails.address)
         .addStringNoLocale("https://schema.org/dateCreated", date)
         .addUrl(RDF.type, "https://schema.org/MedicalOrganization")
+        .addUrl("https://schema.org/member", institutionDetails.administrator)
         .build();
+        
 
     healthDataDataset = setThing(healthDataDataset, institutionDetailsFile)
     const savedPrivateInfoDataset = await saveSolidDatasetAt(
@@ -208,12 +217,9 @@ export async function uploadMedicalRecord(session, healthDataDatasetUrl, fileDet
         console.log(fileDetails["https://schema.org/title"])
         let thingToAdd = createThing({ name: fileDetails["https://schema.org/title"] });
         for (const [property, propertyValue] of Object.entries(fileDetails)) {
-            // thingToAdd = addStringNoLocale(thingToAdd, property, propertyValue);
-            // thingToAdd.build();
             thingToAdd = addStringNoLocale(thingToAdd, property, propertyValue)
         }
         thingToAdd = addUrl(thingToAdd, RDF.type, "https://schema.org/TextDigitalDocument")
-        // thingToAdd.build();
 
         console.log(thingToAdd)
         datasetToUploadTo = setThing(datasetToUploadTo, thingToAdd);
@@ -246,4 +252,23 @@ export async function addThingToDataset(session, datasetUrl, thing) {
     let datasetToAddTo = await getSolidDataset(datasetUrl, { fetch: session.fetch })
     datasetToAddTo = setThing(datasetToAddTo, thing)
     await saveSolidDatasetAt(datasetUrl, datasetToAddTo, { fetch: session.fetch })
+}
+
+export async function deleteExistingHealthData(session, resourceUrl){
+    try {
+        let datasetsWithinDepartment = ['Appointments', 'Diagnoses', 'Prescriptions', 'Records']
+        let departmentsWithinHealthData = await getDepartments(session, resourceUrl)
+        for(var i = 0; i < departmentsWithinHealthData.length; i++){
+            for(var j = 0; j < datasetsWithinDepartment.length; j++){
+                console.log("deleting ", departmentsWithinHealthData[i] + datasetsWithinDepartment[j]);
+                await deleteSolidDataset(departmentsWithinHealthData[i] + datasetsWithinDepartment[j], {fetch: session.fetch})  //Delete each of the 4 child datasets within a department container
+            }
+            await deleteSolidDataset(departmentsWithinHealthData[i], {fetch: session.fetch})    //Then delete the department container
+        }
+        await deleteSolidDataset(resourceUrl, { fetch: session.fetch });    //Then delete the overall dataset
+        console.log("deleted dataset")
+    }
+    catch (err) {
+        console.log(err)
+    }
 }

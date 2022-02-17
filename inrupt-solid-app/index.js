@@ -39,7 +39,8 @@ import {
     getStringNoLocaleAll,
     isContainer,
     getContainedResourceUrlAll,
-    UrlString
+    UrlString,
+    getUrl
 } from "@inrupt/solid-client";
 
 import { Session, getDefaultSession, fetch } from "@inrupt/solid-client-authn-browser";
@@ -191,10 +192,12 @@ async function selectTypeOfHealthData(healthDataType) {
     const institutionDetails = await getThing(healthDataInfoDataset, accessedHealthDataInfoDatasetUrl + "#medicalInstitutionDetails")
     let literalName = await getStringNoLocale(institutionDetails, "http://schema.org/name")
     let literalAddress = await getStringNoLocale(institutionDetails, "http://schema.org/address")
+    let administrator = await getUrl(institutionDetails, "https://schema.org/member")
     document.getElementById("typeOfAccessedHealthData").innerHTML = "<u>Accessing Health Data of type</u>: " + healthDataType
     document.getElementById("ownerOfPod").innerHTML = "<u>Currently accessing the pod belonging to</u>: " + accessedPodOwnerUrl;
     document.getElementById("nameOfInstitution").innerHTML = "<u>Who receives care at</u>: " + literalName;
     document.getElementById("addressOfInstitution").innerHTML = "<u>Which is located at</u>: " + literalAddress;
+    document.getElementById("administratorOfInstitution").innerHTML = "<u>And the organiser of appointments is</u>: " + administrator;
     document.getElementById("accessingPod").style.display = "none"
     document.getElementById("institutionInformation").style.display = 'block'
     checkIfAdministrator(session, accessedHealthDataContainerUrl);
