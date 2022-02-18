@@ -62,9 +62,11 @@ export async function writeAppointment(session, healthDataContainerUrl, appointm
     let departmentAppointmentDataset = await getSolidDataset(departmentDatasetUrl + "/Appointments", { fetch: session.fetch })
     let appointmentFileName = "Appointment @ " + appointmentDetails.appointmentTime.toDateString()
     const appointmentDetailsFile = buildThing(createThing({ name: appointmentFileName }))
+        .addStringNoLocale("https://schema.org/dateCreated", new Date().toUTCString())
         .addStringNoLocale("https://schema.org/startDate", appointmentDetails.appointmentTime)
         .addStringNoLocale("https://schema.org/organizer", appointmentDetails.appointmentDoctor)
         .addStringNoLocale("https://schema.org/about", appointmentDetails.appointmentNotes)
+        .addStringNoLocale("https://schema.org/creator", session.info.webId)
         .addUrl(RDF.type, "https://schema.org/Event")
         .build();
 
@@ -212,16 +214,11 @@ export async function storeMedicalInsitutionInformation(session, healthDataDatas
 export async function uploadMedicalRecord(session, healthDataDatasetUrl, fileDetails) {
     try {
         let datasetToUploadTo = await getSolidDataset(healthDataDatasetUrl, { fetch: session.fetch })
-        console.log(datasetToUploadTo)
-        console.log(fileDetails)
-        console.log(fileDetails["https://schema.org/title"])
         let thingToAdd = createThing({ name: fileDetails["https://schema.org/title"] });
         for (const [property, propertyValue] of Object.entries(fileDetails)) {
             thingToAdd = addStringNoLocale(thingToAdd, property, propertyValue)
         }
         thingToAdd = addUrl(thingToAdd, RDF.type, "https://schema.org/TextDigitalDocument")
-
-        console.log(thingToAdd)
         datasetToUploadTo = setThing(datasetToUploadTo, thingToAdd);
         await saveSolidDatasetAt(healthDataDatasetUrl, datasetToUploadTo, { fetch: session.fetch })
         return true;

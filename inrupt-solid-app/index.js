@@ -162,11 +162,6 @@ async function checkMedicalInstitutionStatus(podOwner) {
             document.getElementById("podOwner").value = "";
         }
         else {
-            let indexesOfExistingHealthData = typesOfHealthDataExists.reduce(
-                (out, bool, index) => bool ? out.concat(index) : out,
-                []
-            )
-            // console.log(indexesOfExistingHealthData)
             if (podOwner == "signedInUserNew" && !document.getElementById("newInstitutionWarningMessage")) {
                 let existingHealthDataTypes = []
                 for (var i = 0; i < typesOfHealthData.length; i++) {
@@ -189,9 +184,22 @@ async function selectTypeOfHealthData(healthDataType) {
     accessedHealthDataContainerUrl = accessedPodOwnerBaseUrl + "/" + healthDataType + "HealthData3/"
     var accessedHealthDataInfoDatasetUrl = accessedHealthDataContainerUrl + "Info"
     console.log(accessedHealthDataContainerUrl)
+    let signedInUsersAccessToOverall = ""
     document.getElementById("accessingPod").style.display = "none"
-
     const healthDataInfoDataset = await getSolidDataset(accessedHealthDataInfoDatasetUrl, { fetch: session.fetch });
+    try {
+        signedInUsersAccessToOverall = await getAccessToDataset(accessedHealthDataContainerUrl, { fetch: session.fetch })
+        let adminAccess = { read: true, write: true, append: true, controlRead: true, controlWrite: true }
+        let userHasAdmin = await checkIfPersonHasAccess(session, accessedHealthDataContainerUrl, session.info.webId, adminAccess)
+        if (userHasAdmin) {
+            console.log("we made it man")
+        }
+        console.log(signedInUsersAccessToOverall)
+    }
+    catch(err){
+        console.log("didnt have access")    
+        //Hide edit buttons of info dataset in here, and creating new appointments if the list of departments is empty
+    }
     const institutionDetails = await getThing(healthDataInfoDataset, accessedHealthDataInfoDatasetUrl + "#medicalInstitutionDetails")
     let literalName = await getStringNoLocale(institutionDetails, "http://schema.org/name")
     let literalAddress = await getStringNoLocale(institutionDetails, "http://schema.org/address")
@@ -1434,7 +1442,7 @@ setNameToEditable.addEventListener("click", (event) => {
     editableField.style.width = "50%"
     editableField.addEventListener("keydown", (event) => {
         if (event.key == "Enter") {
-            updateMedicalInstitutionField("http://schema.org/name", document.getElementById("editableInstitutionName").value).then( async()=>{
+            updateMedicalInstitutionField("http://schema.org/name", document.getElementById("editableInstitutionName").value).then(async () => {
                 alert("Field updated successfully")
                 document.getElementById("setNameToReadOnly").style.display = "none"
                 document.getElementById("nameOfInstitution").style.display = "block"
@@ -1444,7 +1452,7 @@ setNameToEditable.addEventListener("click", (event) => {
             })
         }
     })
-    
+
     document.getElementById("setNameToEditable").parentNode.appendChild(editableField)
     document.getElementById("setNameToEditable").style.display = "none"
     document.getElementById("setNameToReadOnly").style.display = "block"
@@ -1468,7 +1476,7 @@ setAddressToEditable.addEventListener("click", (event) => {
     editableField.style.width = "50%"
     editableField.addEventListener("keydown", (event) => {
         if (event.key == "Enter") {
-            updateMedicalInstitutionField("http://schema.org/address", document.getElementById("editableInstitutionAddress").value).then( async()=>{
+            updateMedicalInstitutionField("http://schema.org/address", document.getElementById("editableInstitutionAddress").value).then(async () => {
                 alert("Field updated successfully")
                 document.getElementById("setAddressToReadOnly").style.display = "none"
                 document.getElementById("addressOfInstitution").style.display = "block"
@@ -1501,20 +1509,20 @@ setAdministratorToEditable.addEventListener("click", (event) => {
     editableField.style.width = "50%"
     editableField.addEventListener("keydown", (event) => {
         if (event.key == "Enter") {
-            try{    //Validate the value they entered is a URL
-            let UrlVersionOfString = new URL(document.getElementById("editableInstitutionAdministrator").value)
+            try {    //Validate the value they entered is a URL
+                let UrlVersionOfString = new URL(document.getElementById("editableInstitutionAdministrator").value)
             }
-            catch(err){
+            catch (err) {
                 alert('Value entered is not a valid URL')
                 return
             }
-            updateMedicalInstitutionField("https://schema.org/member", document.getElementById("editableInstitutionAdministrator").value).then( async()=>{
-                let noAccess = {read: false, append: false, write: false, controlRead: false, controlWrite: false}
-                let administratorAccess = {read: true, append: true, write: true, control: true}
+            updateMedicalInstitutionField("https://schema.org/member", document.getElementById("editableInstitutionAdministrator").value).then(async () => {
+                let noAccess = { read: false, append: false, write: false, controlRead: false, controlWrite: false }
+                let administratorAccess = { read: true, append: true, write: true, control: true }
                 await grantAccessToDataset(session, existingValue, accessedHealthDataContainerUrl, noAccess, false)                 //Revoke access
                 await grantAccessToDataset(session, existingValue, accessedHealthDataContainerUrl + "Info", noAccess, false)        // from previous
-                await grantAccessToDataset(session, document.getElementById("editableInstitutionAdministrator").value, accessedHealthDataContainerUrl, administratorAccess, false )             //Grant access 
-                await grantAccessToDataset(session, document.getElementById("editableInstitutionAdministrator").value, accessedHealthDataContainerUrl + "Info", administratorAccess, false )    // to new
+                await grantAccessToDataset(session, document.getElementById("editableInstitutionAdministrator").value, accessedHealthDataContainerUrl, administratorAccess, false)             //Grant access 
+                await grantAccessToDataset(session, document.getElementById("editableInstitutionAdministrator").value, accessedHealthDataContainerUrl + "Info", administratorAccess, false)    // to new
 
                 alert("Field updated successfully")
                 document.getElementById("setAdministratorToReadOnly").style.display = "none"

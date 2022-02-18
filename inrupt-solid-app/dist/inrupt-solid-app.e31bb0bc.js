@@ -71085,7 +71085,7 @@ async function writeAppointment(session, healthDataContainerUrl, appointmentDeta
   let appointmentFileName = "Appointment @ " + appointmentDetails.appointmentTime.toDateString();
   const appointmentDetailsFile = (0, _solidClient.buildThing)((0, _solidClient.createThing)({
     name: appointmentFileName
-  })).addStringNoLocale("https://schema.org/startDate", appointmentDetails.appointmentTime).addStringNoLocale("https://schema.org/organizer", appointmentDetails.appointmentDoctor).addStringNoLocale("https://schema.org/about", appointmentDetails.appointmentNotes).addUrl(_vocabCommonRdf.RDF.type, "https://schema.org/Event").build();
+  })).addStringNoLocale("https://schema.org/dateCreated", new Date().toUTCString()).addStringNoLocale("https://schema.org/startDate", appointmentDetails.appointmentTime).addStringNoLocale("https://schema.org/organizer", appointmentDetails.appointmentDoctor).addStringNoLocale("https://schema.org/about", appointmentDetails.appointmentNotes).addStringNoLocale("https://schema.org/creator", session.info.webId).addUrl(_vocabCommonRdf.RDF.type, "https://schema.org/Event").build();
   departmentAppointmentDataset = (0, _solidClient.setThing)(departmentAppointmentDataset, appointmentDetailsFile);
   await (0, _solidClient.saveSolidDatasetAt)(departmentDatasetUrl + "/Appointments", departmentAppointmentDataset, {
     fetch: session.fetch
@@ -71255,9 +71255,6 @@ async function uploadMedicalRecord(session, healthDataDatasetUrl, fileDetails) {
     let datasetToUploadTo = await (0, _solidClient.getSolidDataset)(healthDataDatasetUrl, {
       fetch: session.fetch
     });
-    console.log(datasetToUploadTo);
-    console.log(fileDetails);
-    console.log(fileDetails["https://schema.org/title"]);
     let thingToAdd = (0, _solidClient.createThing)({
       name: fileDetails["https://schema.org/title"]
     });
@@ -71267,7 +71264,6 @@ async function uploadMedicalRecord(session, healthDataDatasetUrl, fileDetails) {
     }
 
     thingToAdd = (0, _solidClient.addUrl)(thingToAdd, _vocabCommonRdf.RDF.type, "https://schema.org/TextDigitalDocument");
-    console.log(thingToAdd);
     datasetToUploadTo = (0, _solidClient.setThing)(datasetToUploadTo, thingToAdd);
     await (0, _solidClient.saveSolidDatasetAt)(healthDataDatasetUrl, datasetToUploadTo, {
       fetch: session.fetch
@@ -88853,8 +88849,6 @@ async function checkMedicalInstitutionStatus(podOwner) {
 
       document.getElementById("podOwner").value = "";
     } else {
-      let indexesOfExistingHealthData = typesOfHealthDataExists.reduce((out, bool, index) => bool ? out.concat(index) : out, []); // console.log(indexesOfExistingHealthData)
-
       if (podOwner == "signedInUserNew" && !document.getElementById("newInstitutionWarningMessage")) {
         let existingHealthDataTypes = [];
 
@@ -88878,10 +88872,34 @@ async function selectTypeOfHealthData(healthDataType) {
   accessedHealthDataContainerUrl = accessedPodOwnerBaseUrl + "/" + healthDataType + "HealthData3/";
   var accessedHealthDataInfoDatasetUrl = accessedHealthDataContainerUrl + "Info";
   console.log(accessedHealthDataContainerUrl);
+  let signedInUsersAccessToOverall = "";
   document.getElementById("accessingPod").style.display = "none";
   const healthDataInfoDataset = await (0, _solidClient.getSolidDataset)(accessedHealthDataInfoDatasetUrl, {
     fetch: session.fetch
   });
+
+  try {
+    signedInUsersAccessToOverall = await (0, _podReader.getAccessToDataset)(accessedHealthDataContainerUrl, {
+      fetch: session.fetch
+    });
+    let adminAccess = {
+      read: true,
+      write: true,
+      append: true,
+      controlRead: true,
+      controlWrite: true
+    };
+    let userHasAdmin = await (0, _podReader.checkIfPersonHasAccess)(session, accessedHealthDataContainerUrl, session.info.webId, adminAccess);
+
+    if (userHasAdmin) {
+      console.log("we made it man");
+    }
+
+    console.log(signedInUsersAccessToOverall);
+  } catch (err) {
+    console.log("didnt have access"); //Hide edit buttons of info dataset in here, and creating new appointments if the list of departments is empty
+  }
+
   const institutionDetails = await (0, _solidClient.getThing)(healthDataInfoDataset, accessedHealthDataInfoDatasetUrl + "#medicalInstitutionDetails");
   let literalName = await (0, _solidClient.getStringNoLocale)(institutionDetails, "http://schema.org/name");
   let literalAddress = await (0, _solidClient.getStringNoLocale)(institutionDetails, "http://schema.org/address");
