@@ -23,7 +23,7 @@ import {
     hasFallbackAcl,
     createAclFromFallbackAcl,
     isContainer,
-    deleteSolidDataset
+    deleteSolidDataset,
 
 } from "@inrupt/solid-client"
 import { SCHEMA_INRUPT, VCARD, FOAF, RDF } from "@inrupt/vocab-common-rdf";

@@ -196,6 +196,33 @@
   color:aliceblue
   /* display:block; */
 }
+.white-button-small{
+  margin-left:5%;
+  margin-right: auto;
+  width: 5em;
+  background-color: #ffffff;
+  font-weight: 600;
+  color:#005b81;
+  border-radius: 50%;
+  /* display:block; */
+}
+.red-button-small{
+  margin-left:5%;
+  margin-right: auto;
+  width: 5em;
+  background-color: #e43a3a;
+  font-weight: 600;
+  color:#c8e7f5;
+  border-radius: 50%;
+  /* display:block; */
+}
+.column-2{
+  float: left;
+  width: 50%;
+  position: relative;
+  top: 50%;
+  bottom: 50%;
+}
 .column-3{
   float: left;
   width: 33%;

@@ -40,7 +40,8 @@ import {
     isContainer,
     getContainedResourceUrlAll,
     UrlString,
-    getUrl
+    getUrl,
+    setUrl
 } from "@inrupt/solid-client";
 
 import { Session, getDefaultSession, fetch } from "@inrupt/solid-client-authn-browser";
@@ -68,6 +69,7 @@ const readForm = document.getElementById("readForm");
 var accessedPodOwnerUrl = ""
 var accessedPodOwnerBaseUrl = ""
 var accessedHealthDataContainerUrl = ""
+var accessedHealthDataType = ""
 var medicalInstitutionRegistered = Boolean(0);
 var initialStateOfDatasetAccess = {}
 var currentlyAccessedDatasetUrl = ""
@@ -182,9 +184,10 @@ async function checkMedicalInstitutionStatus(podOwner) {
 }
 
 async function selectTypeOfHealthData(healthDataType) {
+    accessedHealthDataType = healthDataType
     console.log(healthDataType)
     accessedHealthDataContainerUrl = accessedPodOwnerBaseUrl + "/" + healthDataType + "HealthData3/"
-    var accessedHealthDataInfoDatasetUrl = accessedHealthDataContainerUrl + "/Info"
+    var accessedHealthDataInfoDatasetUrl = accessedHealthDataContainerUrl + "Info"
     console.log(accessedHealthDataContainerUrl)
     document.getElementById("accessingPod").style.display = "none"
 
@@ -197,7 +200,7 @@ async function selectTypeOfHealthData(healthDataType) {
     document.getElementById("ownerOfPod").innerHTML = "<u>Currently accessing the pod belonging to</u>: " + accessedPodOwnerUrl;
     document.getElementById("nameOfInstitution").innerHTML = "<u>Who receives care at</u>: " + literalName;
     document.getElementById("addressOfInstitution").innerHTML = "<u>Which is located at</u>: " + literalAddress;
-    document.getElementById("administratorOfInstitution").innerHTML = "<u>And the organiser of appointments is</u>: " + administrator;
+    document.getElementById("administratorOfInstitution").innerHTML = "<u>And the institution administrator is</u>: " + administrator;
     document.getElementById("accessingPod").style.display = "none"
     document.getElementById("institutionInformation").style.display = 'block'
     checkIfAdministrator(session, accessedHealthDataContainerUrl);
@@ -269,6 +272,19 @@ async function registerNewMedicalInstitution() {
     resetCurrentPodSession(false)
 }
 
+async function updateMedicalInstitutionField(fieldID, newValue) {
+    console.log(fieldID)
+    let accessedHealthDataInfoDatasetUrl = accessedHealthDataContainerUrl + "Info"
+    var infoDataSet = await getSolidDataset(accessedHealthDataInfoDatasetUrl, { fetch: session.fetch });
+    console.log(infoDataSet)
+    let institutionDetails = await getThing(infoDataSet, accessedHealthDataInfoDatasetUrl + "#medicalInstitutionDetails")
+    console.log(institutionDetails)
+    if (fieldID == "http://schema.org/name" || fieldID == "http://schema.org/address") institutionDetails = await setStringNoLocale(institutionDetails, fieldID, newValue)
+    else if (fieldID == "https://schema.org/member") institutionDetails = await setUrl(institutionDetails, fieldID, newValue)
+    infoDataSet = await setThing(infoDataSet, institutionDetails)
+    await saveSolidDatasetAt(accessedHealthDataInfoDatasetUrl, infoDataSet, { fetch: session.fetch })
+}
+
 async function saveNewAppointment() {
     let department = document.getElementById("selectedAppointmentDepartmentDropdown").value
     let timeOfAppointment = document.getElementById("newAppointmentTime").value;
@@ -295,7 +311,7 @@ async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdow
 
     let departments = await getDepartments(session, accessedHealthDataContainerUrl)
     if (departments.length == 0) {
-        alert("The currently accessed pod owner has no medical records stored in their pod.")
+        alert("The currently accessed pod owner has no medical records stored in their pod. Register details of an appointment to allow for the creation of records in the appointment department.")
         resetCurrentPodSession(false)
         return
     }
@@ -1297,9 +1313,14 @@ otherUserPodButton.addEventListener('click', (event) => {
     checkMedicalInstitutionStatus("specifiedUser");
 })
 
-institutionInformationForm.addEventListener("submit", (event) => {
+// institutionInformationForm.addEventListener("submit", (event) => {
+//     event.preventDefault();
+//     resetCurrentPodSession(true);
+// })
+
+cancelSessionWithPodButton.addEventListener("click", (event) => {
     event.preventDefault();
-    resetCurrentPodSession(true);
+    resetCurrentPodSession(true)
 })
 
 
@@ -1400,6 +1421,130 @@ registerNewMedicalInstitutionButton.addEventListener("click", (event) => {
     console.log("Getting called after clicking button");
     checkMedicalInstitutionStatus("signedInUserNew")
     setTimeout(() => { window.scrollTo(0, document.body.scrollHeight) }, 500)    //Wait half a second then scroll to bottom of page
+})
+
+setNameToEditable.addEventListener("click", (event) => {
+    event.preventDefault();
+    let existingValue = document.getElementById("nameOfInstitution").innerHTML
+    existingValue = existingValue.substring(existingValue.lastIndexOf(":") + 2, existingValue.length)
+    document.getElementById("nameOfInstitution").style.display = "none"
+    let editableField = document.createElement("input")
+    editableField.value = existingValue
+    editableField.id = "editableInstitutionName"
+    editableField.style.width = "50%"
+    editableField.addEventListener("keydown", (event) => {
+        if (event.key == "Enter") {
+            updateMedicalInstitutionField("http://schema.org/name", document.getElementById("editableInstitutionName").value).then( async()=>{
+                alert("Field updated successfully")
+                document.getElementById("setNameToReadOnly").style.display = "none"
+                document.getElementById("nameOfInstitution").style.display = "block"
+                document.getElementById("setNameToEditable").style.display = "block"
+                document.getElementById("editableInstitutionName").remove()
+                await selectTypeOfHealthData(accessedHealthDataType)
+            })
+        }
+    })
+    
+    document.getElementById("setNameToEditable").parentNode.appendChild(editableField)
+    document.getElementById("setNameToEditable").style.display = "none"
+    document.getElementById("setNameToReadOnly").style.display = "block"
+})
+setNameToReadOnly.addEventListener("click", (event) => {
+    event.preventDefault();
+    document.getElementById("editableInstitutionName").remove();
+    document.getElementById("setNameToReadOnly").style.display = "none"
+    document.getElementById("nameOfInstitution").style.display = "block"
+    document.getElementById("setNameToEditable").style.display = "block"
+})
+
+setAddressToEditable.addEventListener("click", (event) => {
+    event.preventDefault();
+    let existingValue = document.getElementById("addressOfInstitution").innerHTML
+    existingValue = existingValue.substring(existingValue.lastIndexOf(":") + 2, existingValue.length)
+    document.getElementById("addressOfInstitution").style.display = "none"
+    let editableField = document.createElement("input")
+    editableField.value = existingValue
+    editableField.id = "editableInstitutionAddress"
+    editableField.style.width = "50%"
+    editableField.addEventListener("keydown", (event) => {
+        if (event.key == "Enter") {
+            updateMedicalInstitutionField("http://schema.org/address", document.getElementById("editableInstitutionAddress").value).then( async()=>{
+                alert("Field updated successfully")
+                document.getElementById("setAddressToReadOnly").style.display = "none"
+                document.getElementById("addressOfInstitution").style.display = "block"
+                document.getElementById("setAddressToEditable").style.display = "block"
+                document.getElementById("editableInstitutionAddress").remove()
+                await selectTypeOfHealthData(accessedHealthDataType)
+            })
+        }
+    })
+    document.getElementById("setAddressToEditable").parentNode.appendChild(editableField)
+    document.getElementById("setAddressToEditable").style.display = "none"
+    document.getElementById("setAddressToReadOnly").style.display = "block"
+})
+setAddressToReadOnly.addEventListener("click", (event) => {
+    event.preventDefault();
+    document.getElementById("editableInstitutionAddress").remove();
+    document.getElementById("setAddressToReadOnly").style.display = "none"
+    document.getElementById("addressOfInstitution").style.display = "block"
+    document.getElementById("setAddressToEditable").style.display = "block"
+})
+
+setAdministratorToEditable.addEventListener("click", (event) => {
+    event.preventDefault();
+    let existingValue = document.getElementById("administratorOfInstitution").innerHTML
+    existingValue = existingValue.substring(existingValue.indexOf(":") + 2, existingValue.length)
+    document.getElementById("administratorOfInstitution").style.display = "none"
+    let editableField = document.createElement("input")
+    editableField.value = existingValue
+    editableField.id = "editableInstitutionAdministrator"
+    editableField.style.width = "50%"
+    editableField.addEventListener("keydown", (event) => {
+        if (event.key == "Enter") {
+            try{    //Validate the value they entered is a URL
+            let UrlVersionOfString = new URL(document.getElementById("editableInstitutionAdministrator").value)
+            }
+            catch(err){
+                alert('Value entered is not a valid URL')
+                return
+            }
+            updateMedicalInstitutionField("https://schema.org/member", document.getElementById("editableInstitutionAdministrator").value).then( async()=>{
+                let noAccess = {read: false, append: false, write: false, controlRead: false, controlWrite: false}
+                let administratorAccess = {read: true, append: true, write: true, control: true}
+                await grantAccessToDataset(session, existingValue, accessedHealthDataContainerUrl, noAccess, false)                 //Revoke access
+                await grantAccessToDataset(session, existingValue, accessedHealthDataContainerUrl + "Info", noAccess, false)        // from previous
+                await grantAccessToDataset(session, document.getElementById("editableInstitutionAdministrator").value, accessedHealthDataContainerUrl, administratorAccess, false )             //Grant access 
+                await grantAccessToDataset(session, document.getElementById("editableInstitutionAdministrator").value, accessedHealthDataContainerUrl + "Info", administratorAccess, false )    // to new
+
+                alert("Field updated successfully")
+                document.getElementById("setAdministratorToReadOnly").style.display = "none"
+                document.getElementById("administratorOfInstitution").style.display = "block"
+                document.getElementById("setAdministratorToEditable").style.display = "block"
+                document.getElementById("administratorTooltip").style.display = "block"
+                document.getElementById("warningMessageForUpdatingAdmin").remove()
+                document.getElementById("editableInstitutionAdministrator").remove()
+                await selectTypeOfHealthData(accessedHealthDataType)
+            })
+        }
+    })
+    let warningMessage = document.createElement("p")
+    warningMessage.id = "warningMessageForUpdatingAdmin"
+    warningMessage.innerText = "WARNING: Changing the WebID of the administrator for this institution will remove all access that was assigned to the previous administrator"
+    warningMessage.style.color = "red"
+    document.getElementById("setAdministratorToEditable").parentNode.appendChild(warningMessage)
+    document.getElementById("setAdministratorToEditable").parentNode.appendChild(editableField)
+    document.getElementById("setAdministratorToEditable").style.display = "none"
+    document.getElementById("administratorTooltip").style.display = "none"
+    document.getElementById("setAdministratorToReadOnly").style.display = "block"
+})
+setAdministratorToReadOnly.addEventListener("click", (event) => {
+    event.preventDefault();
+    document.getElementById("warningMessageForUpdatingAdmin").remove();
+    document.getElementById("editableInstitutionAdministrator").remove();
+    document.getElementById("setAdministratorToReadOnly").style.display = "none"
+    document.getElementById("administratorTooltip").style.display = "block"
+    document.getElementById("administratorOfInstitution").style.display = "block"
+    document.getElementById("setAdministratorToEditable").style.display = "block"
 })
 
 

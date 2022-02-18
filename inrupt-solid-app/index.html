@@ -52,15 +52,46 @@
 
     <div id="institutionInformation" class="podSelector" style="display:none">
       <div class="row">
-        <form id="institutionInformationForm">
-          <h3 id="typeOfAccessedHealthData" class="section-header"></h3>
-          <h3 id="ownerOfPod"></h3>
-          <h3 id="nameOfInstitution"></h3>
-          <h3 id="addressOfInstitution"></h3>
-          <h3 id="administratorOfInstitution"></h3>
-          <button type="submit" class="white-button column-5" style="margin: 2%;"> Cancel session with current pod owner
-          </button>
-        </form>
+        <!-- <form id="institutionInformationForm"> -->
+        <h3 id="typeOfAccessedHealthData" class="section-header"></h3>
+        <h3 id="ownerOfPod"></h3>
+        <br><br>
+        <h5>Edit any of the fields below and press the Enter key to save changes </h5>
+        <div class="row alt-color" style="margin: 1vh; padding: 1vh; border: 2px; border-radius: 10px 10px 10px 10px">
+          <h3 id="nameOfInstitution" class="column-2"></h3> <input style="float:right; margin-left: 10%; margin-top: 1%"
+            type="button" class="white-button-small" id="setNameToEditable" value="Edit">
+          <input style="float:right; margin-left: 10%; margin-top: 1%; display: none" type="button"
+            class="red-button-small" id="setNameToReadOnly" value="Cancel">
+        </div>
+        <div class="row alt-color" style="margin: 1vh; padding: 1vh; border: 2px; border-radius: 10px 10px 10px 10px">
+          <h3 id="addressOfInstitution" class="column-2"></h3> <input
+            style="float:right; margin-left: 10%; margin-top: 1%" type="button" class="white-button-small"
+            id="setAddressToEditable" value="Edit">
+          <input style="float:right; margin-left: 10%; margin-top: 1%; display: none" type="button"
+            class="red-button-small" id="setAddressToReadOnly" value="Cancel">
+        </div>
+        <div class="row alt-color" style="margin: 1vh; padding: 1vh; border: 2px; border-radius: 10px 10px 10px 10px">
+          <h3 id="administratorOfInstitution" class="column-2"></h3> <input
+            style="float:right; margin-left: 10%; margin-top: 1%" type="button" class="white-button-small"
+            id="setAdministratorToEditable" value="Edit">
+          <input style="float:right; margin-left: 10%; margin-top: 1%; display: none" type="button"
+            class="red-button-small" id="setAdministratorToReadOnly" value="Cancel">
+          <div class="help-tip" style="left: 40%; align-items:inherit;" id = "administratorTooltip">
+            <!-- <div class="help-tip" style="position: inherit"> -->
+
+            <p>This is the only individual than the pod owner that is able to register appointments in a new
+              department
+              on behalf of the patient. <br> <br> By specifying the WebID of the doctor conducting an appointment,
+              they
+              will also be able to grant permissions to the doctor to view, modify and change access to
+              records within a given healthcare department.
+            </p>
+          </div>
+        </div>
+        <button id="cancelSessionWithPodButton" class="white-button column-5" style="margin: 2%;"> Cancel session with
+          current pod owner
+        </button>
+        <!-- </form> -->
         <button type="submit" class="white-button column-5" id="registerNewMedicalInstitutionButton"
           style="margin: 2%;">
           Register new medical institution</button>
@@ -150,10 +181,13 @@
           <div class="help-tip" style="left: 300px">
             <p>This individual will be able to view and make changes to all records held in the selected appointment
               department. This is for the purpose of uploading any general records, diagnoses or prescriptions that came
-              from the appointment. <br> <br> They will also be able to grant the same permissions to others, for the purpose of
+              from the appointment. <br> <br> They will also be able to grant the same permissions to others, for the
+              purpose of
               granting
-              access to Pharmacists who may have to fill out a prescription that was created after the appointment. <br><br>It
-              is very important that the WebID entered here is the WebID of the trusted health worker.</p>
+              access to Pharmacists who may have to fill out a prescription that was created after the appointment.
+              <br><br>It
+              is very important that the WebID entered here is the WebID of the trusted health worker.
+            </p>
           </div>
           <input class="column-4" type="url" placeholder="Enter Doctor's WebID" id="newAppointmentDoctor" required>
           <textarea class="column-6" style="float:right; resize: none;" cols="40" rows="5"
