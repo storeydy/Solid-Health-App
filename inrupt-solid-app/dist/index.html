@@ -67,7 +67,7 @@
         <div class="row alt-color" style="margin: 1vh; padding: 1vh; border: 2px; border-radius: 10px 10px 10px 10px">
           <h3 id="administratorOfInstitution" class="column-2"></h3> <input style="float:right; margin-left: 10%; margin-top: 1%" type="button" class="white-button-small" id="setAdministratorToEditable" value="Edit">
           <input style="float:right; margin-left: 10%; margin-top: 1%; display: none" type="button" class="red-button-small" id="setAdministratorToReadOnly" value="Cancel">
-          <div class="help-tip" style="left: 40%; align-items:inherit;" id="administratorTooltip">
+          <div class="help-tip-left" style="left: 40%; align-items:inherit;" id="administratorTooltip">
             <!-- <div class="help-tip" style="position: inherit"> -->
 
             <p>This is the only individual than the pod owner that is able to register appointments in a new
@@ -83,7 +83,7 @@
           current pod owner
         </button>
         <!-- </form> -->
-        <button type="submit" class="white-button column-5" id="registerNewMedicalInstitutionButton" style="margin: 2%;">
+        <button type="submit" class="white-button column-5" id="registerNewMedicalInstitutionButton" disabled="true" style="margin: 2%;" title="This action can currently only be performed by the pod owner or medical institution administrator">
           Register new medical institution</button>
         <button type="submit" class="white-button column-5" id="registerNewAppointmentButton" style="margin: 2%;">
           Register new appointment</button>
@@ -93,7 +93,7 @@
       <div class="row">
         <button type="submit" class="white-button column-5" id="uploadMedicalRecordsButton" style="margin: 2%;">
           Upload medical records </button>
-        <button class="white-button column-5" id="initiateInsuranceRequestButton" style="margin: 2%;">Make insurance
+        <button class="white-button column-5" id="initiateInsuranceRequestButton" style="margin: 2%;" disabled="true" title="This action can currently only be performed by the pod owner">Make insurance
           request</button>
         <!-- <button class = "white-button column-5" id = "viewInsuranceDiagnosesButton" style = "margin: 2%;">View pertinent diagnoses for insurance</button> -->
 
@@ -144,6 +144,12 @@
       <h2 style="text-align: center;"> Upload new appointment details </h2>
       <div class="row">
         <label class="column-4" style="font-size: 2vh;"> Department of appointment: </label>
+        <div class="help-tip-right" style="left: 20%;" id="administratorTooltip">
+          <!-- <div class="help-tip" style="position: inherit"> -->
+          <p>Only pod owner or institution administrator can upload details of an appointment in a department where no
+            records previously exist <br> <br>
+          </p>
+        </div>
         <form class="column-4" id="selectedDepartmentForm">
           <div class="dropdown">
             <button type="submit" class="dropbtn" id="departmentDropdownButton">Select a department</button>
@@ -162,7 +168,7 @@
         </div>
         <div class="row">
           <label class="column-4"> WebID of Health worker conducting appointment: </label>
-          <div class="help-tip" style="left: 300px">
+          <div class="help-tip-left" style="left: 300px">
             <p>This individual will be able to view and make changes to all records held in the selected appointment
               department. This is for the purpose of uploading any general records, diagnoses or prescriptions that came
               from the appointment. <br> <br> They will also be able to grant the same permissions to others, for the
@@ -225,7 +231,7 @@
           <input class="column-6" placeholder="dd/mm/yy" required="" pattern="[0-9][0-9]/[0-1][0-9]/[0-9][0-9]" minlength="8" maxlength="8" id="generalRecordDate">
           <div id="newRecordDepartmentPlaceholderDiv" class="column-6" style="float:right"></div>
           <label class="column-6" style="float:right"> Department: </label>
-          <div class="help-tip">
+          <div class="help-tip-left">
             <p>Only departments in which you have previously recorded an appointment will be shown here. Register
               details of a new appointment to allow the creation of records in a new department.</p>
           </div>
@@ -250,7 +256,7 @@
           <input class="column-3" placeholder="Enter a title" required="" id="prescriptionTitle">
           <div id="newPrescriptionDepartmentPlaceholderDiv" class="column-6" style="float:right"></div>
           <label class="column-6" style="float:right"> Department: </label>
-          <div class="help-tip">
+          <div class="help-tip-left">
             <p>Only departments in which you have previously recorded an appointment will be shown here. Register
               details of a new appointment to allow the creation of records in a new department.</p>
           </div>
@@ -279,7 +285,7 @@
           <input class="column-3" placeholder="Enter a title" required="" id="diagnosisTitle">
           <div id="newDiagnosisDepartmentPlaceholderDiv" class="column-6" style="float:right"></div>
           <label class="column-6" style="float:right"> Department: </label>
-          <div class="help-tip">
+          <div class="help-tip-left">
             <p>Only departments in which you have previously recorded an appointment will be shown here. Register
               details of a new appointment to allow the creation of records in a new department.</p>
           </div>

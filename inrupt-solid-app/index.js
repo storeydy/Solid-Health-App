@@ -70,6 +70,7 @@ var accessedPodOwnerUrl = ""
 var accessedPodOwnerBaseUrl = ""
 var accessedHealthDataContainerUrl = ""
 var accessedHealthDataType = ""
+var accessedHealthDataContainerAdministrator = ""
 var medicalInstitutionRegistered = Boolean(0);
 var initialStateOfDatasetAccess = {}
 var currentlyAccessedDatasetUrl = ""
@@ -128,16 +129,16 @@ async function checkMedicalInstitutionStatus(podOwner) {
         else if (podOwner == "specifiedUser") webID = document.getElementById("podOwner").value;
         accessedPodOwnerUrl = webID;
         accessedPodOwnerBaseUrl = webID.substring(0, (webID.length - 16))
-        let healthDataExists = await checkIfDatasetExists(session, healthDataDatasetUrl) // https://testuser1.solidcommunity.net/profile/card#me
+        // let healthDataExists = await checkIfDatasetExists(session, healthDataDatasetUrl) // https://testuser1.solidcommunity.net/profile/card#me
         let typesOfHealthData = ['public', 'private', 'GP']
         let typesOfHealthDataExists = [false, false, false]
         let accessTypeOfHealthDataForm = document.getElementById("accessHealthDataForm")
         console.log(accessTypeOfHealthDataForm.childNodes.length)
         for (var i = 0; i < typesOfHealthData.length; i++) {
             var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/" + typesOfHealthData[i] + "HealthData3/Info"
-            let healthDataExists = await checkIfDatasetExists(session, healthDataDatasetUrl)
-            let selectableHealthDataType = document.getElementById(typesOfHealthData[i] + "Button")
+            let healthDataExists = await checkIfDatasetExists(session, healthDataDatasetUrl)    //Checks that they have read access to 'info' dataset, meaning they can do something to that type of health data
             if (healthDataExists == true) {
+                let selectableHealthDataType = document.getElementById(typesOfHealthData[i] + "Button")
                 selectableHealthDataType.onclick = async function () {
                     selectTypeOfHealthData(selectableHealthDataType.id.substring(0, selectableHealthDataType.id.indexOf("Button")))
                 }
@@ -157,7 +158,8 @@ async function checkMedicalInstitutionStatus(podOwner) {
                 document.getElementById("registerNewMedicalInstitution").style.display = 'block'
             }
             else {
-                alert("You have not been authorized to view medical records in the specified individual's pod. Contact them to request access.")
+                resetCurrentPodSession(true)
+                alert("You have not been authorized to view medical records in the specified individual's pod, or they have no Health Data stored with the application.")
             }
             document.getElementById("podOwner").value = "";
         }
@@ -187,23 +189,42 @@ async function selectTypeOfHealthData(healthDataType) {
     let signedInUsersAccessToOverall = ""
     document.getElementById("accessingPod").style.display = "none"
     const healthDataInfoDataset = await getSolidDataset(accessedHealthDataInfoDatasetUrl, { fetch: session.fetch });
-    try {
-        signedInUsersAccessToOverall = await getAccessToDataset(accessedHealthDataContainerUrl, { fetch: session.fetch })
-        let adminAccess = { read: true, write: true, append: true, controlRead: true, controlWrite: true }
-        let userHasAdmin = await checkIfPersonHasAccess(session, accessedHealthDataContainerUrl, session.info.webId, adminAccess)
-        if (userHasAdmin) {
-            console.log("we made it man")
-        }
-        console.log(signedInUsersAccessToOverall)
-    }
-    catch(err){
-        console.log("didnt have access")    
-        //Hide edit buttons of info dataset in here, and creating new appointments if the list of departments is empty
-    }
     const institutionDetails = await getThing(healthDataInfoDataset, accessedHealthDataInfoDatasetUrl + "#medicalInstitutionDetails")
     let literalName = await getStringNoLocale(institutionDetails, "http://schema.org/name")
     let literalAddress = await getStringNoLocale(institutionDetails, "http://schema.org/address")
     let administrator = await getUrl(institutionDetails, "https://schema.org/member")
+    accessedHealthDataContainerAdministrator = administrator
+    try {
+        signedInUsersAccessToOverall = await getAccessToDataset(accessedHealthDataContainerUrl, { fetch: session.fetch })
+        let adminAccess = { read: true, write: true, append: true, controlRead: true, controlWrite: true }
+        // let userHasAdmin = await checkIfPersonHasAccess(session, accessedHealthDataContainerUrl, session.info.webId, adminAccess)
+        // if (userHasAdmin) {
+        // }
+        if (([accessedHealthDataContainerAdministrator, accessedPodOwnerUrl].includes(session.info.webId))) {   //Check that the signed in user is either pod owner or administrator
+            // throw "Doesn't have admin access"
+            document.getElementById("initiateInsuranceRequestButton").disabled = false
+            document.getElementById("registerNewMedicalInstitutionButton").disabled = false
+        }
+    }
+    catch (err) {   //Comes here if signed in user is not the institution administrator or pod owner - restrict relevant actions
+        console.log("didnt have access")
+        //Hide edit buttons of info dataset in here, and creating new appointments if the list of departments is empty
+        // let infoMessageToUser = ""
+        // document.getElementById("registerNewMedicalInstitutionButton").onpointerover = function () { document.getElementById("registerNewMedicalInstitutionButton").title = infoMessageToUser }
+        // document.getElementById("initiateInsuranceRequestButton").onpointerover = function () { document.getElementById("initiateInsuranceRequestButton").title = infoMessageToUser.substring(0, infoMessageToUser.indexOf("or") ) }
+        // document.getElementById("initiateInsuranceRequestButton").disabled = true
+
+    }
+
+    let departments = await getDepartments(session, accessedHealthDataContainerUrl)
+    if (departments.length < 1) {   //Don't allow anyone to create a new department of health records unless they are pod owner or institution administrator
+        document.getElementById("registerNewAppointmentButton").onpointerover = function () { document.getElementById("registerNewAppointmentButton").title = infoMessageToUser }
+        document.getElementById("registerNewAppointmentButton").disabled = true
+    }
+
+    if (session.info.webId == accessedPodOwnerUrl) {
+        document.getElementById("initiateInsuranceRequestButton").disabled = false
+    }
     document.getElementById("typeOfAccessedHealthData").innerHTML = "<u>Accessing Health Data of type</u>: " + healthDataType
     document.getElementById("ownerOfPod").innerHTML = "<u>Currently accessing the pod belonging to</u>: " + accessedPodOwnerUrl;
     document.getElementById("nameOfInstitution").innerHTML = "<u>Who receives care at</u>: " + literalName;
@@ -211,7 +232,7 @@ async function selectTypeOfHealthData(healthDataType) {
     document.getElementById("administratorOfInstitution").innerHTML = "<u>And the institution administrator is</u>: " + administrator;
     document.getElementById("accessingPod").style.display = "none"
     document.getElementById("institutionInformation").style.display = 'block'
-    checkIfAdministrator(session, accessedHealthDataContainerUrl);
+    // checkIfAdministrator(session, accessedHealthDataContainerUrl);
 }
 
 function resetCurrentPodSession(completelyReset) {
@@ -1240,17 +1261,28 @@ function logAccessInfo(agent, access, resource) {
     }
 }
 
-function onDropdownClick() {
+async function onDropdownClick(userType) {
+
     var dropdownOptions = document.getElementById("myDropdown");
     if (dropdownOptions.children.length <= 1) {
-        const departmentList = departments;
+        let selectableDepartments = {}
+        if (userType == "administrator") {
+            selectableDepartments = departments
+        }
+        else if (userType == "standardUser") {
+            selectableDepartments = await getDepartments(session, accessedHealthDataContainerUrl)
+            for (var i = 0; i < selectableDepartments.length; i++) {
+                selectableDepartments[i] = { label: selectableDepartments[i].substring(selectableDepartments[i].lastIndexOf("HealthData3/") + 12, selectableDepartments[i].length - 1) }
+            }
+        }
+
+        const departmentList = selectableDepartments;
         for (var i = 0; i <= departmentList.length - 1; i++) {
             //console.log(departmentList[i].label)
             if (departmentList[i].label) {
                 let newOption = document.createElement("a")
                 const labelValue = departmentList[i].label
                 newOption.innerHTML = labelValue
-                console.log("getting set as: ", newOption.innerHTML)
                 newOption.onclick = function () {
                     console.log(newOption.innerHTML)
                     document.getElementById('selectedAppointmentDepartmentDropdown').value = labelValue;
@@ -1348,7 +1380,10 @@ newDiagnosisForm.addEventListener("submit", (event) => {
 })
 selectedDepartmentForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    onDropdownClick();
+    if (([accessedHealthDataContainerAdministrator, accessedPodOwnerUrl].includes(session.info.webId))) {
+        onDropdownClick("administrator");
+    }
+    else onDropdownClick("standardUser")
 })
 
 saveNewAppointmentDetailsForm.addEventListener("submit", (event) => {

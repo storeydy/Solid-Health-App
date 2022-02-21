@@ -39,9 +39,8 @@ export async function getDepartments(session, resourceUrl) {
     try {
         const healthDataDataset = await getSolidDataset(resourceUrl, { fetch: session.fetch })
         const listOfDatasetsWithinHealthDataDataset = await getContainedResourceUrlAll(healthDataDataset, { fetch: session.fetch })
-        for(var i = 0 ; i < listOfDatasetsWithinHealthDataDataset.length; i++)
-        {
-            if(!(isContainer(listOfDatasetsWithinHealthDataDataset[i], {fetch: session.fetch}))) listOfDatasetsWithinHealthDataDataset.splice(i, 1)
+        for (var i = 0; i < listOfDatasetsWithinHealthDataDataset.length; i++) {
+            if (!(isContainer(listOfDatasetsWithinHealthDataDataset[i], { fetch: session.fetch }))) listOfDatasetsWithinHealthDataDataset.splice(i, 1)
         }
         console.log(listOfDatasetsWithinHealthDataDataset)
         return listOfDatasetsWithinHealthDataDataset
@@ -51,33 +50,31 @@ export async function getDepartments(session, resourceUrl) {
     }
 }
 
-export async function getFilesInDataset(session, resourceUrl)
-{
-    try{
-    const selectedDataset = await getSolidDataset(resourceUrl, {fetch:session.fetch})
-    // console.log(selectedDataset)
-    let filesInDataset = await getThingAll(selectedDataset, {fetch: session.fetch})
-    // console.log(filesInDataset)
-    return filesInDataset
+export async function getFilesInDataset(session, resourceUrl) {
+    try {
+        const selectedDataset = await getSolidDataset(resourceUrl, { fetch: session.fetch })
+        // console.log(selectedDataset)
+        let filesInDataset = await getThingAll(selectedDataset, { fetch: session.fetch })
+        // console.log(filesInDataset)
+        return filesInDataset
     }
-    catch(err){
-        if(err.response){
+    catch (err) {
+        if (err.response) {
             throw err.response.status
         }
         return false
     }
 }
 
-export async function getAccessToDataset(session, resourceUrl)
-{
+export async function getAccessToDataset(session, resourceUrl) {
     // const resourceInfo = await getResourceInfo(resourceUrl, {fetch: session.fetch})
     console.log(resourceUrl)
-    try{
-    const resourceInfo = await getAccessForAll(resourceUrl, "agent", {fetch: session.fetch})
-    return resourceInfo
+    try {
+        const resourceInfo = await getAccessForAll(resourceUrl, "agent", { fetch: session.fetch })
+        return resourceInfo
     }
-    catch(err){
-        if(err.response){
+    catch (err) {
+        if (err.response) {
             throw err.response.status
         }
         return false
@@ -136,7 +133,16 @@ export async function checkIfPersonHasAccess(session, departmentDatasetUrl, pers
     console.log(permissionSet)
     const access = await getAgentAccess(departmentDatasetUrl, personWebID, { fetch: session.fetch });
     console.log(access)
-    if (_.isEqual(access,permissionSet)) return true;
+    // const access = await getAgentResourceAccess(departmentDatasetUrl + ".acl", personWebID, { fetch: session.fetch });
+    // console.log(access)
+    // const access = await getResourceInfoWithAcl(departmentDatasetUrl, { fetch: session.fetch });
+    // console.log(access.internal_resourceInfo.permissions.user)
+
+    // const access = await getAgentAccess(departmentDatasetUrl, personWebID, { fetch: session.fetch }).then(access => {
+    //     console.log(access)
+    // }) 
+
+    if (_.isEqual(access, permissionSet)) return true;
     else return false
 }
 
