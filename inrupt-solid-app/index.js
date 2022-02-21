@@ -75,6 +75,7 @@ var medicalInstitutionRegistered = Boolean(0);
 var initialStateOfDatasetAccess = {}
 var currentlyAccessedDatasetUrl = ""
 var typesOfHealthData = ['public', 'private', 'GP']
+var typesOfHealthDataForDisplay = ['Public', 'Private', 'General Practitioner (GP)']
 var typesOfHealthDataExists = [false, false, false]
 // 1a. Start Login Process. Call session.login() function.
 async function login() {
@@ -284,6 +285,19 @@ function resetCurrentPodSession(completelyReset) {
     while (departmentSelectionForm.children.length > 1) {
         let nextNode = departmentSelectionForm.lastChild
         departmentSelectionForm.removeChild(nextNode);
+    }
+    for(var i = 0; i < typesOfHealthData.length; i++)
+    {
+        let typeID = typesOfHealthData[i] + "HealthDataType"
+        console.log(typeID)
+        let containerInDiagram = document.getElementById(typeID)
+        console.log(containerInDiagram)
+        // while(containerInDiagram.children.length > 1){
+        //     let nextNode = containerInDiagram.lastChild
+        //     containerInDiagram.removeChild(nextNode);
+        // }
+        containerInDiagram.innerHTML = typesOfHealthDataForDisplay[i]
+        console.log(containerInDiagram)
     }
     document.getElementById("medicalRecordTypeSelection").style.display = "block"
     document.getElementById("createNewGeneralRecordDiv").style.display = "none";
@@ -1313,9 +1327,9 @@ async function onDropdownClick(userType) {
 async function displayPodDiagram() {
     console.log(typesOfHealthData)
     console.log(typesOfHealthDataExists)
+    let innerDatasetsWithinDepartment = ['Appointments', 'Diagnoses', 'Prescriptions', 'Records']
     for (var i = 0; i < typesOfHealthData.length; i++) {
         if (typesOfHealthDataExists[i] == true) {
-            // console.log()
             let divForCurrentHealthDataType = document.getElementById(typesOfHealthData[i] + "HealthDataType")
             divForCurrentHealthDataType.style.backgroundColor = "green"
             let departmentsToBeDisplayed = document.createElement("ul")
@@ -1325,7 +1339,30 @@ async function displayPodDiagram() {
                 console.log(departmentsInCurrentHealthDataType)
                 for (var j = 0; j < departmentsInCurrentHealthDataType.length; j++) {
                     let item = document.createElement("li")
-                    item.innerText = departmentsInCurrentHealthDataType[j].substring(departmentsInCurrentHealthDataType[j].lastIndexOf("HealthData3/") + 12, departmentsInCurrentHealthDataType[j].length - 1)
+                    item.classList.add("diagram-outer-department")
+                    let departmentNameAsPlaintext = departmentsInCurrentHealthDataType[j].substring(departmentsInCurrentHealthDataType[j].lastIndexOf("HealthData3/") + 12, departmentsInCurrentHealthDataType[j].length - 1)
+                    item.innerText = departmentNameAsPlaintext
+                    for(var k = 0; k < innerDatasetsWithinDepartment.length; k++)
+                    {
+                        let innerDept = document.createElement("li")
+                        innerDept.classList.add("diagram-inner-dataset")
+                        let urlOfCurrentDatasetWithinDepartment = healthDataContainerUrl + departmentNameAsPlaintext + "/" + innerDatasetsWithinDepartment[k]
+                        let numberOfFiles = ""
+                        try{
+                            let files = await getFilesInDataset(session, urlOfCurrentDatasetWithinDepartment)
+                            numberOfFiles = files.length + " files"
+                        }
+                        catch(err){
+                            console.log(err)
+                            numberOfFiles = "Unauthorized to view contents"
+                        }
+                        innerDept.innerText = innerDatasetsWithinDepartment[k] //+ ": " + numberOfFiles
+                        let thingsInDept = document.createElement("p")
+                        thingsInDept.innerText = numberOfFiles
+                        thingsInDept.classList.add("diagram-things")
+                        innerDept.appendChild(thingsInDept)
+                        item.appendChild(innerDept)
+                    }
                     departmentsToBeDisplayed.appendChild(item)
                 }
             }

@@ -381,16 +381,37 @@
       <h3> Overall pod structure </h3>
     </div> -->
     <h1 style="font-size: medium;">In order to use this application, users make use of the <a
-      href="https://solidproject.org/TR/protocol">Solid specification</a>
-    in order to store and access medical records in individual patient's pods, which can be thought of as personal data stores.</h1>
+        href="https://solidproject.org/TR/protocol">Solid specification</a>
+      in order to store and access medical records in individual patient's pods, which can be thought of as personal
+      data stores.</h1>
     <!-- <br><br> -->
-    <h1 style="font-size: medium;">All of the data used in this application is stored in the pod of the individual that was specified at the initial welcome screen after logging in. This data is set to private by default, meaning that explicit access must be granted to view or update any of it. It is also entirely isolated from all other data held in the pod.</h1>
+    <h1 style="font-size: medium;">All of the data used in this application is stored in the pod of the individual that
+      was specified at the initial welcome screen after logging in. This data is set to private by default, meaning that
+      explicit access must be granted to view or update any of it. It is also entirely isolated from all other data held
+      in the pod.</h1>
     <!-- <br><br> -->
-    <h1 style="font-size: medium">The owner of this pod is <a href="" id="podOwnerUrl"></a>, and you have been granted access to health data stored in their pod for the types shown in green: </h1>
-    <div id = "createdHealthDataTypes" class = "row">
-      <div id = "publicHealthDataType" class = "column-4 diagram-entity">Public</div>
-      <div id = "privateHealthDataType" class = "column-4 diagram-entity">Private</div>
-      <div id = "GPHealthDataType" class = "column-4 diagram-entity">General Practioner (GP)</div>
+    <h1 style="font-size: medium">The owner of this pod is <a href="" id="podOwnerUrl"></a>, and you have been granted
+      access to health data stored in their pod for the types shown in green: </h1>
+    <div id="diagramLegend">
+      <div class="row">
+        <div class="column-4">
+          <div class="container-box"> </div>
+          <a style="float:left; margin-top: 6%;"> Container </a>
+        </div>
+        <div class="column-4">
+          <div class="dataset-box"> </div>
+          <a style="float:left; margin-top: 6%;"> Dataset </a>
+        </div>
+        <div class="column-4">
+          <div class="thing-box"> </div>
+          <a style="float:left; margin-top: 6%;"> Thing </a>
+        </div>
+      </div>
+    </div>
+    <div id="createdHealthDataTypes" class="row">
+      <div id="publicHealthDataType" class="column-4 diagram-entity">Public</div>
+      <div id="privateHealthDataType" class="column-4 diagram-entity">Private</div>
+      <div id="GPHealthDataType" class="column-4 diagram-entity">General Practioner (GP)</div>
     </div>
   </div>
 

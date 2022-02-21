@@ -160,3 +160,5 @@ export async function checkIfAdministrator(session, urlOfHealthRecordDataset) {
     //     logAccessInfo(signedInUsersWebID, access, urlOfHealthRecordDataset + "1")
     // })
 }
+
+// export async function getNumberOfFiles(session,)

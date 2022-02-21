@@ -414,9 +414,53 @@
   margin: 2%;
   padding: 2%;
   text-align: left;
-  /* font-size: x-large; */
+  font-size: x-large;
+  color:rgb(172, 184, 3)
 }
 
+.diagram-outer-department{
+  padding: 5%;
+  background-color:#b9ecff;
+  display: inline-block;
+  padding: 20px;
+  border: 2px solid white;
+  font-size: large;
+
+}
+.diagram-inner-dataset{
+  margin: 10% 4% 5% 15%;
+  color:#02aef8;
+  font-size: medium
+}
+.diagram-things{
+  margin-left: 10%;
+  color: rgb(216, 142, 5);
+}
+.container-box{
+  background-color:rgb(172, 184, 3);
+  height: 20px;
+  width: 20px;
+  float: left;
+  margin-top: 6%;
+  margin-right: 2%;
+  
+}
+.dataset-box{
+  background-color:#02aef8;
+  height: 20px;
+  width: 20px;
+  float: left;
+  margin-top: 6%;
+  margin-right: 2%;
+}
+.thing-box{
+  background-color: rgb(216, 142, 5);;
+  height: 20px;
+  width: 20px;
+  float: left;
+  margin-top: 6%;
+  margin-right: 2%;
+}
 @-webkit-keyframes fadeIn {
   0% { 
       opacity:0; 
