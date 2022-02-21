@@ -74,6 +74,8 @@ var accessedHealthDataContainerAdministrator = ""
 var medicalInstitutionRegistered = Boolean(0);
 var initialStateOfDatasetAccess = {}
 var currentlyAccessedDatasetUrl = ""
+var typesOfHealthData = ['public', 'private', 'GP']
+var typesOfHealthDataExists = [false, false, false]
 // 1a. Start Login Process. Call session.login() function.
 async function login() {
     if (!session.info.isLoggedIn) {
@@ -126,12 +128,14 @@ async function checkMedicalInstitutionStatus(podOwner) {
     if (podOwner) {
         var webID;
         if (podOwner.includes("signedInUser")) webID = session.info.webId
-        else if (podOwner == "specifiedUser") webID = document.getElementById("podOwner").value;
+        else if (podOwner == "specifiedUser") webID = document.getElementById("podOwner").value.trim(); //Take value from input box and remove whitespace
         accessedPodOwnerUrl = webID;
+        document.getElementById("podOwnerUrl").innerHTML = accessedPodOwnerUrl
+        document.getElementById("podOwnerUrl").href = accessedPodOwnerUrl
         accessedPodOwnerBaseUrl = webID.substring(0, (webID.length - 16))
         // let healthDataExists = await checkIfDatasetExists(session, healthDataDatasetUrl) // https://testuser1.solidcommunity.net/profile/card#me
-        let typesOfHealthData = ['public', 'private', 'GP']
-        let typesOfHealthDataExists = [false, false, false]
+        // let typesOfHealthData = ['public', 'private', 'GP']
+        // let typesOfHealthDataExists = [false, false, false]
         let accessTypeOfHealthDataForm = document.getElementById("accessHealthDataForm")
         console.log(accessTypeOfHealthDataForm.childNodes.length)
         for (var i = 0; i < typesOfHealthData.length; i++) {
@@ -200,10 +204,16 @@ async function selectTypeOfHealthData(healthDataType) {
         // let userHasAdmin = await checkIfPersonHasAccess(session, accessedHealthDataContainerUrl, session.info.webId, adminAccess)
         // if (userHasAdmin) {
         // }
-        if (([accessedHealthDataContainerAdministrator, accessedPodOwnerUrl].includes(session.info.webId))) {   //Check that the signed in user is either pod owner or administrator
+        if (accessedPodOwnerUrl == session.info.webId) {   //Check that the signed in user is pod owner
             // throw "Doesn't have admin access"
             document.getElementById("initiateInsuranceRequestButton").disabled = false
             document.getElementById("registerNewMedicalInstitutionButton").disabled = false
+        }
+        if ([accessedPodOwnerUrl, accessedHealthDataContainerAdministrator].includes(session.info.webId)) {   //Enable editing of 
+            document.getElementById("editInstitutionInfoLabel").style.display = "block"
+            document.getElementById("setNameToEditable").style.display = "block"
+            document.getElementById("setAddressToEditable").style.display = "block"
+            document.getElementById("setAdministratorToEditable").style.display = "block"
         }
     }
     catch (err) {   //Comes here if signed in user is not the institution administrator or pod owner - restrict relevant actions
@@ -264,6 +274,9 @@ function resetCurrentPodSession(completelyReset) {
     let buttonForInitiatingInsurance = document.getElementById("initiateInsuranceRequestButton")
     buttonForInitiatingInsurance.classList.remove("clicked-button")
     buttonForInitiatingInsurance.style.display = "block"
+    let buttonForViewingPodDiagram = document.getElementById("viewPodDiagramButton")
+    buttonForViewingPodDiagram.classList.remove("clicked-button")
+    buttonForViewingPodDiagram.style.display = "block"
     let buttonForRegisteringNewInsitution = document.getElementById("registerNewMedicalInstitutionButton")
     buttonForRegisteringNewInsitution.classList.remove("clicked-button")
     buttonForRegisteringNewInsitution.style.display = "block"
@@ -277,6 +290,7 @@ function resetCurrentPodSession(completelyReset) {
     createNewPrescriptionDiv
     document.getElementById("createNewPrescriptionDiv").style.display = "none";
     document.getElementById("insuranceDiv").style.display = "none";
+    document.getElementById("podDiagramDiv").style.display = "none";
     document.getElementById("medicalRecordTypeSelection").style.display = "block"
     if (document.getElementById("selectedDepartment")) document.getElementById("selectedDepartment").remove()
     if (document.getElementById("containerForRecordAccess")) document.getElementById("containerForRecordAccess").remove()
@@ -1296,6 +1310,35 @@ async function onDropdownClick(userType) {
     document.getElementById("myDropdown").classList.toggle("show");
 }
 
+async function displayPodDiagram() {
+    console.log(typesOfHealthData)
+    console.log(typesOfHealthDataExists)
+    for (var i = 0; i < typesOfHealthData.length; i++) {
+        if (typesOfHealthDataExists[i] == true) {
+            // console.log()
+            let divForCurrentHealthDataType = document.getElementById(typesOfHealthData[i] + "HealthDataType")
+            divForCurrentHealthDataType.style.backgroundColor = "green"
+            let departmentsToBeDisplayed = document.createElement("ul")
+            let healthDataContainerUrl = accessedPodOwnerBaseUrl + "/" + typesOfHealthData[i] + "HealthData3/"
+            try {
+                let departmentsInCurrentHealthDataType = await getDepartments(session, healthDataContainerUrl)
+                console.log(departmentsInCurrentHealthDataType)
+                for (var j = 0; j < departmentsInCurrentHealthDataType.length; j++) {
+                    let item = document.createElement("li")
+                    item.innerText = departmentsInCurrentHealthDataType[j].substring(departmentsInCurrentHealthDataType[j].lastIndexOf("HealthData3/") + 12, departmentsInCurrentHealthDataType[j].length - 1)
+                    departmentsToBeDisplayed.appendChild(item)
+                }
+            }
+            catch (err) {
+                let errorGettingDepartments = document.createElement("li")
+                errorGettingDepartments.innerText = "Error retrieving the department list for this department"
+                departmentsToBeDisplayed.appendChild(errorGettingDepartments)
+            }
+            divForCurrentHealthDataType.appendChild(departmentsToBeDisplayed)
+        }
+    }
+}
+
 buttonLogin.onclick = function () {
     login();
 };
@@ -1314,6 +1357,9 @@ returnFromUploadingMedicalRecord.onclick = function () {
     resetCurrentPodSession(false);
 }
 returnFromInsurance.onclick = function () {
+    resetCurrentPodSession(false);
+}
+returnFromPodDiagram.onclick = function () {
     resetCurrentPodSession(false);
 }
 
@@ -1408,8 +1454,8 @@ registerNewAppointmentButton.addEventListener("click", (event) => {
     document.getElementById("uploadMedicalRecordsButton").style.display = "none";
     document.getElementById("initiateInsuranceRequestButton").style.display = "none";
     document.getElementById("registerNewMedicalInstitutionButton").style.display = "none";
+    document.getElementById("viewPodDiagramButton").style.display = "none"
 
-    // document.getElementById("viewInsuranceDiagnosesButton").style.display = "none";    
     document.getElementById("registerNewAppointmentButton").classList.add("clicked-button")
     document.getElementById("uploadNewAppointmentDetails").style.display = "block"
     setTimeout(() => { window.scrollTo(0, document.body.scrollHeight) }, 500)    //Wait half a second then scroll to bottom of page
@@ -1421,8 +1467,7 @@ accessMedicalRecordsButton.addEventListener("click", (event) => {
     document.getElementById("registerNewAppointmentButton").style.display = "none";
     document.getElementById("initiateInsuranceRequestButton").style.display = "none";
     document.getElementById("registerNewMedicalInstitutionButton").style.display = "none";
-
-    // document.getElementById("viewInsuranceDiagnosesButton").style.display = "none";    
+    document.getElementById("viewPodDiagramButton").style.display = "none"
     document.getElementById("accessMedicalRecordsButton").classList.add("clicked-button")
     getPatientDepartmentsAndDisplay("accessingRecords", "")
     setTimeout(() => { window.scrollTo(0, document.body.scrollHeight) }, 500)    //Wait half a second then scroll to bottom of page
@@ -1434,8 +1479,7 @@ initiateInsuranceRequestButton.addEventListener("click", (event) => {
     document.getElementById("registerNewAppointmentButton").style.display = "none";
     document.getElementById("uploadMedicalRecordsButton").style.display = "none";
     document.getElementById("registerNewMedicalInstitutionButton").style.display = "none";
-
-    // document.getElementById("viewInsuranceDiagnosesButton").style.display = "none";    
+    document.getElementById("viewPodDiagramButton").style.display = "none"
     document.getElementById("initiateInsuranceRequestButton").classList.add("clicked-button")
     document.getElementById("insuranceDiv").style.display = "block"
     setTimeout(() => { window.scrollTo(0, document.body.scrollHeight) }, 500)    //Wait half a second then scroll to bottom of page
@@ -1448,6 +1492,7 @@ uploadMedicalRecordsButton.addEventListener("click", (event) => {
     document.getElementById("registerNewAppointmentButton").style.display = "none";
     document.getElementById("initiateInsuranceRequestButton").style.display = "none";
     document.getElementById("registerNewMedicalInstitutionButton").style.display = "none";
+    document.getElementById("viewPodDiagramButton").style.display = "none"
     document.getElementById("uploadMedicalRecordsButton").classList.add("clicked-button")
     document.getElementById("uploadNewMedicalRecordDiv").style.display = "block"
     setTimeout(() => { window.scrollTo(0, document.body.scrollHeight) }, 500)    //Wait half a second then scroll to bottom of page
@@ -1459,10 +1504,24 @@ registerNewMedicalInstitutionButton.addEventListener("click", (event) => {
     document.getElementById("registerNewAppointmentButton").style.display = "none";
     document.getElementById("initiateInsuranceRequestButton").style.display = "none";
     document.getElementById("uploadMedicalRecordsButton").style.display = "none";
+    document.getElementById("viewPodDiagramButton").style.display = "none"
     document.getElementById("registerNewMedicalInstitutionButton").classList.add("clicked-button")
     document.getElementById("registerNewMedicalInstitution").style.display = "block"
-    console.log("Getting called after clicking button");
     checkMedicalInstitutionStatus("signedInUserNew")
+    setTimeout(() => { window.scrollTo(0, document.body.scrollHeight) }, 500)    //Wait half a second then scroll to bottom of page
+})
+
+viewPodDiagramButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    document.getElementById("accessMedicalRecordsButton").style.display = "none";
+    document.getElementById("registerNewAppointmentButton").style.display = "none";
+    document.getElementById("initiateInsuranceRequestButton").style.display = "none";
+    document.getElementById("uploadMedicalRecordsButton").style.display = "none";
+    document.getElementById("registerNewMedicalInstitution").style.display = "none"
+    document.getElementById("viewPodDiagramButton").classList.add("clicked-button")
+    document.getElementById("podDiagramDiv").style.display = "block"
+    console.log("Getting called after clicking button");
+    displayPodDiagram()
     setTimeout(() => { window.scrollTo(0, document.body.scrollHeight) }, 500)    //Wait half a second then scroll to bottom of page
 })
 

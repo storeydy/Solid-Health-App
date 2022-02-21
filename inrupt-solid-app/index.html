@@ -56,23 +56,25 @@
         <h3 id="typeOfAccessedHealthData" class="section-header"></h3>
         <h3 id="ownerOfPod"></h3>
         <br><br>
-        <h5>Edit any of the fields below and press the Enter key to save changes </h5>
+        <h5 id="editInstitutionInfoLabel" style="display:none">Edit any of the fields below and press the Enter key to
+          save changes </h5>
         <div class="row alt-color" style="margin: 1vh; padding: 1vh; border: 2px; border-radius: 10px 10px 10px 10px">
-          <h3 id="nameOfInstitution" class="column-2"></h3> <input style="float:right; margin-left: 10%; margin-top: 1%"
-            type="button" class="white-button-small" id="setNameToEditable" value="Edit">
+          <h3 id="nameOfInstitution" class="column-2"></h3> <input
+            style="float:right; margin-left: 10%; margin-top: 1%; display:none" type="button" class="white-button-small"
+            id="setNameToEditable" value="Edit">
           <input style="float:right; margin-left: 10%; margin-top: 1%; display: none" type="button"
             class="red-button-small" id="setNameToReadOnly" value="Cancel">
         </div>
         <div class="row alt-color" style="margin: 1vh; padding: 1vh; border: 2px; border-radius: 10px 10px 10px 10px">
           <h3 id="addressOfInstitution" class="column-2"></h3> <input
-            style="float:right; margin-left: 10%; margin-top: 1%" type="button" class="white-button-small"
+            style="float:right; margin-left: 10%; margin-top: 1%; display:none" type="button" class="white-button-small"
             id="setAddressToEditable" value="Edit">
           <input style="float:right; margin-left: 10%; margin-top: 1%; display: none" type="button"
             class="red-button-small" id="setAddressToReadOnly" value="Cancel">
         </div>
         <div class="row alt-color" style="margin: 1vh; padding: 1vh; border: 2px; border-radius: 10px 10px 10px 10px">
           <h3 id="administratorOfInstitution" class="column-2"></h3> <input
-            style="float:right; margin-left: 10%; margin-top: 1%" type="button" class="white-button-small"
+            style="float:right; margin-left: 10%; margin-top: 1%; display:none" type="button" class="white-button-small"
             id="setAdministratorToEditable" value="Edit">
           <input style="float:right; margin-left: 10%; margin-top: 1%; display: none" type="button"
             class="red-button-small" id="setAdministratorToReadOnly" value="Cancel">
@@ -104,11 +106,12 @@
       <div class="row">
         <button type="submit" class="white-button column-5" id="uploadMedicalRecordsButton" style="margin: 2%;">
           Upload medical records </button>
-        <button class="white-button column-5" id="initiateInsuranceRequestButton" style="margin: 2%;" disabled="true"
+        <button class="white-button column-5" id="initiateInsuranceRequestButton" style="margin: 2%;"
           title="This action can currently only be performed by the pod owner" disabled="true">Make insurance
           request</button>
-        <!-- <button class = "white-button column-5" id = "viewInsuranceDiagnosesButton" style = "margin: 2%;">View pertinent diagnoses for insurance</button> -->
 
+        <button class="white-button column-5" id="viewPodDiagramButton" style="margin: 2%;">View pod diagram</button>
+        <!-- <button class = "white-button column-5" id = "viewInsuranceDiagnosesButton" style = "margin: 2%;">View pertinent diagnoses for insurance</button> -->
       </div>
     </div>
 
@@ -369,6 +372,29 @@
     <input type="url" placeholder="Insurer WebID" id="insurerWebID">
     <button id="submitInsuranceRequestButton" style="margin-left:70px" class="green-button">Submit </button>
   </div>
+
+  <div id="podDiagramDiv" class="panel" style="display: none">
+    <button id="returnFromPodDiagram" class="red-button"
+      style="float: right; position: inherit; align-self: flex-end; top: 5%"> Go back </button>
+    <h3 class="section-header" style="margin-top: 5%;">Overall pod structure</h3>
+    <!-- <div class = "panel">
+      <h3> Overall pod structure </h3>
+    </div> -->
+    <h1 style="font-size: medium;">In order to use this application, users make use of the <a
+      href="https://solidproject.org/TR/protocol">Solid specification</a>
+    in order to store and access medical records in individual patient's pods, which can be thought of as personal data stores.</h1>
+    <!-- <br><br> -->
+    <h1 style="font-size: medium;">All of the data used in this application is stored in the pod of the individual that was specified at the initial welcome screen after logging in. This data is set to private by default, meaning that explicit access must be granted to view or update any of it. It is also entirely isolated from all other data held in the pod.</h1>
+    <!-- <br><br> -->
+    <h1 style="font-size: medium">The owner of this pod is <a href="" id="podOwnerUrl"></a>, and you have been granted access to health data stored in their pod for the types shown in green: </h1>
+    <div id = "createdHealthDataTypes" class = "row">
+      <div id = "publicHealthDataType" class = "column-4 diagram-entity">Public</div>
+      <div id = "privateHealthDataType" class = "column-4 diagram-entity">Private</div>
+      <div id = "GPHealthDataType" class = "column-4 diagram-entity">General Practioner (GP)</div>
+    </div>
+  </div>
+
+
 
   <script>
     function disableOtherCheckboxes(checkboxToDisable1, checkboxToDisable2) {
