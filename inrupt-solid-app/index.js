@@ -210,7 +210,7 @@ async function selectTypeOfHealthData(healthDataType) {
             document.getElementById("initiateInsuranceRequestButton").disabled = false
             document.getElementById("registerNewMedicalInstitutionButton").disabled = false
         }
-        if ([accessedPodOwnerUrl, accessedHealthDataContainerAdministrator].includes(session.info.webId)) {   //Enable editing of 
+        if ([accessedPodOwnerUrl, accessedHealthDataContainerAdministrator].includes(session.info.webId)) {   //Enable editing of info dataset information including changing the institution administrator
             document.getElementById("editInstitutionInfoLabel").style.display = "block"
             document.getElementById("setNameToEditable").style.display = "block"
             document.getElementById("setAddressToEditable").style.display = "block"
@@ -229,6 +229,7 @@ async function selectTypeOfHealthData(healthDataType) {
 
     let departments = await getDepartments(session, accessedHealthDataContainerUrl)
     if (departments.length < 1) {   //Don't allow anyone to create a new department of health records unless they are pod owner or institution administrator
+        console.log("in here")
         document.getElementById("registerNewAppointmentButton").onpointerover = function () { document.getElementById("registerNewAppointmentButton").title = infoMessageToUser }
         document.getElementById("registerNewAppointmentButton").disabled = true
     }
@@ -292,10 +293,6 @@ function resetCurrentPodSession(completelyReset) {
         console.log(typeID)
         let containerInDiagram = document.getElementById(typeID)
         console.log(containerInDiagram)
-        // while(containerInDiagram.children.length > 1){
-        //     let nextNode = containerInDiagram.lastChild
-        //     containerInDiagram.removeChild(nextNode);
-        // }
         containerInDiagram.innerHTML = typesOfHealthDataForDisplay[i]
         console.log(containerInDiagram)
     }
@@ -357,7 +354,8 @@ async function saveNewAppointment() {
         appointmentDepartment: department,
         appointmentTime: appointmentFullTime,
         appointmentDoctor: doctorWebID,
-        appointmentNotes: notes
+        appointmentNotes: notes,
+        institutionAdministrator: accessedHealthDataContainerAdministrator
     }
     await writeAppointment(session, accessedHealthDataContainerUrl, appointmentDetails)
     document.getElementById("saveNewAppointmentDetailsForm").reset();
