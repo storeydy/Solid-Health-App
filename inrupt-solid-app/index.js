@@ -209,12 +209,12 @@ async function selectTypeOfHealthData(healthDataType) {
             // throw "Doesn't have admin access"
             document.getElementById("initiateInsuranceRequestButton").disabled = false
             document.getElementById("registerNewMedicalInstitutionButton").disabled = false
+            document.getElementById("setAdministratorToEditable").style.display = "block"
         }
         if ([accessedPodOwnerUrl, accessedHealthDataContainerAdministrator].includes(session.info.webId)) {   //Enable editing of info dataset information including changing the institution administrator
             document.getElementById("editInstitutionInfoLabel").style.display = "block"
             document.getElementById("setNameToEditable").style.display = "block"
             document.getElementById("setAddressToEditable").style.display = "block"
-            document.getElementById("setAdministratorToEditable").style.display = "block"
         }
     }
     catch (err) {   //Comes here if signed in user is not the institution administrator or pod owner - restrict relevant actions
@@ -228,8 +228,8 @@ async function selectTypeOfHealthData(healthDataType) {
     }
 
     let departments = await getDepartments(session, accessedHealthDataContainerUrl)
-    if (departments.length < 1) {   //Don't allow anyone to create a new department of health records unless they are pod owner or institution administrator
-        console.log("in here")
+    if (departments.length < 1 && accessedPodOwnerUrl != session.info.webId) {   //Don't allow anyone to create a new department of health records unless they are pod owner or institution administrator
+        let infoMessageToUser = "Only the pod owner is able to create a new appointment when no other appointments exist"
         document.getElementById("registerNewAppointmentButton").onpointerover = function () { document.getElementById("registerNewAppointmentButton").title = infoMessageToUser }
         document.getElementById("registerNewAppointmentButton").disabled = true
     }
@@ -347,10 +347,10 @@ async function saveNewAppointment() {
     let notes = document.getElementById("newAppointmentNotes").value;
 
 
-    let appointmentDateAsString = "20" + dateOfAppointment.substring(0, 2) + "-" + dateOfAppointment.substring(3, 5) + "-" + dateOfAppointment.substring(6, 8) + " " + timeOfAppointment
+    let appointmentDateAsString = "20" + dateOfAppointment.substring(6, 8) + "-" + dateOfAppointment.substring(3, 5) + "-" + dateOfAppointment.substring(0, 2) + " " + timeOfAppointment
     let appointmentFullTime = new Date(appointmentDateAsString)
     let appointmentDetails = {
-        podOwnerBaseUrl: accessedPodOwnerBaseUrl,
+        podOwnerUrl: accessedPodOwnerUrl,
         appointmentDepartment: department,
         appointmentTime: appointmentFullTime,
         appointmentDoctor: doctorWebID,

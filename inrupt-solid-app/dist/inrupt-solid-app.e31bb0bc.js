@@ -71026,94 +71026,113 @@ var _vocabCommonRdf = require("@inrupt/vocab-common-rdf");
 
 var _podReader = require("./podReader");
 
+const emergencyWorkerWebID = "https://emergencyworker.solidcommunity.net/profile/card#me";
+const expectedOverallPermissionSet = {
+  read: true,
+  write: false,
+  append: false,
+  controlRead: false,
+  controlWrite: false
+}; //For reading, different to granting
+
+const expectedDoctorInfoPermissionSet = {
+  read: true,
+  write: false,
+  append: false,
+  controlRead: false,
+  controlWrite: false
+};
+const expectedDoctorPermissionSetForAppointments = {
+  read: true,
+  write: false,
+  append: false,
+  controlRead: false,
+  controlWrite: false
+};
+const doctorPermissionSetForRecordsDiagnoses = {
+  read: true,
+  write: true,
+  append: true,
+  control: false
+};
+const doctorPermissionSetForAppointments = {
+  read: true,
+  write: false,
+  append: false,
+  control: false
+};
+const doctorPermissionSetForPrescriptions = {
+  read: true,
+  write: true,
+  append: true,
+  control: true
+};
+const expectedAdministratorAppointmentsPermissionSet = {
+  read: true,
+  write: true,
+  append: true,
+  controlRead: false,
+  controlWrite: false
+}; //Institution administrator should be able to upload details of a new appointment to any department
+
+const administratorPermissionSetForAppointments = {
+  read: true,
+  write: true,
+  append: true,
+  control: false
+}; //Administrator will need to be able to upload records to the appointments dataset
+
+const administratorPermissionSetForDiagnosesPrescriptionsRecords = {
+  read: false,
+  write: false,
+  append: false,
+  control: true
+}; //Doesn't need to view/update these records but needs to be able to grant read,write access to doctors when they are uploading details of a new appointment
+
+const permissionSetForCreatorOfDepartment = {
+  read: true,
+  append: true,
+  write: true,
+  control: true
+}; //This works and not controlRead, controlWrite
+
+const permissionSetForEmergencyWorkersToPrescriptions = {
+  read: true,
+  append: false,
+  write: false,
+  control: false
+}; //Emergency worker user needs to be able to view all prescriptions
+
 async function writeAppointment(session, healthDataContainerUrl, appointmentDetails) {
   console.log(session);
   console.log(appointmentDetails);
-  let departmentDatasetUrl = healthDataContainerUrl + appointmentDetails.appointmentDepartment;
-  let datasetExists = await (0, _podReader.checkIfDatasetExists)(session, departmentDatasetUrl + "/Appointments"); //If the appointment dataset exists then the other datasets will - means don't need to grant access to administrator to overall department container
+  let departmentDatasetUrl = healthDataContainerUrl + appointmentDetails.appointmentDepartment; // for example: "https://testuser1.solidcommunity.net/publicHealthData/" + "Cardiology"
 
-  if (datasetExists == false) {
-    console.log("shouldn't go in here");
-    await createDepartmentDataset(session, departmentDatasetUrl, appointmentDetails.podOwnerBaseUrl, appointmentDetails.appointmentDepartment);
+  let departmentExists = await (0, _podReader.checkIfDatasetExists)(session, departmentDatasetUrl + "/Appointments"); //If the appointment dataset exists then the other datasets will - means don't need to grant access to administrator to overall department container
+
+  if (departmentExists == false) {
+    // console.log("creating department for the appointment")
+    await createDepartmentDataset(session, healthDataContainerUrl, departmentDatasetUrl, appointmentDetails.podOwnerUrl, appointmentDetails.institutionAdministrator);
   } //TO CHECK IF SOMEONE HAS ACCESS THEY NEED CONTROL ACCESS. MAKES THEM AN OWNER.
 
 
-  let expectedOverallPermissionSet = {
-    read: true,
-    write: false,
-    append: false,
-    controlRead: false,
-    controlWrite: false
-  };
   let doctorHasAccessToOverall = await (0, _podReader.checkIfPersonHasAccess)(session, healthDataContainerUrl, appointmentDetails.appointmentDoctor, expectedOverallPermissionSet);
-  if (doctorHasAccessToOverall == false) await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, healthDataContainerUrl, expectedOverallPermissionSet, false);
+  if (doctorHasAccessToOverall == false) await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, healthDataContainerUrl, expectedOverallPermissionSet, false); //Doctor atleast needs read access to overall HealthData container to access Patient's pod 
+
   let infoDatasetUrl = healthDataContainerUrl + "Info";
-  let expectedInfoPermissionSet = {
-    read: true,
-    write: false,
-    append: false,
-    controlRead: false,
-    controlWrite: false
-  };
-  let doctorHasAccessToInfo = await (0, _podReader.checkIfPersonHasAccess)(session, infoDatasetUrl, appointmentDetails.appointmentDoctor, expectedInfoPermissionSet);
-  if (doctorHasAccessToInfo == false) await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, infoDatasetUrl, expectedInfoPermissionSet, false);
-  let expectedDoctorPermissionSet = {
-    read: true,
-    write: false,
-    append: false,
-    controlRead: false,
-    controlWrite: false
-  };
-  let doctorHasAccessToDepartment = await (0, _podReader.checkIfPersonHasAccess)(session, departmentDatasetUrl + "/Appointments", appointmentDetails.appointmentDoctor, expectedDoctorPermissionSet); //Same permission set for multiple datasets, only one check needed
+  console.log(infoDatasetUrl);
+  let doctorHasAccessToInfo = await (0, _podReader.checkIfPersonHasAccess)(session, infoDatasetUrl, appointmentDetails.appointmentDoctor, expectedDoctorInfoPermissionSet);
+  if (doctorHasAccessToInfo == false) await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, infoDatasetUrl, expectedDoctorInfoPermissionSet, false); //Doctor also needs read access to info dataset HealthData container to display homepage in Patient's pod
+
+  let doctorHasAccessToDepartment = await (0, _podReader.checkIfPersonHasAccess)(session, departmentDatasetUrl + "/Appointments", appointmentDetails.appointmentDoctor, expectedDoctorPermissionSetForAppointments); //Same permission set for multiple datasets, only one check needed
 
   if (doctorHasAccessToDepartment == false) {
-    let doctorPermissionSetForRecordsDiagnoses = {
-      read: true,
-      write: true,
-      append: true,
-      control: false
-    };
-    let doctorPermissionSetForAppointments = {
-      read: true,
-      write: false,
-      append: false,
-      control: false
-    };
-    let doctorPermissionSetForPrescriptions = {
-      read: true,
-      write: true,
-      append: true,
-      control: true
-    };
     console.log("giving doctor access");
     await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, departmentDatasetUrl + "/Appointments", doctorPermissionSetForAppointments, false);
     await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, departmentDatasetUrl + "/Records", doctorPermissionSetForRecordsDiagnoses, false);
     await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, departmentDatasetUrl + "/Diagnoses", doctorPermissionSetForRecordsDiagnoses, false);
     await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, departmentDatasetUrl + "/Prescriptions", doctorPermissionSetForPrescriptions, false);
   }
-
-  let expectedAdministratorAppointmentsPermissionSet = {
-    read: true,
-    write: true,
-    append: true,
-    controlRead: false,
-    controlWrite: false
-  }; //Institution administrator should be able to upload details of a new appointment to any department
-  //MIGHT NEED TO CHECK THAT SIGNED IN USER IS POD OWNER BEFORE MAKING THIS CHECK
-
-  let administratorHasAccessToAppointments = await (0, _podReader.checkIfPersonHasAccess)(session, departmentDatasetUrl + "/Appointments", appointmentDetails.institutionAdministrator, expectedAdministratorAppointmentsPermissionSet);
-
-  if (administratorHasAccessToAppointments == false) {
-    let administratorPermissionSetForAppointments = {
-      read: true,
-      write: true,
-      append: true,
-      control: false
-    };
-    console.log("giving administrator access");
-    await grantAccessToDataset(session, appointmentDetails.institutionAdministrator, departmentDatasetUrl + "/Appointments", administratorPermissionSetForAppointments, false);
-  } //Grant permission to emergency worker
-
 
   let departmentAppointmentDataset = await (0, _solidClient.getSolidDataset)(departmentDatasetUrl + "/Appointments", {
     fetch: session.fetch
@@ -71129,54 +71148,51 @@ async function writeAppointment(session, healthDataContainerUrl, appointmentDeta
   console.log("appointment details saved to pod");
 }
 
-async function createDepartmentDataset(session, departmentDatasetUrl, podOwnerBaseUrl, departmentName) {
+async function createDepartmentDataset(session, healthDataContainerUrl, departmentDatasetUrl, podOwnerUrl, institutionAdministrator) {
   let newDepartmentAppointmentsDataset = (0, _solidClient.createSolidDataset)();
   let newDepartmentRecordsDataset = (0, _solidClient.createSolidDataset)();
   let newDepartmentDiagnosesDataset = (0, _solidClient.createSolidDataset)();
   let newDepartmentPrescriptionsDataset = (0, _solidClient.createSolidDataset)();
-  let podOwnerWebID = podOwnerBaseUrl + "/profile/card#me";
-  let permissionSetForCreator = {
-    read: true,
-    append: true,
-    write: true,
-    control: true
-  }; //This works and not controlRead, controlWrite
-
   let ownerOfPodIsAppointmentCreator = false;
-  if (session.info.webId == podOwnerWebID) ownerOfPodIsAppointmentCreator = true; //Make sure pod owner has access
+  if (session.info.webId == podOwnerUrl) ownerOfPodIsAppointmentCreator = true; //Make sure pod owner has access
 
   console.log(ownerOfPodIsAppointmentCreator);
   await (0, _solidClient.createContainerAt)(departmentDatasetUrl + "/", {
     fetch: session.fetch
   });
-  await grantAccessToDataset(session, podOwnerWebID, departmentDatasetUrl + "/", permissionSetForCreator, true); //MESSES UP WHOLE DATASET
-  // await grantAccessToDataset(session, session.info.webId, departmentDatasetUrl + "/", permissionSetForCreator, false ) //MESSES UP WHOLE DATASET
+  await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/", permissionSetForCreatorOfDepartment, true);
+  await grantAccessToDataset(session, institutionAdministrator, departmentDatasetUrl + "/", permissionSetForCreatorOfDepartment, true); //Makes no difference
 
   await (0, _solidClient.saveSolidDatasetAt)(departmentDatasetUrl + "/Appointments", newDepartmentAppointmentsDataset, {
     fetch: session.fetch
   });
-  console.log("Appointments created"); // await grantAccessToDataset(session, session.info.webId, podOwnerBaseUrl + "/healthData2/" + departmentName, permissionSetForCreator, false ) //MESSES UP WHOLE DATASET
-
-  await grantAccessToDataset(session, session.info.webId, departmentDatasetUrl + "/Appointments", permissionSetForCreator, ownerOfPodIsAppointmentCreator);
-  console.log("Appointments granted to creator");
+  await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/Appointments", permissionSetForCreatorOfDepartment, ownerOfPodIsAppointmentCreator);
   await (0, _solidClient.saveSolidDatasetAt)(departmentDatasetUrl + "/Records", newDepartmentRecordsDataset, {
     fetch: session.fetch
   });
-  console.log("Records created");
-  await grantAccessToDataset(session, session.info.webId, departmentDatasetUrl + "/Records", permissionSetForCreator, ownerOfPodIsAppointmentCreator);
-  console.log("Records granted to creator");
+  await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/Records", permissionSetForCreatorOfDepartment, ownerOfPodIsAppointmentCreator);
   await (0, _solidClient.saveSolidDatasetAt)(departmentDatasetUrl + "/Diagnoses", newDepartmentDiagnosesDataset, {
     fetch: session.fetch
   });
-  await grantAccessToDataset(session, session.info.webId, departmentDatasetUrl + "/Diagnoses", permissionSetForCreator, ownerOfPodIsAppointmentCreator);
+  await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/Diagnoses", permissionSetForCreatorOfDepartment, ownerOfPodIsAppointmentCreator);
   await (0, _solidClient.saveSolidDatasetAt)(departmentDatasetUrl + "/Prescriptions", newDepartmentPrescriptionsDataset, {
     fetch: session.fetch
   });
-  await grantAccessToDataset(session, session.info.webId, departmentDatasetUrl + "/Prescriptions", permissionSetForCreator, ownerOfPodIsAppointmentCreator);
-  await grantAccessToDataset(session, podOwnerWebID, departmentDatasetUrl + "/Appointments", permissionSetForCreator, true);
-  await grantAccessToDataset(session, podOwnerWebID, departmentDatasetUrl + "/Records", permissionSetForCreator, true);
-  await grantAccessToDataset(session, podOwnerWebID, departmentDatasetUrl + "/Diagnoses", permissionSetForCreator, true);
-  await grantAccessToDataset(session, podOwnerWebID, departmentDatasetUrl + "/Prescriptions", permissionSetForCreator, true);
+  await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/Prescriptions", permissionSetForCreatorOfDepartment, ownerOfPodIsAppointmentCreator);
+  await grantAccessToDataset(session, emergencyWorkerWebID, healthDataContainerUrl, permissionSetForEmergencyWorkersToPrescriptions, false); //Grant read access of health data container to emergency worker
+
+  await grantAccessToDataset(session, emergencyWorkerWebID, healthDataContainerUrl + "Info", permissionSetForEmergencyWorkersToPrescriptions, false); //Grant read access of prescriptions to emergency worker
+
+  await grantAccessToDataset(session, emergencyWorkerWebID, departmentDatasetUrl + "/Prescriptions", permissionSetForEmergencyWorkersToPrescriptions, false); //Grant read access of prescriptions to emergency worker
+  // await grantAccessToDataset(session, podOwnerWebID, departmentDatasetUrl + "/Appointments", permissionSetForCreator, true)
+
+  await grantAccessToDataset(session, institutionAdministrator, departmentDatasetUrl + "/Appointments", administratorPermissionSetForAppointments, false); //Grant read, write access of appointments to administrator
+
+  await grantAccessToDataset(session, institutionAdministrator, departmentDatasetUrl + "/Diagnoses", administratorPermissionSetForDiagnosesPrescriptionsRecords, false); //Grant read, write access of appointments to administrator
+
+  await grantAccessToDataset(session, institutionAdministrator, departmentDatasetUrl + "/Prescriptions", administratorPermissionSetForDiagnosesPrescriptionsRecords, false); //Grant read, write access of appointments to administrator
+
+  await grantAccessToDataset(session, institutionAdministrator, departmentDatasetUrl + "/Records", administratorPermissionSetForDiagnosesPrescriptionsRecords, false); //Grant read, write access of appointments to administrator
 }
 
 async function grantAccessToDataset(session, personWebID, datasetUrl, permissionSet, isOwner) {
@@ -71197,8 +71213,7 @@ async function grantAccessToDataset(session, personWebID, datasetUrl, permission
     }
 
     myDatasetsAcl = (0, _solidClient.createAclFromFallbackAcl)(myDatasetWithAcl);
-  } else myDatasetsAcl = (0, _solidClient.getResourceAcl)(myDatasetWithAcl); // const myDatasetsAcl = createAcl(myDatasetWithAcl)
-
+  } else myDatasetsAcl = (0, _solidClient.getResourceAcl)(myDatasetWithAcl);
 
   let updatedAcl = (0, _solidClient.setAgentResourceAccess)(myDatasetsAcl, personWebID, permissionSet);
 
@@ -71241,6 +71256,12 @@ async function storeMedicalInsitutionInformation(session, healthDataDatasetUrl, 
     write: true,
     control: true
   });
+  updatedContainerAcl = (0, _solidClient.setAgentDefaultAccess)(updatedContainerAcl, session.info.webId, {
+    read: true,
+    append: true,
+    write: true,
+    control: true
+  });
 
   if (institutionDetails.administrator) {
     updatedContainerAcl = (0, _solidClient.setAgentResourceAccess)(updatedContainerAcl, institutionDetails.administrator, {
@@ -71249,14 +71270,14 @@ async function storeMedicalInsitutionInformation(session, healthDataDatasetUrl, 
       write: true,
       control: true
     });
+    updatedContainerAcl = (0, _solidClient.setAgentDefaultAccess)(updatedContainerAcl, institutionDetails.administrator, {
+      read: true,
+      append: true,
+      write: true,
+      control: true
+    });
   }
 
-  updatedContainerAcl = (0, _solidClient.setAgentDefaultAccess)(updatedContainerAcl, session.info.webId, {
-    read: true,
-    append: true,
-    write: true,
-    control: true
-  });
   const myDatasetWithAcl = await (0, _solidClient.getResourceInfoWithAcl)(healthDataDatasetUrl + "/Info", {
     fetch: session.fetch
   });
@@ -88964,6 +88985,7 @@ async function selectTypeOfHealthData(healthDataType) {
       // throw "Doesn't have admin access"
       document.getElementById("initiateInsuranceRequestButton").disabled = false;
       document.getElementById("registerNewMedicalInstitutionButton").disabled = false;
+      document.getElementById("setAdministratorToEditable").style.display = "block";
     }
 
     if ([accessedPodOwnerUrl, accessedHealthDataContainerAdministrator].includes(session.info.webId)) {
@@ -88971,7 +88993,6 @@ async function selectTypeOfHealthData(healthDataType) {
       document.getElementById("editInstitutionInfoLabel").style.display = "block";
       document.getElementById("setNameToEditable").style.display = "block";
       document.getElementById("setAddressToEditable").style.display = "block";
-      document.getElementById("setAdministratorToEditable").style.display = "block";
     }
   } catch (err) {
     //Comes here if signed in user is not the institution administrator or pod owner - restrict relevant actions
@@ -88984,9 +89005,9 @@ async function selectTypeOfHealthData(healthDataType) {
 
   let departments = await (0, _podReader.getDepartments)(session, accessedHealthDataContainerUrl);
 
-  if (departments.length < 1) {
+  if (departments.length < 1 && accessedPodOwnerUrl != session.info.webId) {
     //Don't allow anyone to create a new department of health records unless they are pod owner or institution administrator
-    console.log("in here");
+    let infoMessageToUser = "Only the pod owner is able to create a new appointment when no other appointments exist";
 
     document.getElementById("registerNewAppointmentButton").onpointerover = function () {
       document.getElementById("registerNewAppointmentButton").title = infoMessageToUser;
@@ -89112,10 +89133,10 @@ async function saveNewAppointment() {
   let dateOfAppointment = document.getElementById("newAppointmentDate").value;
   let doctorWebID = document.getElementById("newAppointmentDoctor").value;
   let notes = document.getElementById("newAppointmentNotes").value;
-  let appointmentDateAsString = "20" + dateOfAppointment.substring(0, 2) + "-" + dateOfAppointment.substring(3, 5) + "-" + dateOfAppointment.substring(6, 8) + " " + timeOfAppointment;
+  let appointmentDateAsString = "20" + dateOfAppointment.substring(6, 8) + "-" + dateOfAppointment.substring(3, 5) + "-" + dateOfAppointment.substring(0, 2) + " " + timeOfAppointment;
   let appointmentFullTime = new Date(appointmentDateAsString);
   let appointmentDetails = {
-    podOwnerBaseUrl: accessedPodOwnerBaseUrl,
+    podOwnerUrl: accessedPodOwnerUrl,
     appointmentDepartment: department,
     appointmentTime: appointmentFullTime,
     appointmentDoctor: doctorWebID,
