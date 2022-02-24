@@ -117,7 +117,6 @@ async function handleRedirectAfterLogin() {
         document.getElementById("btnLogout").style.display = "block"
         document.getElementById("loginButtonDiv").style.display = "none"
         document.getElementById("accessingPod").style.display = "block"
-        // checkMedicalInstitutionStatus();
     }
 }
 
@@ -134,33 +133,28 @@ async function checkMedicalInstitutionStatus(podOwner) {
         document.getElementById("podOwnerUrl").innerHTML = accessedPodOwnerUrl
         document.getElementById("podOwnerUrl").href = accessedPodOwnerUrl
         accessedPodOwnerBaseUrl = webID.substring(0, (webID.length - 16))
-        // let healthDataExists = await checkIfDatasetExists(session, healthDataDatasetUrl) // https://testuser1.solidcommunity.net/profile/card#me
-        // let typesOfHealthData = ['public', 'private', 'GP']
-        // let typesOfHealthDataExists = [false, false, false]
+
         let accessTypeOfHealthDataForm = document.getElementById("accessHealthDataForm")
-        console.log(accessTypeOfHealthDataForm.childNodes.length)
-        for (var i = 0; i < typesOfHealthData.length; i++) {
+        for (var i = 0; i < typesOfHealthData.length; i++) {    //Loop through array containing 'public', 'private', 'GP'
             var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/" + typesOfHealthData[i] + "HealthData3/Info"
             let healthDataExists = await checkIfDatasetExists(session, healthDataDatasetUrl)    //Checks that they have read access to 'info' dataset, meaning they can do something to that type of health data
-            if (healthDataExists == true) {
+            if (healthDataExists == true) { //If the user has been granted some aspect of access to the current health data type
                 let selectableHealthDataType = document.getElementById(typesOfHealthData[i] + "Button")
+                selectableHealthDataType.disabled = false       //Allow the button for that health data to be clicked
                 selectableHealthDataType.onclick = async function () {
-                    selectTypeOfHealthData(selectableHealthDataType.id.substring(0, selectableHealthDataType.id.indexOf("Button")))
+                    selectTypeOfHealthData(selectableHealthDataType.id.substring(0, selectableHealthDataType.id.indexOf("Button"))) //Open that health data container when clicked
                 }
-                selectableHealthDataType.disabled = false
                 typesOfHealthDataExists[i] = true
             }
         }
-        document.getElementById("accessPodForm").style.display = "none"
-        accessTypeOfHealthDataForm.style.display = "block"
-        console.log(typesOfHealthDataExists)
-        console.log(accessTypeOfHealthDataForm.childNodes.length)
+        document.getElementById("accessPodForm").style.display = "none"     //Hide the div that allows you to select what pod you wish to access
+        accessTypeOfHealthDataForm.style.display = "block"          //Display div showing 3 health data container options
         if (!typesOfHealthDataExists.includes(true)) {  //Means no health data exists
             if (podOwner == "signedInUser") {
                 alert("You have not created a dataset in your Solid pod to hold medical record information. Please create one by following the steps below.")
                 medicalInstitutionRegistered = false;
                 document.getElementById("accessingPod").style.display = "none"
-                document.getElementById("registerNewMedicalInstitution").style.display = 'block'
+                document.getElementById("registerNewMedicalInstitution").style.display = 'block'        //Display pod allowing them to create a health data container
             }
             else {
                 resetCurrentPodSession(true)
@@ -169,7 +163,7 @@ async function checkMedicalInstitutionStatus(podOwner) {
             document.getElementById("podOwner").value = "";
         }
         else {
-            if (podOwner == "signedInUserNew" && !document.getElementById("newInstitutionWarningMessage")) {
+            if (podOwner == "signedInUserNew" && !document.getElementById("newInstitutionWarningMessage")) {        //Comes in here when pod owner clicks 'Register new medical institution'
                 let existingHealthDataTypes = []
                 for (var i = 0; i < typesOfHealthData.length; i++) {
                     if (typesOfHealthDataExists[i] == true) existingHealthDataTypes.push(typesOfHealthData[i])
@@ -186,85 +180,61 @@ async function checkMedicalInstitutionStatus(podOwner) {
 }
 
 async function selectTypeOfHealthData(healthDataType) {
-    accessedHealthDataType = healthDataType
-    console.log(healthDataType)
+    accessedHealthDataType = healthDataType //Either 'public', 'private', or 'GP'
     accessedHealthDataContainerUrl = accessedPodOwnerBaseUrl + "/" + healthDataType + "HealthData3/"
     var accessedHealthDataInfoDatasetUrl = accessedHealthDataContainerUrl + "Info"
-    console.log(accessedHealthDataContainerUrl)
     let signedInUsersAccessToOverall = ""
     document.getElementById("accessingPod").style.display = "none"
-    const healthDataInfoDataset = await getSolidDataset(accessedHealthDataInfoDatasetUrl, { fetch: session.fetch });
+    const healthDataInfoDataset = await getSolidDataset(accessedHealthDataInfoDatasetUrl, { fetch: session.fetch });        //Get 'Info' dataset and extract variables
     const institutionDetails = await getThing(healthDataInfoDataset, accessedHealthDataInfoDatasetUrl + "#medicalInstitutionDetails")
     let literalName = await getStringNoLocale(institutionDetails, "http://schema.org/name")
     let literalAddress = await getStringNoLocale(institutionDetails, "http://schema.org/address")
     let administrator = await getUrl(institutionDetails, "https://schema.org/member")
     accessedHealthDataContainerAdministrator = administrator
-    try {
-        signedInUsersAccessToOverall = await getAccessToDataset(accessedHealthDataContainerUrl, { fetch: session.fetch })
-        let adminAccess = { read: true, write: true, append: true, controlRead: true, controlWrite: true }
-        // let userHasAdmin = await checkIfPersonHasAccess(session, accessedHealthDataContainerUrl, session.info.webId, adminAccess)
-        // if (userHasAdmin) {
-        // }
-        if (accessedPodOwnerUrl == session.info.webId) {   //Check that the signed in user is pod owner
-            // throw "Doesn't have admin access"
-            document.getElementById("initiateInsuranceRequestButton").disabled = false
-            document.getElementById("registerNewMedicalInstitutionButton").disabled = false
-            document.getElementById("setAdministratorToEditable").style.display = "block"
-        }
-        if ([accessedPodOwnerUrl, accessedHealthDataContainerAdministrator].includes(session.info.webId)) {   //Enable editing of info dataset information including changing the institution administrator
-            document.getElementById("editInstitutionInfoLabel").style.display = "block"
-            document.getElementById("setNameToEditable").style.display = "block"
-            document.getElementById("setAddressToEditable").style.display = "block"
-        }
-    }
-    catch (err) {   //Comes here if signed in user is not the institution administrator or pod owner - restrict relevant actions
-        console.log("didnt have access")
-        //Hide edit buttons of info dataset in here, and creating new appointments if the list of departments is empty
-        // let infoMessageToUser = ""
-        // document.getElementById("registerNewMedicalInstitutionButton").onpointerover = function () { document.getElementById("registerNewMedicalInstitutionButton").title = infoMessageToUser }
-        // document.getElementById("initiateInsuranceRequestButton").onpointerover = function () { document.getElementById("initiateInsuranceRequestButton").title = infoMessageToUser.substring(0, infoMessageToUser.indexOf("or") ) }
-        // document.getElementById("initiateInsuranceRequestButton").disabled = true
-
-    }
-
-    let departments = await getDepartments(session, accessedHealthDataContainerUrl)
-    if (departments.length < 1 && accessedPodOwnerUrl != session.info.webId) {   //Don't allow anyone to create a new department of health records unless they are pod owner or institution administrator
-        let infoMessageToUser = "Only the pod owner is able to create a new appointment when no other appointments exist"
-        document.getElementById("registerNewAppointmentButton").onpointerover = function () { document.getElementById("registerNewAppointmentButton").title = infoMessageToUser }
-        document.getElementById("registerNewAppointmentButton").disabled = true
-    }
-
-    if (session.info.webId == accessedPodOwnerUrl) {
+    if (accessedPodOwnerUrl == session.info.webId) {   //Check that the signed in user is pod owner. Enable creating new health data, registering for insurance and editing of administrator if they are
         document.getElementById("initiateInsuranceRequestButton").disabled = false
+        document.getElementById("registerNewMedicalInstitutionButton").disabled = false
+        document.getElementById("setAdministratorToEditable").style.display = "block"
     }
-    document.getElementById("typeOfAccessedHealthData").innerHTML = "<u>Accessing Health Data of type</u>: " + healthDataType
+    if ([accessedPodOwnerUrl, accessedHealthDataContainerAdministrator].includes(session.info.webId)) {   //Check that the signed in user is either the pod owner or institution administrator
+        document.getElementById("editInstitutionInfoLabel").style.display = "block" //Enable editing of institution metatdata
+        document.getElementById("setNameToEditable").style.display = "block"       //Enable editing of institution metatdata
+        document.getElementById("setAddressToEditable").style.display = "block"    //Enable editing of institution metatdata
+        document.getElementById("registerNewAppointmentButton").disabled = false    //Enable creation of new appointments
+        document.getElementById("registerNewAppointmentButton").title = ""          //Remove tooltip saying that this action cannot be performed
+    }
+
+    document.getElementById("typeOfAccessedHealthData").innerHTML = "<u>Accessing Health Data of type</u>: " + healthDataType       //Display pod info along top of screen
     document.getElementById("ownerOfPod").innerHTML = "<u>Currently accessing the pod belonging to</u>: " + accessedPodOwnerUrl;
     document.getElementById("nameOfInstitution").innerHTML = "<u>Who receives care at</u>: " + literalName;
     document.getElementById("addressOfInstitution").innerHTML = "<u>Which is located at</u>: " + literalAddress;
     document.getElementById("administratorOfInstitution").innerHTML = "<u>And the institution administrator is</u>: " + administrator;
-    document.getElementById("accessingPod").style.display = "none"
-    document.getElementById("institutionInformation").style.display = 'block'
-    // checkIfAdministrator(session, accessedHealthDataContainerUrl);
+    document.getElementById("accessingPod").style.display = "none"                  //Hide pod showing 3 health data container options
+    document.getElementById("institutionInformation").style.display = 'block'       //Display pod showing selected health data container metadata and application action buttons ('Create Appointment','View Records' etc.)
 }
 
 function resetCurrentPodSession(completelyReset) {
-    if (completelyReset == true) {
+    if (completelyReset == true) {      //Takes the application back to the screen asking what pod you would like to access
         document.getElementById("institutionInformation").style.display = "none";
-        document.getElementById("accessingPod").style.display = "block";
         document.getElementById("accessHealthDataForm").style.display = "none";
+        document.getElementById("accessingPod").style.display = "block";
         document.getElementById("accessPodForm").style.display = "block";
-
     }
-    let recordsContainer = document.getElementById("containerForDisplayedRecords");
-    if (recordsContainer) recordsContainer.remove();
-    document.getElementById("uploadNewAppointmentDetails").style.display = "none"
+    document.getElementById("uploadNewAppointmentDetails").style.display = "none"       //Set all divs to hidden that could possibly be displayed
     document.getElementById("accessingRecordsDiv").style.display = "none";
     document.getElementById("uploadNewMedicalRecordDiv").style.display = "none";
     document.getElementById("registerNewMedicalInstitution").style.display = "none";
     document.getElementById("createNewDiagnosisDiv").style.display = "none";
     document.getElementById("createNewPrescriptionDiv").style.display = "none";
     document.getElementById("createNewGeneralRecordDiv").style.display = "none";
-    let buttonForAppointment = document.getElementById("registerNewAppointmentButton")
+    document.getElementById("insuranceDiv").style.display = "none";
+    document.getElementById("podDiagramDiv").style.display = "none";
+
+    if (document.getElementById("containerForDisplayedRecords")) document.getElementById("containerForDisplayedRecords").remove()  //Remove div showing displayed records if it exists i.e. the user is currently viewing records
+    if (document.getElementById("containerForRecordAccess")) document.getElementById("containerForRecordAccess").remove()          //Remove div showing displayed access if it exists
+    if (document.getElementById("selectedDepartment")) document.getElementById("selectedDepartment").remove()   //Remove selected dropdown input box if it exists
+
+    let buttonForAppointment = document.getElementById("registerNewAppointmentButton")      //Reset status of all main application buttons 
     buttonForAppointment.classList.remove("clicked-button")
     buttonForAppointment.style.display = "block"
     let buttonForReadingFiles = document.getElementById("accessMedicalRecordsButton")
@@ -282,39 +252,27 @@ function resetCurrentPodSession(completelyReset) {
     let buttonForRegisteringNewInsitution = document.getElementById("registerNewMedicalInstitutionButton")
     buttonForRegisteringNewInsitution.classList.remove("clicked-button")
     buttonForRegisteringNewInsitution.style.display = "block"
-    let departmentSelectionForm = document.getElementById("departmentSelectionForm")
-    while (departmentSelectionForm.children.length > 1) {
+
+    let departmentSelectionForm = document.getElementById("departmentSelectionForm")        
+    while (departmentSelectionForm.children.length > 1) {                           //Remove all department options from the department dropdown
         let nextNode = departmentSelectionForm.lastChild
         departmentSelectionForm.removeChild(nextNode);
     }
-    for(var i = 0; i < typesOfHealthData.length; i++)
-    {
+
+    for (var i = 0; i < typesOfHealthData.length; i++) {
         let typeID = typesOfHealthData[i] + "HealthDataType"
-        console.log(typeID)
         let containerInDiagram = document.getElementById(typeID)
-        console.log(containerInDiagram)
-        containerInDiagram.innerHTML = typesOfHealthDataForDisplay[i]
-        console.log(containerInDiagram)
+        containerInDiagram.innerHTML = typesOfHealthDataForDisplay[i]   //Reset the inner content of the pod diagram
     }
-    document.getElementById("medicalRecordTypeSelection").style.display = "block"
-    document.getElementById("createNewGeneralRecordDiv").style.display = "none";
-    createNewPrescriptionDiv
-    document.getElementById("createNewPrescriptionDiv").style.display = "none";
-    document.getElementById("insuranceDiv").style.display = "none";
-    document.getElementById("podDiagramDiv").style.display = "none";
-    document.getElementById("medicalRecordTypeSelection").style.display = "block"
-    if (document.getElementById("selectedDepartment")) document.getElementById("selectedDepartment").remove()
-    if (document.getElementById("containerForRecordAccess")) document.getElementById("containerForRecordAccess").remove()
+    document.getElementById("medicalRecordTypeSelection").style.display = "block"   //Reset choice of medical record type to being displayed incase user was in the middle 
 }
 
-async function registerNewMedicalInstitution() {
+async function registerNewMedicalInstitution() {        //Extract values from form and send details to podWriter for upload
     const institutionType = document.getElementById("institutionType").value
-    // console.log(institutionType)
     const institutionName = document.getElementById("institutionName").value;
     const institutionAddress = document.getElementById("institutionAddress").value;
     let administratorWebID = document.getElementById("institutionSysAdmin").value;
     if (administratorWebID == "") administratorWebID = null
-    const webID = session.info.webId
     var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/" + institutionType + "HealthData3"  // https://testuser1.solidcommunity.net/profile/card#me
     let institutionDetails = {
         name: institutionName,
@@ -323,29 +281,26 @@ async function registerNewMedicalInstitution() {
     }
     await storeMedicalInsitutionInformation(session, healthDataDatasetUrl, institutionDetails)
     await checkMedicalInstitutionStatus("signedInUser");
+    await selectTypeOfHealthData(institutionType)       //Access new health data container after it has been created
     resetCurrentPodSession(false)
 }
 
-async function updateMedicalInstitutionField(fieldID, newValue) {
-    console.log(fieldID)
+async function updateMedicalInstitutionField(fieldID, newValue) {       //Update field in the medical institution metadata thing
     let accessedHealthDataInfoDatasetUrl = accessedHealthDataContainerUrl + "Info"
     var infoDataSet = await getSolidDataset(accessedHealthDataInfoDatasetUrl, { fetch: session.fetch });
-    console.log(infoDataSet)
     let institutionDetails = await getThing(infoDataSet, accessedHealthDataInfoDatasetUrl + "#medicalInstitutionDetails")
-    console.log(institutionDetails)
     if (fieldID == "http://schema.org/name" || fieldID == "http://schema.org/address") institutionDetails = await setStringNoLocale(institutionDetails, fieldID, newValue)
     else if (fieldID == "https://schema.org/member") institutionDetails = await setUrl(institutionDetails, fieldID, newValue)
     infoDataSet = await setThing(infoDataSet, institutionDetails)
     await saveSolidDatasetAt(accessedHealthDataInfoDatasetUrl, infoDataSet, { fetch: session.fetch })
 }
 
-async function saveNewAppointment() {
-    let department = document.getElementById("selectedAppointmentDepartmentDropdown").value
+async function saveNewAppointment() {       //Extract fields of new appointment and send object to podWriter
+    let department = document.getElementById("selectedAppointmentDepartmentDropdown").value 
     let timeOfAppointment = document.getElementById("newAppointmentTime").value;
     let dateOfAppointment = document.getElementById("newAppointmentDate").value;
     let doctorWebID = document.getElementById("newAppointmentDoctor").value;
     let notes = document.getElementById("newAppointmentNotes").value;
-
 
     let appointmentDateAsString = "20" + dateOfAppointment.substring(6, 8) + "-" + dateOfAppointment.substring(3, 5) + "-" + dateOfAppointment.substring(0, 2) + " " + timeOfAppointment
     let appointmentFullTime = new Date(appointmentDateAsString)
@@ -362,7 +317,7 @@ async function saveNewAppointment() {
     alert("Appointment details saved successfully to pod")
 }
 
-async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdown) {
+async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdown) {        //Add a department dropdown selection to the designated application area
 
     let departments = await getDepartments(session, accessedHealthDataContainerUrl)
     if (departments.length == 0) {
@@ -380,7 +335,7 @@ async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdow
         else if (useOfDropdown == "accessingRecords") {
             document.getElementById("accessingRecordsDiv").style.display = "block"
             departmentListForm = document.getElementById("departmentSelectionForm")
-            if (departmentListForm.childNodes.length < 4) {
+            if (departmentListForm.childNodes.length < 4) {     //Means that no dropdowns have been added to the form - add them in
                 let selectAbleRecordType = document.createElement("select")
                 selectAbleRecordType.id = "selectedRecordType"
                 selectAbleRecordType.style.margin = "2%"
@@ -401,8 +356,7 @@ async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdow
             }
         }
 
-        if (departmentListForm.childNodes.length < 5) {
-            console.log(departments)
+        if (departmentListForm.childNodes.length < 5) {     //Adds selectable department options to dropdown after they have been rendered
             let selectAbleDepartment = document.createElement("select")
             selectAbleDepartment.id = "selectedDepartment"
             selectAbleDepartment.style.margin = "2%"
@@ -1340,17 +1294,16 @@ async function displayPodDiagram() {
                     item.classList.add("diagram-outer-department")
                     let departmentNameAsPlaintext = departmentsInCurrentHealthDataType[j].substring(departmentsInCurrentHealthDataType[j].lastIndexOf("HealthData3/") + 12, departmentsInCurrentHealthDataType[j].length - 1)
                     item.innerText = departmentNameAsPlaintext
-                    for(var k = 0; k < innerDatasetsWithinDepartment.length; k++)
-                    {
+                    for (var k = 0; k < innerDatasetsWithinDepartment.length; k++) {
                         let innerDept = document.createElement("li")
                         innerDept.classList.add("diagram-inner-dataset")
                         let urlOfCurrentDatasetWithinDepartment = healthDataContainerUrl + departmentNameAsPlaintext + "/" + innerDatasetsWithinDepartment[k]
                         let numberOfFiles = ""
-                        try{
+                        try {
                             let files = await getFilesInDataset(session, urlOfCurrentDatasetWithinDepartment)
                             numberOfFiles = files.length + " files"
                         }
-                        catch(err){
+                        catch (err) {
                             console.log(err)
                             numberOfFiles = "Unauthorized to view contents"
                         }

@@ -71079,8 +71079,8 @@ const administratorPermissionSetForAppointments = {
   read: true,
   write: true,
   append: true,
-  control: false
-}; //Administrator will need to be able to upload records to the appointments dataset
+  control: true
+}; //Administrator will need to be able to upload records to the appointments dataset, and grant view access to doctors when uploading an appointment
 
 const administratorPermissionSetForDiagnosesPrescriptionsRecords = {
   read: false,
@@ -71129,9 +71129,13 @@ async function writeAppointment(session, healthDataContainerUrl, appointmentDeta
   if (doctorHasAccessToDepartment == false) {
     console.log("giving doctor access");
     await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, departmentDatasetUrl + "/Appointments", doctorPermissionSetForAppointments, false);
+    console.log("granted to appointments");
     await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, departmentDatasetUrl + "/Records", doctorPermissionSetForRecordsDiagnoses, false);
+    console.log("granted to records");
     await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, departmentDatasetUrl + "/Diagnoses", doctorPermissionSetForRecordsDiagnoses, false);
+    console.log("granted to diagnoses");
     await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, departmentDatasetUrl + "/Prescriptions", doctorPermissionSetForPrescriptions, false);
+    console.log("granted to prescriptions");
   }
 
   let departmentAppointmentDataset = await (0, _solidClient.getSolidDataset)(departmentDatasetUrl + "/Appointments", {
@@ -71153,46 +71157,40 @@ async function createDepartmentDataset(session, healthDataContainerUrl, departme
   let newDepartmentRecordsDataset = (0, _solidClient.createSolidDataset)();
   let newDepartmentDiagnosesDataset = (0, _solidClient.createSolidDataset)();
   let newDepartmentPrescriptionsDataset = (0, _solidClient.createSolidDataset)();
-  let ownerOfPodIsAppointmentCreator = false;
-  if (session.info.webId == podOwnerUrl) ownerOfPodIsAppointmentCreator = true; //Make sure pod owner has access
-
-  console.log(ownerOfPodIsAppointmentCreator);
   await (0, _solidClient.createContainerAt)(departmentDatasetUrl + "/", {
     fetch: session.fetch
   });
-  await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/", permissionSetForCreatorOfDepartment, true);
-  await grantAccessToDataset(session, institutionAdministrator, departmentDatasetUrl + "/", permissionSetForCreatorOfDepartment, true); //Makes no difference
-
   await (0, _solidClient.saveSolidDatasetAt)(departmentDatasetUrl + "/Appointments", newDepartmentAppointmentsDataset, {
     fetch: session.fetch
   });
-  await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/Appointments", permissionSetForCreatorOfDepartment, ownerOfPodIsAppointmentCreator);
   await (0, _solidClient.saveSolidDatasetAt)(departmentDatasetUrl + "/Records", newDepartmentRecordsDataset, {
     fetch: session.fetch
   });
-  await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/Records", permissionSetForCreatorOfDepartment, ownerOfPodIsAppointmentCreator);
   await (0, _solidClient.saveSolidDatasetAt)(departmentDatasetUrl + "/Diagnoses", newDepartmentDiagnosesDataset, {
     fetch: session.fetch
   });
-  await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/Diagnoses", permissionSetForCreatorOfDepartment, ownerOfPodIsAppointmentCreator);
   await (0, _solidClient.saveSolidDatasetAt)(departmentDatasetUrl + "/Prescriptions", newDepartmentPrescriptionsDataset, {
     fetch: session.fetch
   });
-  await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/Prescriptions", permissionSetForCreatorOfDepartment, ownerOfPodIsAppointmentCreator);
+  await grantAccessToDataset(session, session.info.webId, departmentDatasetUrl + "/", permissionSetForCreatorOfDepartment, true);
+  await grantAccessToDataset(session, session.info.webId, departmentDatasetUrl + "/Appointments", permissionSetForCreatorOfDepartment, true);
+  await grantAccessToDataset(session, session.info.webId, departmentDatasetUrl + "/Records", permissionSetForCreatorOfDepartment, true);
+  await grantAccessToDataset(session, session.info.webId, departmentDatasetUrl + "/Diagnoses", permissionSetForCreatorOfDepartment, true);
+  await grantAccessToDataset(session, session.info.webId, departmentDatasetUrl + "/Prescriptions", permissionSetForCreatorOfDepartment, true);
+
+  if (session.info.webId != podOwnerUrl) {
+    await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/", permissionSetForCreatorOfDepartment, true);
+    await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/Appointments", permissionSetForCreatorOfDepartment, true);
+    await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/Records", permissionSetForCreatorOfDepartment, true);
+    await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/Diagnoses", permissionSetForCreatorOfDepartment, true);
+    await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/Prescriptions", permissionSetForCreatorOfDepartment, true);
+  }
+
   await grantAccessToDataset(session, emergencyWorkerWebID, healthDataContainerUrl, permissionSetForEmergencyWorkersToPrescriptions, false); //Grant read access of health data container to emergency worker
 
   await grantAccessToDataset(session, emergencyWorkerWebID, healthDataContainerUrl + "Info", permissionSetForEmergencyWorkersToPrescriptions, false); //Grant read access of prescriptions to emergency worker
 
   await grantAccessToDataset(session, emergencyWorkerWebID, departmentDatasetUrl + "/Prescriptions", permissionSetForEmergencyWorkersToPrescriptions, false); //Grant read access of prescriptions to emergency worker
-  // await grantAccessToDataset(session, podOwnerWebID, departmentDatasetUrl + "/Appointments", permissionSetForCreator, true)
-
-  await grantAccessToDataset(session, institutionAdministrator, departmentDatasetUrl + "/Appointments", administratorPermissionSetForAppointments, false); //Grant read, write access of appointments to administrator
-
-  await grantAccessToDataset(session, institutionAdministrator, departmentDatasetUrl + "/Diagnoses", administratorPermissionSetForDiagnosesPrescriptionsRecords, false); //Grant read, write access of appointments to administrator
-
-  await grantAccessToDataset(session, institutionAdministrator, departmentDatasetUrl + "/Prescriptions", administratorPermissionSetForDiagnosesPrescriptionsRecords, false); //Grant read, write access of appointments to administrator
-
-  await grantAccessToDataset(session, institutionAdministrator, departmentDatasetUrl + "/Records", administratorPermissionSetForDiagnosesPrescriptionsRecords, false); //Grant read, write access of appointments to administrator
 }
 
 async function grantAccessToDataset(session, personWebID, datasetUrl, permissionSet, isOwner) {
@@ -71230,26 +71228,25 @@ async function storeMedicalInsitutionInformation(session, healthDataDatasetUrl, 
   const date = new Date().toUTCString();
 
   if (await (0, _podReader.checkIfDatasetExists)(session, healthDataDatasetUrl)) {
-    console.log("deleting existing");
+    //If there is already a health data container of the selected type
     await deleteExistingHealthData(session, healthDataDatasetUrl);
   }
 
-  let healthDataDataset = (0, _solidClient.createSolidDataset)();
-  let healthDataContainer = (0, _solidClient.createContainerAt)(healthDataDatasetUrl, {
+  let healthDataDataset = await (0, _solidClient.createSolidDataset)();
+  await (0, _solidClient.createContainerAt)(healthDataDatasetUrl, {
     fetch: session.fetch
   });
   const institutionDetailsFile = (0, _solidClient.buildThing)((0, _solidClient.createThing)({
     name: "medicalInstitutionDetails"
   })).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.name, institutionDetails.name).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.address, institutionDetails.address).addStringNoLocale("https://schema.org/dateCreated", date).addUrl(_vocabCommonRdf.RDF.type, "https://schema.org/MedicalOrganization").addUrl("https://schema.org/member", institutionDetails.administrator).build();
   healthDataDataset = (0, _solidClient.setThing)(healthDataDataset, institutionDetailsFile);
-  const savedPrivateInfoDataset = await (0, _solidClient.saveSolidDatasetAt)(healthDataDatasetUrl + "/Info", healthDataDataset, {
+  await (0, _solidClient.saveSolidDatasetAt)(healthDataDatasetUrl + "/Info", healthDataDataset, {
     fetch: session.fetch
   });
   const myContainerWithAcl = await (0, _solidClient.getResourceInfoWithAcl)(healthDataDatasetUrl, {
     fetch: session.fetch
   });
   const myContainersAcl = (0, _solidClient.createAcl)(myContainerWithAcl);
-  console.log(myContainersAcl);
   let updatedContainerAcl = (0, _solidClient.setAgentResourceAccess)(myContainersAcl, session.info.webId, {
     read: true,
     append: true,
@@ -71282,7 +71279,6 @@ async function storeMedicalInsitutionInformation(session, healthDataDatasetUrl, 
     fetch: session.fetch
   });
   const myDatasetsAcl = (0, _solidClient.createAcl)(myDatasetWithAcl);
-  console.log(myDatasetsAcl);
   let updatedAcl = (0, _solidClient.setAgentResourceAccess)(myDatasetsAcl, session.info.webId, {
     read: true,
     append: true,
@@ -88639,16 +88635,12 @@ function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && 
 
 async function checkIfDatasetExists(session, datasetUrl) {
   try {
-    console.log(session);
-    console.log(datasetUrl);
     const dataset = await (0, _solidClient.getSolidDataset)(datasetUrl, {
       fetch: session.fetch
-    }); //const dataset = await getSolidDataset("https://testuser2.solidcommunity.net/healthData40404", {fetch: session.fetch})
-
+    });
     return true;
   } catch (ex) {
-    console.log(ex);
-
+    // console.log(ex)
     if (ex.message.includes("Fetching the Resource at [" + datasetUrl + "] failed: [404]")) //Dataset does not exist
       {
         return false;
@@ -88717,52 +88709,7 @@ async function getAccessToDataset(session, resourceUrl) {
 
     return false;
   }
-} // export async function checkIfHealthDataExists(session, healthDataUrl) {
-//     try {
-//         console.log(healthDataUrl + "/Info")
-//         const healthDataDataset = await getSolidDataset(healthDataUrl + "/Info", { fetch: session.fetch });
-//         console.log(healthDataDataset);
-//         const institutionDetails = await getThing(healthDataDataset, healthDataDatasetUrl + "1/Info#medicalInstitutionDetails")
-//         console.log(institutionDetails)
-//         let literalName = await getStringNoLocale(institutionDetails, "http://schema.org/name")
-//         let literalAddress = await getStringNoLocale(institutionDetails, "http://schema.org/address")
-//         console.log(literalName, literalAddress);
-//         document.getElementById("ownerOfPod").innerHTML = "Currently accessing the pod belonging to: " + webID;
-//         document.getElementById("nameOfInstitution").innerHTML = "Who receives care at: " + literalName;
-//         document.getElementById("addressOfInstitution").innerHTML = "Which is located at: " + literalAddress;
-//         document.getElementById("accessingPod").style.display = "none"
-//         document.getElementById("institutionInformation").style.display = 'block'
-//         //checkIfAdministrator(healthDataDatasetUrl);
-//     }
-//     catch (ex) {
-//         console.log("here", ex)
-//         if (ex instanceof TypeError) {
-//             console.log(ex.message)
-//             if (ex.message == "Failed to fetch") {
-//                 alert("Invalid URL entered, make sure URL is a valid WebID for a user's Solid pod.")
-//             }
-//             else if (ex.message == "Failed to construct 'URL': Invalid URL") {
-//                 alert("No URL entered, enter a URL.")
-//             }
-//         }
-//         if (ex instanceof Error) {
-//             if (ex.response.status == 404) //Health data dataset does not exist
-//             {
-//                 alert("You have not created a dataset in your Solid pod to hold medical record information. Please create one by following the steps below.")
-//                 medicalInstitutionRegistered = false;
-//                 console.log(medicalInstitutionRegistered)
-//                 document.getElementById("accessingPod").style.display = "none"
-//                 document.getElementById("registerNewMedicalInstitution").style.display = 'block'
-//             }
-//             else if (ex.response.status == 403) //Not authorized
-//             {
-//                 alert("You have not been authorized to view medical records in the specified individual's pod. Contact them to request access.")
-//             }
-//         }
-//         document.getElementById("podOwner").value = "";
-//     }
-// }
-
+}
 
 async function checkIfPersonHasAccess(session, departmentDatasetUrl, personWebID, permissionSet) {
   console.log(departmentDatasetUrl);
@@ -88771,14 +88718,7 @@ async function checkIfPersonHasAccess(session, departmentDatasetUrl, personWebID
   const access = await (0, _universal_v.getAgentAccess)(departmentDatasetUrl, personWebID, {
     fetch: session.fetch
   });
-  console.log(access); // const access = await getAgentResourceAccess(departmentDatasetUrl + ".acl", personWebID, { fetch: session.fetch });
-  // console.log(access)
-  // const access = await getResourceInfoWithAcl(departmentDatasetUrl, { fetch: session.fetch });
-  // console.log(access.internal_resourceInfo.permissions.user)
-  // const access = await getAgentAccess(departmentDatasetUrl, personWebID, { fetch: session.fetch }).then(access => {
-  //     console.log(access)
-  // }) 
-
+  console.log(access);
   if (_.isEqual(access, permissionSet)) return true;else return false;
 }
 
@@ -88876,7 +88816,7 @@ async function handleRedirectAfterLogin() {
     document.getElementById("webID").value = session.info.webId;
     document.getElementById("btnLogout").style.display = "block";
     document.getElementById("loginButtonDiv").style.display = "none";
-    document.getElementById("accessingPod").style.display = "block"; // checkMedicalInstitutionStatus();
+    document.getElementById("accessingPod").style.display = "block";
   }
 }
 
@@ -88890,33 +88830,30 @@ async function checkMedicalInstitutionStatus(podOwner) {
     accessedPodOwnerUrl = webID;
     document.getElementById("podOwnerUrl").innerHTML = accessedPodOwnerUrl;
     document.getElementById("podOwnerUrl").href = accessedPodOwnerUrl;
-    accessedPodOwnerBaseUrl = webID.substring(0, webID.length - 16); // let healthDataExists = await checkIfDatasetExists(session, healthDataDatasetUrl) // https://testuser1.solidcommunity.net/profile/card#me
-    // let typesOfHealthData = ['public', 'private', 'GP']
-    // let typesOfHealthDataExists = [false, false, false]
-
+    accessedPodOwnerBaseUrl = webID.substring(0, webID.length - 16);
     let accessTypeOfHealthDataForm = document.getElementById("accessHealthDataForm");
-    console.log(accessTypeOfHealthDataForm.childNodes.length);
 
     for (var i = 0; i < typesOfHealthData.length; i++) {
+      //Loop through array containing 'public', 'private', 'GP'
       var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/" + typesOfHealthData[i] + "HealthData3/Info";
       let healthDataExists = await (0, _podReader.checkIfDatasetExists)(session, healthDataDatasetUrl); //Checks that they have read access to 'info' dataset, meaning they can do something to that type of health data
 
       if (healthDataExists == true) {
+        //If the user has been granted some aspect of access to the current health data type
         let selectableHealthDataType = document.getElementById(typesOfHealthData[i] + "Button");
+        selectableHealthDataType.disabled = false; //Allow the button for that health data to be clicked
 
         selectableHealthDataType.onclick = async function () {
-          selectTypeOfHealthData(selectableHealthDataType.id.substring(0, selectableHealthDataType.id.indexOf("Button")));
+          selectTypeOfHealthData(selectableHealthDataType.id.substring(0, selectableHealthDataType.id.indexOf("Button"))); //Open that health data container when clicked
         };
 
-        selectableHealthDataType.disabled = false;
         typesOfHealthDataExists[i] = true;
       }
     }
 
-    document.getElementById("accessPodForm").style.display = "none";
-    accessTypeOfHealthDataForm.style.display = "block";
-    console.log(typesOfHealthDataExists);
-    console.log(accessTypeOfHealthDataForm.childNodes.length);
+    document.getElementById("accessPodForm").style.display = "none"; //Hide the div that allows you to select what pod you wish to access
+
+    accessTypeOfHealthDataForm.style.display = "block"; //Display div showing 3 health data container options
 
     if (!typesOfHealthDataExists.includes(true)) {
       //Means no health data exists
@@ -88924,7 +88861,7 @@ async function checkMedicalInstitutionStatus(podOwner) {
         alert("You have not created a dataset in your Solid pod to hold medical record information. Please create one by following the steps below.");
         medicalInstitutionRegistered = false;
         document.getElementById("accessingPod").style.display = "none";
-        document.getElementById("registerNewMedicalInstitution").style.display = 'block';
+        document.getElementById("registerNewMedicalInstitution").style.display = 'block'; //Display pod allowing them to create a health data container
       } else {
         resetCurrentPodSession(true);
         alert("You have not been authorized to view medical records in the specified individual's pod, or they have no Health Data stored with the application.");
@@ -88933,6 +88870,7 @@ async function checkMedicalInstitutionStatus(podOwner) {
       document.getElementById("podOwner").value = "";
     } else {
       if (podOwner == "signedInUserNew" && !document.getElementById("newInstitutionWarningMessage")) {
+        //Comes in here when pod owner clicks 'Register new medical institution'
         let existingHealthDataTypes = [];
 
         for (var i = 0; i < typesOfHealthData.length; i++) {
@@ -88950,103 +88888,80 @@ async function checkMedicalInstitutionStatus(podOwner) {
 }
 
 async function selectTypeOfHealthData(healthDataType) {
-  accessedHealthDataType = healthDataType;
-  console.log(healthDataType);
+  accessedHealthDataType = healthDataType; //Either 'public', 'private', or 'GP'
+
   accessedHealthDataContainerUrl = accessedPodOwnerBaseUrl + "/" + healthDataType + "HealthData3/";
   var accessedHealthDataInfoDatasetUrl = accessedHealthDataContainerUrl + "Info";
-  console.log(accessedHealthDataContainerUrl);
   let signedInUsersAccessToOverall = "";
   document.getElementById("accessingPod").style.display = "none";
   const healthDataInfoDataset = await (0, _solidClient.getSolidDataset)(accessedHealthDataInfoDatasetUrl, {
     fetch: session.fetch
-  });
+  }); //Get 'Info' dataset and extract variables
+
   const institutionDetails = await (0, _solidClient.getThing)(healthDataInfoDataset, accessedHealthDataInfoDatasetUrl + "#medicalInstitutionDetails");
   let literalName = await (0, _solidClient.getStringNoLocale)(institutionDetails, "http://schema.org/name");
   let literalAddress = await (0, _solidClient.getStringNoLocale)(institutionDetails, "http://schema.org/address");
   let administrator = await (0, _solidClient.getUrl)(institutionDetails, "https://schema.org/member");
   accessedHealthDataContainerAdministrator = administrator;
 
-  try {
-    signedInUsersAccessToOverall = await (0, _podReader.getAccessToDataset)(accessedHealthDataContainerUrl, {
-      fetch: session.fetch
-    });
-    let adminAccess = {
-      read: true,
-      write: true,
-      append: true,
-      controlRead: true,
-      controlWrite: true
-    }; // let userHasAdmin = await checkIfPersonHasAccess(session, accessedHealthDataContainerUrl, session.info.webId, adminAccess)
-    // if (userHasAdmin) {
-    // }
-
-    if (accessedPodOwnerUrl == session.info.webId) {
-      //Check that the signed in user is pod owner
-      // throw "Doesn't have admin access"
-      document.getElementById("initiateInsuranceRequestButton").disabled = false;
-      document.getElementById("registerNewMedicalInstitutionButton").disabled = false;
-      document.getElementById("setAdministratorToEditable").style.display = "block";
-    }
-
-    if ([accessedPodOwnerUrl, accessedHealthDataContainerAdministrator].includes(session.info.webId)) {
-      //Enable editing of info dataset information including changing the institution administrator
-      document.getElementById("editInstitutionInfoLabel").style.display = "block";
-      document.getElementById("setNameToEditable").style.display = "block";
-      document.getElementById("setAddressToEditable").style.display = "block";
-    }
-  } catch (err) {
-    //Comes here if signed in user is not the institution administrator or pod owner - restrict relevant actions
-    console.log("didnt have access"); //Hide edit buttons of info dataset in here, and creating new appointments if the list of departments is empty
-    // let infoMessageToUser = ""
-    // document.getElementById("registerNewMedicalInstitutionButton").onpointerover = function () { document.getElementById("registerNewMedicalInstitutionButton").title = infoMessageToUser }
-    // document.getElementById("initiateInsuranceRequestButton").onpointerover = function () { document.getElementById("initiateInsuranceRequestButton").title = infoMessageToUser.substring(0, infoMessageToUser.indexOf("or") ) }
-    // document.getElementById("initiateInsuranceRequestButton").disabled = true
-  }
-
-  let departments = await (0, _podReader.getDepartments)(session, accessedHealthDataContainerUrl);
-
-  if (departments.length < 1 && accessedPodOwnerUrl != session.info.webId) {
-    //Don't allow anyone to create a new department of health records unless they are pod owner or institution administrator
-    let infoMessageToUser = "Only the pod owner is able to create a new appointment when no other appointments exist";
-
-    document.getElementById("registerNewAppointmentButton").onpointerover = function () {
-      document.getElementById("registerNewAppointmentButton").title = infoMessageToUser;
-    };
-
-    document.getElementById("registerNewAppointmentButton").disabled = true;
-  }
-
-  if (session.info.webId == accessedPodOwnerUrl) {
+  if (accessedPodOwnerUrl == session.info.webId) {
+    //Check that the signed in user is pod owner. Enable creating new health data, registering for insurance and editing of administrator if they are
     document.getElementById("initiateInsuranceRequestButton").disabled = false;
+    document.getElementById("registerNewMedicalInstitutionButton").disabled = false;
+    document.getElementById("setAdministratorToEditable").style.display = "block";
   }
 
-  document.getElementById("typeOfAccessedHealthData").innerHTML = "<u>Accessing Health Data of type</u>: " + healthDataType;
+  if ([accessedPodOwnerUrl, accessedHealthDataContainerAdministrator].includes(session.info.webId)) {
+    //Check that the signed in user is either the pod owner or institution administrator
+    document.getElementById("editInstitutionInfoLabel").style.display = "block"; //Enable editing of institution metatdata
+
+    document.getElementById("setNameToEditable").style.display = "block"; //Enable editing of institution metatdata
+
+    document.getElementById("setAddressToEditable").style.display = "block"; //Enable editing of institution metatdata
+
+    document.getElementById("registerNewAppointmentButton").disabled = false; //Enable creation of new appointments
+
+    document.getElementById("registerNewAppointmentButton").title = ""; //Remove tooltip saying that this action cannot be performed
+  }
+
+  document.getElementById("typeOfAccessedHealthData").innerHTML = "<u>Accessing Health Data of type</u>: " + healthDataType; //Display pod info along top of screen
+
   document.getElementById("ownerOfPod").innerHTML = "<u>Currently accessing the pod belonging to</u>: " + accessedPodOwnerUrl;
   document.getElementById("nameOfInstitution").innerHTML = "<u>Who receives care at</u>: " + literalName;
   document.getElementById("addressOfInstitution").innerHTML = "<u>Which is located at</u>: " + literalAddress;
   document.getElementById("administratorOfInstitution").innerHTML = "<u>And the institution administrator is</u>: " + administrator;
-  document.getElementById("accessingPod").style.display = "none";
-  document.getElementById("institutionInformation").style.display = 'block'; // checkIfAdministrator(session, accessedHealthDataContainerUrl);
+  document.getElementById("accessingPod").style.display = "none"; //Hide pod showing 3 health data container options
+
+  document.getElementById("institutionInformation").style.display = 'block'; //Display pod showing selected health data container metadata and application action buttons ('Create Appointment','View Records' etc.)
 }
 
 function resetCurrentPodSession(completelyReset) {
   if (completelyReset == true) {
+    //Takes the application back to the screen asking what pod you would like to access
     document.getElementById("institutionInformation").style.display = "none";
-    document.getElementById("accessingPod").style.display = "block";
     document.getElementById("accessHealthDataForm").style.display = "none";
+    document.getElementById("accessingPod").style.display = "block";
     document.getElementById("accessPodForm").style.display = "block";
   }
 
-  let recordsContainer = document.getElementById("containerForDisplayedRecords");
-  if (recordsContainer) recordsContainer.remove();
-  document.getElementById("uploadNewAppointmentDetails").style.display = "none";
+  document.getElementById("uploadNewAppointmentDetails").style.display = "none"; //Set all divs to hidden that could possibly be displayed
+
   document.getElementById("accessingRecordsDiv").style.display = "none";
   document.getElementById("uploadNewMedicalRecordDiv").style.display = "none";
   document.getElementById("registerNewMedicalInstitution").style.display = "none";
   document.getElementById("createNewDiagnosisDiv").style.display = "none";
   document.getElementById("createNewPrescriptionDiv").style.display = "none";
   document.getElementById("createNewGeneralRecordDiv").style.display = "none";
-  let buttonForAppointment = document.getElementById("registerNewAppointmentButton");
+  document.getElementById("insuranceDiv").style.display = "none";
+  document.getElementById("podDiagramDiv").style.display = "none";
+  if (document.getElementById("containerForDisplayedRecords")) document.getElementById("containerForDisplayedRecords").remove(); //Remove div showing displayed records if it exists i.e. the user is currently viewing records
+
+  if (document.getElementById("containerForRecordAccess")) document.getElementById("containerForRecordAccess").remove(); //Remove div showing displayed access if it exists
+
+  if (document.getElementById("selectedDepartment")) document.getElementById("selectedDepartment").remove(); //Remove selected dropdown input box if it exists
+
+  let buttonForAppointment = document.getElementById("registerNewAppointmentButton"); //Reset status of all main application buttons 
+
   buttonForAppointment.classList.remove("clicked-button");
   buttonForAppointment.style.display = "block";
   let buttonForReadingFiles = document.getElementById("accessMedicalRecordsButton");
@@ -89067,38 +88982,27 @@ function resetCurrentPodSession(completelyReset) {
   let departmentSelectionForm = document.getElementById("departmentSelectionForm");
 
   while (departmentSelectionForm.children.length > 1) {
+    //Remove all department options from the department dropdown
     let nextNode = departmentSelectionForm.lastChild;
     departmentSelectionForm.removeChild(nextNode);
   }
 
   for (var i = 0; i < typesOfHealthData.length; i++) {
     let typeID = typesOfHealthData[i] + "HealthDataType";
-    console.log(typeID);
     let containerInDiagram = document.getElementById(typeID);
-    console.log(containerInDiagram);
-    containerInDiagram.innerHTML = typesOfHealthDataForDisplay[i];
-    console.log(containerInDiagram);
+    containerInDiagram.innerHTML = typesOfHealthDataForDisplay[i]; //Reset the inner content of the pod diagram
   }
 
-  document.getElementById("medicalRecordTypeSelection").style.display = "block";
-  document.getElementById("createNewGeneralRecordDiv").style.display = "none";
-  createNewPrescriptionDiv;
-  document.getElementById("createNewPrescriptionDiv").style.display = "none";
-  document.getElementById("insuranceDiv").style.display = "none";
-  document.getElementById("podDiagramDiv").style.display = "none";
-  document.getElementById("medicalRecordTypeSelection").style.display = "block";
-  if (document.getElementById("selectedDepartment")) document.getElementById("selectedDepartment").remove();
-  if (document.getElementById("containerForRecordAccess")) document.getElementById("containerForRecordAccess").remove();
+  document.getElementById("medicalRecordTypeSelection").style.display = "block"; //Reset choice of medical record type to being displayed incase user was in the middle 
 }
 
 async function registerNewMedicalInstitution() {
-  const institutionType = document.getElementById("institutionType").value; // console.log(institutionType)
-
+  //Extract values from form and send details to podWriter for upload
+  const institutionType = document.getElementById("institutionType").value;
   const institutionName = document.getElementById("institutionName").value;
   const institutionAddress = document.getElementById("institutionAddress").value;
   let administratorWebID = document.getElementById("institutionSysAdmin").value;
   if (administratorWebID == "") administratorWebID = null;
-  const webID = session.info.webId;
   var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/" + institutionType + "HealthData3"; // https://testuser1.solidcommunity.net/profile/card#me
 
   let institutionDetails = {
@@ -89108,18 +89012,18 @@ async function registerNewMedicalInstitution() {
   };
   await (0, _podWriter.storeMedicalInsitutionInformation)(session, healthDataDatasetUrl, institutionDetails);
   await checkMedicalInstitutionStatus("signedInUser");
+  await selectTypeOfHealthData(institutionType); //Access new health data container after it has been created
+
   resetCurrentPodSession(false);
 }
 
 async function updateMedicalInstitutionField(fieldID, newValue) {
-  console.log(fieldID);
+  //Update field in the medical institution metadata thing
   let accessedHealthDataInfoDatasetUrl = accessedHealthDataContainerUrl + "Info";
   var infoDataSet = await (0, _solidClient.getSolidDataset)(accessedHealthDataInfoDatasetUrl, {
     fetch: session.fetch
   });
-  console.log(infoDataSet);
   let institutionDetails = await (0, _solidClient.getThing)(infoDataSet, accessedHealthDataInfoDatasetUrl + "#medicalInstitutionDetails");
-  console.log(institutionDetails);
   if (fieldID == "http://schema.org/name" || fieldID == "http://schema.org/address") institutionDetails = await (0, _solidClient.setStringNoLocale)(institutionDetails, fieldID, newValue);else if (fieldID == "https://schema.org/member") institutionDetails = await (0, _solidClient.setUrl)(institutionDetails, fieldID, newValue);
   infoDataSet = await (0, _solidClient.setThing)(infoDataSet, institutionDetails);
   await (0, _solidClient.saveSolidDatasetAt)(accessedHealthDataInfoDatasetUrl, infoDataSet, {
@@ -89128,6 +89032,7 @@ async function updateMedicalInstitutionField(fieldID, newValue) {
 }
 
 async function saveNewAppointment() {
+  //Extract fields of new appointment and send object to podWriter
   let department = document.getElementById("selectedAppointmentDepartmentDropdown").value;
   let timeOfAppointment = document.getElementById("newAppointmentTime").value;
   let dateOfAppointment = document.getElementById("newAppointmentDate").value;
@@ -89149,6 +89054,7 @@ async function saveNewAppointment() {
 }
 
 async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdown) {
+  //Add a department dropdown selection to the designated application area
   let departments = await (0, _podReader.getDepartments)(session, accessedHealthDataContainerUrl);
 
   if (departments.length == 0) {
@@ -89165,6 +89071,7 @@ async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdow
       departmentListForm = document.getElementById("departmentSelectionForm");
 
       if (departmentListForm.childNodes.length < 4) {
+        //Means that no dropdowns have been added to the form - add them in
         let selectAbleRecordType = document.createElement("select");
         selectAbleRecordType.id = "selectedRecordType";
         selectAbleRecordType.style.margin = "2%";
@@ -89185,7 +89092,7 @@ async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdow
     }
 
     if (departmentListForm.childNodes.length < 5) {
-      console.log(departments);
+      //Adds selectable department options to dropdown after they have been rendered
       let selectAbleDepartment = document.createElement("select");
       selectAbleDepartment.id = "selectedDepartment";
       selectAbleDepartment.style.margin = "2%";

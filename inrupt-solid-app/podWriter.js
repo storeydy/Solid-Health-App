@@ -40,7 +40,7 @@ const doctorPermissionSetForAppointments = { read: true, write: false, append: f
 const doctorPermissionSetForPrescriptions = { read: true, write: true, append: true, control: true }
 
 const expectedAdministratorAppointmentsPermissionSet = {read: true, write: true, append: true, controlRead: false, controlWrite: false}       //Institution administrator should be able to upload details of a new appointment to any department
-const administratorPermissionSetForAppointments = { read: true, write: true, append: true, control: false }         //Administrator will need to be able to upload records to the appointments dataset
+const administratorPermissionSetForAppointments = { read: true, write: true, append: true, control: true }         //Administrator will need to be able to upload records to the appointments dataset, and grant view access to doctors when uploading an appointment
 const administratorPermissionSetForDiagnosesPrescriptionsRecords = { read: false, write: false, append: false, control: true }        //Doesn't need to view/update these records but needs to be able to grant read,write access to doctors when they are uploading details of a new appointment
 
 
@@ -71,9 +71,13 @@ export async function writeAppointment(session, healthDataContainerUrl, appointm
     if (doctorHasAccessToDepartment == false) {
         console.log("giving doctor access")
         await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, departmentDatasetUrl + "/Appointments", doctorPermissionSetForAppointments, false)
+        console.log("granted to appointments");
         await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, departmentDatasetUrl + "/Records", doctorPermissionSetForRecordsDiagnoses, false)
+        console.log("granted to records");
         await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, departmentDatasetUrl + "/Diagnoses", doctorPermissionSetForRecordsDiagnoses, false)
+        console.log("granted to diagnoses");
         await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, departmentDatasetUrl + "/Prescriptions", doctorPermissionSetForPrescriptions, false)
+        console.log("granted to prescriptions");
     }
 
 
@@ -99,34 +103,29 @@ export async function createDepartmentDataset(session, healthDataContainerUrl, d
     let newDepartmentDiagnosesDataset = createSolidDataset();
     let newDepartmentPrescriptionsDataset = createSolidDataset();
 
-    let ownerOfPodIsAppointmentCreator = false
-    if (session.info.webId == podOwnerUrl) ownerOfPodIsAppointmentCreator = true    //Make sure pod owner has access
-    console.log(ownerOfPodIsAppointmentCreator)
     await createContainerAt(departmentDatasetUrl + "/", {fetch: session.fetch})
-    await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/", permissionSetForCreatorOfDepartment, true )
-    await grantAccessToDataset(session, institutionAdministrator, departmentDatasetUrl + "/", permissionSetForCreatorOfDepartment, true )    //Makes no difference
-
     await saveSolidDatasetAt(departmentDatasetUrl + "/Appointments", newDepartmentAppointmentsDataset, { fetch: session.fetch })
-    await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/Appointments", permissionSetForCreatorOfDepartment, ownerOfPodIsAppointmentCreator)
-
     await saveSolidDatasetAt(departmentDatasetUrl + "/Records", newDepartmentRecordsDataset, { fetch: session.fetch })
-    await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/Records", permissionSetForCreatorOfDepartment, ownerOfPodIsAppointmentCreator)
-
     await saveSolidDatasetAt(departmentDatasetUrl + "/Diagnoses", newDepartmentDiagnosesDataset, { fetch: session.fetch })
-    await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/Diagnoses", permissionSetForCreatorOfDepartment, ownerOfPodIsAppointmentCreator)
-
     await saveSolidDatasetAt(departmentDatasetUrl + "/Prescriptions", newDepartmentPrescriptionsDataset, { fetch: session.fetch })
-    await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/Prescriptions", permissionSetForCreatorOfDepartment, ownerOfPodIsAppointmentCreator)
+
+    await grantAccessToDataset(session, session.info.webId, departmentDatasetUrl + "/", permissionSetForCreatorOfDepartment, true )
+    await grantAccessToDataset(session, session.info.webId, departmentDatasetUrl + "/Appointments", permissionSetForCreatorOfDepartment, true)
+    await grantAccessToDataset(session, session.info.webId, departmentDatasetUrl + "/Records", permissionSetForCreatorOfDepartment, true)
+    await grantAccessToDataset(session, session.info.webId, departmentDatasetUrl + "/Diagnoses", permissionSetForCreatorOfDepartment, true)
+    await grantAccessToDataset(session, session.info.webId, departmentDatasetUrl + "/Prescriptions", permissionSetForCreatorOfDepartment, true)
+
+    if (session.info.webId != podOwnerUrl) {
+        await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/", permissionSetForCreatorOfDepartment, true )
+        await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/Appointments", permissionSetForCreatorOfDepartment, true)
+        await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/Records", permissionSetForCreatorOfDepartment, true)
+        await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/Diagnoses", permissionSetForCreatorOfDepartment, true)
+        await grantAccessToDataset(session, podOwnerUrl, departmentDatasetUrl + "/Prescriptions", permissionSetForCreatorOfDepartment, true)
+    }
    
     await grantAccessToDataset(session, emergencyWorkerWebID, healthDataContainerUrl, permissionSetForEmergencyWorkersToPrescriptions, false)    //Grant read access of health data container to emergency worker
     await grantAccessToDataset(session, emergencyWorkerWebID, healthDataContainerUrl + "Info", permissionSetForEmergencyWorkersToPrescriptions, false)    //Grant read access of prescriptions to emergency worker
     await grantAccessToDataset(session, emergencyWorkerWebID, departmentDatasetUrl + "/Prescriptions", permissionSetForEmergencyWorkersToPrescriptions, false)    //Grant read access of prescriptions to emergency worker
-    // await grantAccessToDataset(session, podOwnerWebID, departmentDatasetUrl + "/Appointments", permissionSetForCreator, true)
-
-    await grantAccessToDataset(session, institutionAdministrator, departmentDatasetUrl + "/Appointments", administratorPermissionSetForAppointments, false)    //Grant read, write access of appointments to administrator
-    await grantAccessToDataset(session, institutionAdministrator, departmentDatasetUrl + "/Diagnoses", administratorPermissionSetForDiagnosesPrescriptionsRecords, false)    //Grant read, write access of appointments to administrator
-    await grantAccessToDataset(session, institutionAdministrator, departmentDatasetUrl + "/Prescriptions", administratorPermissionSetForDiagnosesPrescriptionsRecords, false)    //Grant read, write access of appointments to administrator
-    await grantAccessToDataset(session, institutionAdministrator, departmentDatasetUrl + "/Records", administratorPermissionSetForDiagnosesPrescriptionsRecords, false)    //Grant read, write access of appointments to administrator
     
 }
 
@@ -163,13 +162,12 @@ export async function grantAccessToDataset(session, personWebID, datasetUrl, per
 export async function storeMedicalInsitutionInformation(session, healthDataDatasetUrl, institutionDetails) {
     const date = new Date().toUTCString()
 
-    if(await checkIfDatasetExists(session, healthDataDatasetUrl)) {
-        console.log("deleting existing")
+    if(await checkIfDatasetExists(session, healthDataDatasetUrl)) {     //If there is already a health data container of the selected type
         await deleteExistingHealthData(session, healthDataDatasetUrl)
     }
 
-    let healthDataDataset = createSolidDataset();
-    let healthDataContainer = createContainerAt(healthDataDatasetUrl, { fetch: session.fetch });
+    let healthDataDataset = await createSolidDataset();
+    await createContainerAt(healthDataDatasetUrl, { fetch: session.fetch });
     const institutionDetailsFile = buildThing(createThing({ name: "medicalInstitutionDetails" }))
         .addStringNoLocale(SCHEMA_INRUPT.name, institutionDetails.name)
         .addStringNoLocale(SCHEMA_INRUPT.address, institutionDetails.address)
@@ -178,9 +176,8 @@ export async function storeMedicalInsitutionInformation(session, healthDataDatas
         .addUrl("https://schema.org/member", institutionDetails.administrator)
         .build();
         
-
     healthDataDataset = setThing(healthDataDataset, institutionDetailsFile)
-    const savedPrivateInfoDataset = await saveSolidDatasetAt(
+    await saveSolidDatasetAt(
         healthDataDatasetUrl + "/Info",
         healthDataDataset,
         { fetch: session.fetch }
@@ -188,7 +185,6 @@ export async function storeMedicalInsitutionInformation(session, healthDataDatas
     const myContainerWithAcl = await getResourceInfoWithAcl(healthDataDatasetUrl, { fetch: session.fetch })
     const myContainersAcl = createAcl(myContainerWithAcl)
 
-    console.log(myContainersAcl)
     let updatedContainerAcl = setAgentResourceAccess(
         myContainersAcl,
         session.info.webId,
@@ -216,7 +212,6 @@ export async function storeMedicalInsitutionInformation(session, healthDataDatas
     const myDatasetWithAcl = await getResourceInfoWithAcl(healthDataDatasetUrl + "/Info", { fetch: session.fetch })
     const myDatasetsAcl = createAcl(myDatasetWithAcl)
 
-    console.log(myDatasetsAcl)
     let updatedAcl = setAgentResourceAccess(
         myDatasetsAcl,
         session.info.webId,
