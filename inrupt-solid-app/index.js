@@ -367,7 +367,7 @@ async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdow
             }
             departmentListForm.appendChild(selectAbleDepartment)
         }
-        if (useOfDropdown == "accessingRecords") {
+        if (useOfDropdown == "accessingRecords") {      //If the dropdown is for the 'Access medical records' section
             if (departmentListForm.childNodes.length < 6) {
                 let submitButtonToView = document.createElement("button")
                 submitButtonToView.type = "submit"
@@ -378,7 +378,7 @@ async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdow
                 submitButtonToView.style.width = "200px"
                 departmentListForm.appendChild(submitButtonToView)
 
-                let submitButtonToManageAccess = document.getElementById("viewAccessButton")
+                let submitButtonToManageAccess = document.getElementById("viewAccessButton") //Add button for managing access if it doesn't exist
                 if (!submitButtonToManageAccess) {
                     submitButtonToManageAccess = document.createElement("button")
                     submitButtonToManageAccess.innerHTML = "Manage access to selected dataset"
@@ -392,7 +392,7 @@ async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdow
                 }
                 departmentListForm.append(submitButtonToManageAccess)
 
-                let submitButtonToViewInsuranceDiagnoses = document.getElementById("buttonForViewingInsuranceDataset")
+                let submitButtonToViewInsuranceDiagnoses = document.getElementById("buttonForViewingInsuranceDataset")  //Add button for viewing insurance diagnoses if it doesn't exist
                 if (!submitButtonToViewInsuranceDiagnoses) {
                     submitButtonToViewInsuranceDiagnoses = document.createElement("input")
                     submitButtonToViewInsuranceDiagnoses.type = "button"
@@ -404,7 +404,7 @@ async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdow
                     submitButtonToViewInsuranceDiagnoses.style.marginLeft = "20%"
 
                     submitButtonToViewInsuranceDiagnoses.onclick = async function () {
-                        await getPatientFilesAndDisplay("", "", true)
+                        await getPatientFilesAndDisplay("", "", true)   //Special case of calling getPatientFilesAndDisplay that only retrieves files in the insurance dataset
                     }
                 }
                 departmentListForm.appendChild(submitButtonToViewInsuranceDiagnoses)
@@ -415,49 +415,215 @@ async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdow
     }
 }
 
-async function updateDatasetAccess(accessPerson) {
-    console.log(accessPerson)
-    let indexOfAccessPerson = accessPerson.substring(accessPerson.length - 1, accessPerson.length)
-    console.log(indexOfAccessPerson)
-    console.log(initialStateOfDatasetAccess)
-    let previousAccessKey = Object.keys(initialStateOfDatasetAccess)[indexOfAccessPerson]
-    let previousAccessValue = initialStateOfDatasetAccess[previousAccessKey]
-    console.log(previousAccessValue)
-    let currentAccess = {
-        read: document.getElementById("readAccessFor" + indexOfAccessPerson).checked,
-        write: document.getElementById("writeAccessFor" + indexOfAccessPerson).checked,
-        append: document.getElementById("appendAccessFor" + indexOfAccessPerson).checked,
-        controlRead: document.getElementById("controlAccessFor" + indexOfAccessPerson).checked,
-        controlWrite: document.getElementById("controlAccessFor" + indexOfAccessPerson).checked
+async function getAccessAndDisplay(recordType, department) {
+    let urlOfSelectedDataset = accessedHealthDataContainerUrl + department + "/" + recordType
+    let access = ""
+    try {
+        access = await getAccessToDataset(session, urlOfSelectedDataset)    //Get all people that have been granted access to the selected dataset
     }
-    console.log(currentAccess)
-    if (_.isEqual(currentAccess, previousAccessValue)) {
-        alert("No change detected from initial access level. Change the values of checkboxes to make updates.")
-        return
+    catch (err) {
+        if (err == 403) alert('You have not been granted permission to view who can access this dataset. Contact the pod owner to request access')
+        else if (err == 404) alert('No access has been established for the current dataset.')
     }
-    else {
-        console.log(previousAccessKey)
-        console.log(currentlyAccessedDatasetUrl)
-        try {
-            let isOwner = false
-            if (previousAccessKey == accessedPodOwnerUrl) isOwner = true
-            let controlValue = currentAccess.controlRead
-            delete currentAccess.controlRead; delete currentAccess.controlWrite //Control value is read back in 2 separate values
-            currentAccess.control = controlValue    //but written in one value
+    initialStateOfDatasetAccess = { ...access }                 //Save initial state of the access to the selected dataset for comparison after updates
+    currentlyAccessedDatasetUrl = urlOfSelectedDataset      
+    if (Object.entries(access).length > 0) {        //If there is at least one person with access to the dataset
+        let existingDisplayedFiles = document.getElementById("containerForDisplayedRecords")   //Remove currently displayed records if they are displayed
+        if (existingDisplayedFiles) existingDisplayedFiles.remove();
+        let existingDisplayedAccess = document.getElementById("containerForRecordAccess") //Remove currently displayed access if it is displayed
+        if (existingDisplayedAccess) existingDisplayedAccess.remove();
 
-            await grantAccessToDataset(session, previousAccessKey, currentlyAccessedDatasetUrl, currentAccess, isOwner)
-            alert("Individual's access updated successfully.")
-            let selectedDepartment = document.getElementById("selectedDepartment").value
-            let selectedRecordType = document.getElementById("selectedRecordType").value
+        let containerDivForAccess = document.createElement("div")       //Create div to display access
+        containerDivForAccess.id = "containerForRecordAccess"
+        containerDivForAccess.className = "panel"
 
-            getAccessAndDisplay(selectedRecordType, selectedDepartment)
-            return
+        let headerOfContainer = document.createElement("h3")        //Header for the div
+        headerOfContainer.innerHTML = "Currently permitted individuals of the selected dataset"
+        headerOfContainer.className = "section-header"
+        containerDivForAccess.appendChild(headerOfContainer)
+
+        //******************Add description of what each access level means*****************************
+
+        let index = 0
+        let readAccessCheckbox = document.createElement("input")        //Labels and checkboxes for each individuals access
+        let readAccessLabel = document.createElement("label")
+        let writeAccessCheckbox = document.createElement("input")
+        let writeAccessLabel = document.createElement("label")
+        let appendAccessCheckbox = document.createElement("input")
+        let appendAccessLabel = document.createElement("label")
+        let controlAccessCheckbox = document.createElement("input")
+        let controlAccessLabel = document.createElement("label")
+
+        for (const [person, personsAccess] of Object.entries(access)) {
+            let accessDisplayObj = document.createElement("div")        //Create div for each individual with access
+            accessDisplayObj.id = "displayedAccess" + index     //Assign ID of each div object corresponding to the index of the individual in the overall result
+            accessDisplayObj.className = "panel"
+            if (index % 2 == 1) accessDisplayObj.classList.add("alt-color")     //Make the div of every second person with access a different colour
+            let individualsName = document.createElement("h3")
+            individualsName.innerHTML = "Individual's name: <u>" + person + "</u>"
+            individualsName.style.textAlign = "center"
+
+            readAccessCheckbox = document.createElement("input")
+            readAccessCheckbox.type = "checkbox"
+            readAccessCheckbox.id = "readAccessFor" + index
+            readAccessCheckbox.style.marginBottom = "5%"      
+            if (personsAccess.read) readAccessCheckbox.checked = true
+
+            readAccessLabel = document.createElement("label")
+            readAccessLabel.innerHTML = "Read"
+            readAccessLabel.id = "readAccessLabelFor" + index
+            readAccessLabel.style.marginRight = "2%"
+
+            writeAccessCheckbox = document.createElement("input")
+            writeAccessCheckbox.type = "checkbox"
+            writeAccessCheckbox.id = "writeAccessFor" + index
+            if (personsAccess.write) writeAccessCheckbox.checked = true
+
+            writeAccessLabel = document.createElement("label")
+            writeAccessLabel.innerHTML = "Write"
+            writeAccessLabel.style.marginRight = "2%"
+
+            appendAccessCheckbox = document.createElement("input")
+            appendAccessCheckbox.type = "checkbox"
+            appendAccessCheckbox.id = "appendAccessFor" + index
+            if (personsAccess.append) appendAccessCheckbox.checked = true
+
+            appendAccessLabel = document.createElement("label")
+            appendAccessLabel.innerHTML = "Append"
+            appendAccessLabel.style.marginRight = "2%"
+
+            controlAccessCheckbox = document.createElement("input")
+            controlAccessCheckbox.type = "checkbox"
+            controlAccessCheckbox.id = "controlAccessFor" + index
+            if (personsAccess.controlRead && personsAccess.controlWrite) controlAccessCheckbox.checked = true       //Control read and control write must be in sync - only allow one checkbox to be ticked
+
+            controlAccessLabel = document.createElement("label")
+            controlAccessLabel.innerHTML = "Control"
+            controlAccessLabel.style.marginRight = "2%"
+
+            let updateAccessButton = document.createElement("button")       //Create a button to save the changes to an individual's access and set it to hidden
+            updateAccessButton.style.float = "right"
+            updateAccessButton.style.display = "none"
+            updateAccessButton.style.marginTop = "5%"
+            updateAccessButton.style.width = "200px"
+            updateAccessButton.id = "updateAccessFor" + index
+            updateAccessButton.classList.add("light-blue-button")
+            updateAccessButton.innerHTML = "Make changes to access"
+
+            accessDisplayObj.append(individualsName, readAccessCheckbox, readAccessLabel, writeAccessCheckbox, writeAccessLabel, appendAccessCheckbox, appendAccessLabel, controlAccessCheckbox, controlAccessLabel, updateAccessButton)
+
+            containerDivForAccess.appendChild(accessDisplayObj)
+            index++
         }
-        catch (err) {
-            console.log(err)
+        let medicalRecordsDiv = document.getElementById("accessingRecordsDiv")
+        medicalRecordsDiv.appendChild(containerDivForAccess)        //Add div containing each indiviual's access - now they have IDs that can be called for adding click event handlers
+
+        let renderedObj = document.getElementById("containerForRecordAccess") //Find the access div which is now in the dom
+
+        for (var i = 0; i < renderedObj.childNodes.length; i++)    //Loop through each individual div within the overall div -> each iteration is a new individual with access
+        {
+            for (var j = 0; j < renderedObj.childNodes[i].childNodes.length; j++) {     //Loop through the child nodes in each individual div - the labels and the checkboxes for each access level
+                if (renderedObj.childNodes[i].childNodes[j].nodeName == "LABEL") renderedObj.childNodes[i].childNodes[j].htmlFor = renderedObj.childNodes[i].childNodes[j - 1].id //Update the 'htmlFor' attribute of each label as the ID of the corresponding checkbox - which is the previous sibling
+                else if (renderedObj.childNodes[i].childNodes[j].nodeName == "INPUT") {     //If the current node is a checkbox - find the corresponding button for this individual and set it to visible when the checkbox has been changed
+                    let buttonId = "updateAccessFor" + (i - 1)  //First child node is h3 tag, first person with access will be at pos. 1 with an id of updateAccessFor0
+                    renderedObj.childNodes[i].childNodes[j].onchange = function () {
+
+                        document.getElementById(buttonId).style.display = "block"
+                    }
+                }
+                else if (renderedObj.childNodes[i].childNodes[j].nodeName == "BUTTON") {    //If the current node is a button to update access 
+                    let button = renderedObj.childNodes[i].childNodes[j]
+                    renderedObj.childNodes[i].childNodes[j].onclick = function () { updateDatasetAccess(button.id) } //Set the onclick event handler to update the access of the current index based on its current value
+                }
+            }
         }
+
+        let buttonToAddNew = document.createElement("button")       //Create a button for adding access to a new individual
+        buttonToAddNew.innerHTML = "+"
+        buttonToAddNew.className = "addNewButton"
+        buttonToAddNew.id = "addNewAccessButton"
+        buttonToAddNew.onclick = function () {  //When the button is clicked display a new div for specifying the individual's WebID and access levels
+
+            buttonToAddNew.style.display = "none"   //Hide the button when it's clicked
+            let addingNewAccess = document.createElement("div") //Create a div for the new individual to be given access
+            addingNewAccess.id = "grantingNewAccessDiv"
+            addingNewAccess.classList.add("panel", "addingAccess")
+
+            let webIDDiv = document.createElement("div")
+            webIDDiv.className = "row"
+
+            let newAgentWebIDLabel = document.createElement("h3")
+            newAgentWebIDLabel.innerHTML = "New individual's WebID: "
+            newAgentWebIDLabel.style.float = "left"
+
+            let newAgentWebID = document.createElement("input")
+            newAgentWebID.type = "url"
+            newAgentWebID.placeholder = "Enter a new user's WebID"
+            newAgentWebID.id = "webIDNewAccess"
+            newAgentWebID.className = "column-3"
+            newAgentWebID.style.marginTop = "2.5%"
+            newAgentWebID.style.float = "left"
+            newAgentWebID.style.width = "50%"
+
+            webIDDiv.append(newAgentWebIDLabel, newAgentWebID)
+
+            let clonedReadCheckbox = readAccessCheckbox.cloneNode(false)    //Clone the existing checkboxes and give it a new ID
+            clonedReadCheckbox.id = "readAccessForNew"
+            clonedReadCheckbox.checked = false
+            let clonedReadLabel = readAccessLabel.cloneNode(true)   //Clone the existing labels with descendants (necessary for resetting the 'htmlFor' attribute)
+            clonedReadLabel.htmlFor = clonedReadCheckbox.id
+            clonedReadLabel.id = "readAccessLabelForNew"
+
+            let clonedWriteCheckbox = writeAccessCheckbox.cloneNode(false)
+            clonedWriteCheckbox.id = "writeAccessForNew"
+            clonedWriteCheckbox.checked = false
+            let clonedWriteLabel = writeAccessLabel.cloneNode(true)
+            clonedWriteLabel.htmlFor = clonedWriteCheckbox.id
+            clonedWriteLabel.id = "writeAccessLabelForNew"
+
+
+            let clonedAppendCheckbox = appendAccessCheckbox.cloneNode(false)
+            clonedAppendCheckbox.id = "appendAccessForNew"
+            clonedAppendCheckbox.checked = false
+            let clonedAppendLabel = appendAccessLabel.cloneNode(true)
+            clonedAppendLabel.htmlFor = clonedAppendCheckbox.id
+            clonedAppendLabel.id = "appendAccessLabelForNew"
+
+
+            let clonedControlCheckbox = controlAccessCheckbox.cloneNode(false)
+            clonedControlCheckbox.id = "controlAccessForNew"
+            clonedControlCheckbox.checked = false
+            let clonedControlLabel = controlAccessLabel.cloneNode(true)
+            clonedControlLabel.htmlFor = clonedControlCheckbox.id
+            clonedControlLabel.id = "controlAccessLabelForNew"
+
+            let submitButton = document.createElement("button") //Button to save changes for the new individual's access
+            submitButton.innerHTML = "Submit changes"
+            submitButton.id = "submitAccessButtonForNew"
+            submitButton.style.float = "right"
+            submitButton.style.marginTop = "5%"
+            submitButton.style.marginRight = "2.5%"
+            submitButton.classList.add("green-button")
+            submitButton.onclick = function () { grantNewAccess() }
+
+            let cancelButton = document.createElement("button")    //Cancel button to remove the div that has just been created above and display the add button again
+            cancelButton.innerHTML = "Cancel"
+            cancelButton.id = "cancelAccessButtonForNew"
+            cancelButton.style.float = "right"
+            cancelButton.style.marginTop = "5%"
+            cancelButton.classList.add("red-button")
+            cancelButton.onclick = function () {
+                document.getElementById("grantingNewAccessDiv").remove()
+                document.getElementById("addNewAccessButton").style.display = "block"
+            }
+            addingNewAccess.append(webIDDiv, clonedReadCheckbox, clonedReadLabel, clonedWriteCheckbox, clonedWriteLabel, clonedAppendCheckbox, clonedAppendLabel, clonedControlCheckbox, clonedControlLabel, cancelButton, submitButton)
+
+            document.getElementById("containerForRecordAccess").appendChild(addingNewAccess)
+            document.getElementById("grantingNewAccessDiv").scrollIntoView()
+        }
+
+        document.getElementById("containerForRecordAccess").appendChild(buttonToAddNew)
     }
-    if (currentAccess == previousAccessValue) console.log("they are the same")
 }
 
 async function getPatientFilesAndDisplay(recordType, department, isForInsurer) {
@@ -554,237 +720,68 @@ async function getPatientFilesAndDisplay(recordType, department, isForInsurer) {
     else alert('Dataset exists but no files are currently held in it.')
 }
 
-async function getAccessAndDisplay(recordType, department) {
-    let urlOfSelectedDataset = accessedHealthDataContainerUrl + department + "/" + recordType
-    let access = ""
-    try {
-        access = await getAccessToDataset(session, urlOfSelectedDataset)
+async function updateDatasetAccess(accessPerson) {
+    let indexOfAccessPerson = accessPerson.substring(accessPerson.length - 1, accessPerson.length)
+    let previousAccessKey = Object.keys(initialStateOfDatasetAccess)[indexOfAccessPerson]
+    let previousAccessValue = initialStateOfDatasetAccess[previousAccessKey]
+    let currentAccess = {
+        read: document.getElementById("readAccessFor" + indexOfAccessPerson).checked,
+        write: document.getElementById("writeAccessFor" + indexOfAccessPerson).checked,
+        append: document.getElementById("appendAccessFor" + indexOfAccessPerson).checked,
+        controlRead: document.getElementById("controlAccessFor" + indexOfAccessPerson).checked,
+        controlWrite: document.getElementById("controlAccessFor" + indexOfAccessPerson).checked
     }
-    catch (err) {
-        if (err == 403) alert('You have not been granted permission to view who can access this dataset. Contact the pod owner to request access')
-        else if (err == 404) alert('No access has been established for the current dataset.')
+    console.log(currentAccess)
+    if (_.isEqual(currentAccess, previousAccessValue)) {
+        alert("No change detected from initial access level. Change the values of checkboxes to make updates.")
+        return
     }
-    initialStateOfDatasetAccess = { ...access }
-    currentlyAccessedDatasetUrl = urlOfSelectedDataset
-    if (Object.entries(access).length > 0) {
-        let existingDisplayedFiles = document.getElementById("containerForDisplayedRecords")
-        if (existingDisplayedFiles) existingDisplayedFiles.remove();
-        let existingDisplayedAccess = document.getElementById("containerForRecordAccess")
-        if (existingDisplayedAccess) existingDisplayedAccess.remove();
+    else {
+        console.log(previousAccessKey)
+        console.log(currentlyAccessedDatasetUrl)
+        try {
+            let isOwner = false
+            if (previousAccessKey == accessedPodOwnerUrl) isOwner = true
+            let controlValue = currentAccess.controlRead
+            delete currentAccess.controlRead; delete currentAccess.controlWrite //Control value is read back in 2 separate values
+            currentAccess.control = controlValue    //but written in one value
 
-        let containerDivForAccess = document.createElement("div")
-        containerDivForAccess.id = "containerForRecordAccess"
-        containerDivForAccess.className = "panel"
+            await grantAccessToDataset(session, previousAccessKey, currentlyAccessedDatasetUrl, currentAccess, isOwner)
+            alert("Individual's access updated successfully.")
+            let selectedDepartment = document.getElementById("selectedDepartment").value
+            let selectedRecordType = document.getElementById("selectedRecordType").value
 
-        let headerOfContainer = document.createElement("h3")
-        headerOfContainer.innerHTML = "Currently permitted individuals of the selected dataset"
-        headerOfContainer.className = "section-header"
-        containerDivForAccess.appendChild(headerOfContainer)
-
-        let index = 0
-        let readAccessCheckbox = document.createElement("input")
-        let readAccessLabel = document.createElement("label")
-        let writeAccessCheckbox = document.createElement("input")
-        let writeAccessLabel = document.createElement("label")
-        let appendAccessCheckbox = document.createElement("input")
-        let appendAccessLabel = document.createElement("label")
-        let controlAccessCheckbox = document.createElement("input")
-        let controlAccessLabel = document.createElement("label")
-
-        for (const [person, personsAccess] of Object.entries(access)) {
-            let accessDisplayObj = document.createElement("div")
-            accessDisplayObj.id = "displayedAccess" + index
-            accessDisplayObj.className = "panel"
-            if (index % 2 == 1) accessDisplayObj.classList.add("alt-color")
-            let individualsName = document.createElement("h3")
-            individualsName.innerHTML = "Individual's name: <u>" + person + "</u>"
-            individualsName.style.textAlign = "center"
-
-            readAccessCheckbox = document.createElement("input")
-            readAccessCheckbox.type = "checkbox"
-            readAccessCheckbox.id = "readAccessFor" + index
-            readAccessCheckbox.style.marginBottom = "5%"      //To make space for button in DOM
-            if (personsAccess.read) readAccessCheckbox.checked = true
-
-            readAccessLabel = document.createElement("label")
-            readAccessLabel.innerHTML = "Read"
-            readAccessLabel.id = "readAccessLabelFor" + index
-            readAccessLabel.style.marginRight = "2%"
-
-            writeAccessCheckbox = document.createElement("input")
-            writeAccessCheckbox.type = "checkbox"
-            writeAccessCheckbox.id = "writeAccessFor" + index
-            if (personsAccess.write) writeAccessCheckbox.checked = true
-
-            writeAccessLabel = document.createElement("label")
-            writeAccessLabel.innerHTML = "Write"
-            writeAccessLabel.style.marginRight = "2%"
-
-            appendAccessCheckbox = document.createElement("input")
-            appendAccessCheckbox.type = "checkbox"
-            appendAccessCheckbox.id = "appendAccessFor" + index
-            if (personsAccess.append) appendAccessCheckbox.checked = true
-
-            appendAccessLabel = document.createElement("label")
-            appendAccessLabel.innerHTML = "Append"
-            appendAccessLabel.style.marginRight = "2%"
-
-            controlAccessCheckbox = document.createElement("input")
-            controlAccessCheckbox.type = "checkbox"
-            controlAccessCheckbox.id = "controlAccessFor" + index
-            if (personsAccess.controlRead && personsAccess.controlWrite) controlAccessCheckbox.checked = true
-
-            controlAccessLabel = document.createElement("label")
-            controlAccessLabel.innerHTML = "Control"
-            controlAccessLabel.style.marginRight = "2%"
-
-            let updateAccessButton = document.createElement("button")
-            updateAccessButton.style.float = "right"
-            updateAccessButton.style.display = "none"
-            updateAccessButton.style.marginTop = "5%"
-            updateAccessButton.id = "updateAccessFor" + index
-            updateAccessButton.innerHTML = "Make changes to access"
-
-            accessDisplayObj.append(individualsName, readAccessCheckbox, readAccessLabel, writeAccessCheckbox, writeAccessLabel, appendAccessCheckbox, appendAccessLabel, controlAccessCheckbox, controlAccessLabel, updateAccessButton)
-
-            containerDivForAccess.appendChild(accessDisplayObj)
-            index++
+            getAccessAndDisplay(selectedRecordType, selectedDepartment)
+            return
         }
-        let medicalRecordsDiv = document.getElementById("accessingRecordsDiv")
-        medicalRecordsDiv.appendChild(containerDivForAccess)
-
-        let renderedObj = document.getElementById("containerForRecordAccess")
-
-        console.log(renderedObj.childNodes.length)
-        console.log(renderedObj)
-        for (var i = 0; i < renderedObj.childNodes.length; i++)  //Each individual with access
-        {
-            for (var j = 0; j < renderedObj.childNodes[i].childNodes.length; j++) {
-                if (renderedObj.childNodes[i].childNodes[j].nodeName == "LABEL") renderedObj.childNodes[i].childNodes[j].htmlFor = renderedObj.childNodes[i].childNodes[j - 1].id //label is for previous element which is the checkbox
-                else if (renderedObj.childNodes[i].childNodes[j].nodeName == "INPUT") {
-                    let buttonId = "updateAccessFor" + (i - 1)  //First child node is h3 tag, first person with access will be at pos. 1 with an id of updateAccessFor0
-                    renderedObj.childNodes[i].childNodes[j].onchange = function () {
-
-                        document.getElementById(buttonId).style.display = "block"
-                    }
-                }
-                else if (renderedObj.childNodes[i].childNodes[j].nodeName == "BUTTON") {
-                    let button = renderedObj.childNodes[i].childNodes[j]
-                    renderedObj.childNodes[i].childNodes[j].onclick = function () { updateDatasetAccess(button.id) }
-                }
-            }
+        catch (err) {
+            console.log(err)
         }
-
-        let buttonToAddNew = document.createElement("button")
-        buttonToAddNew.innerHTML = "+"
-        buttonToAddNew.className = "addNewButton"
-        buttonToAddNew.id = "addNewAccessButton"
-        buttonToAddNew.onclick = function () {
-
-            buttonToAddNew.style.display = "none"
-
-            let addingNewAccess = document.createElement("div")
-            addingNewAccess.id = "grantingNewAccessDiv"
-            addingNewAccess.classList.add("panel", "addingAccess")
-
-            let webIDDiv = document.createElement("div")
-            webIDDiv.className = "row"
-
-            let newAgentWebIDLabel = document.createElement("h3")
-            newAgentWebIDLabel.innerHTML = "New individual's WebID: "
-            newAgentWebIDLabel.style.float = "left"
-
-            let newAgentWebID = document.createElement("input")
-            newAgentWebID.type = "url"
-            newAgentWebID.placeholder = "Enter a new user's WebID"
-            newAgentWebID.id = "webIDNewAccess"
-            newAgentWebID.className = "column-3"
-            newAgentWebID.style.marginTop = "2.5%"
-            newAgentWebID.style.float = "left"
-            newAgentWebID.style.width = "50%"
-
-            webIDDiv.append(newAgentWebIDLabel, newAgentWebID)
-
-            let clonedReadCheckbox = readAccessCheckbox.cloneNode(false)
-            clonedReadCheckbox.id = "readAccessForNew"
-            clonedReadCheckbox.checked = false
-            let clonedReadLabel = readAccessLabel.cloneNode(true)
-            clonedReadLabel.htmlFor = clonedReadCheckbox.id
-            clonedReadLabel.id = "readAccessLabelForNew"
-
-            let clonedWriteCheckbox = writeAccessCheckbox.cloneNode(false)
-            clonedWriteCheckbox.id = "writeAccessForNew"
-            clonedWriteCheckbox.checked = false
-            let clonedWriteLabel = writeAccessLabel.cloneNode(true)
-            clonedWriteLabel.htmlFor = clonedWriteCheckbox.id
-            clonedWriteLabel.id = "writeAccessLabelForNew"
-
-
-            let clonedAppendCheckbox = appendAccessCheckbox.cloneNode(false)
-            clonedAppendCheckbox.id = "appendAccessForNew"
-            clonedAppendCheckbox.checked = false
-            let clonedAppendLabel = appendAccessLabel.cloneNode(true)
-            clonedAppendLabel.htmlFor = clonedAppendCheckbox.id
-            clonedAppendLabel.id = "appendAccessLabelForNew"
-
-
-            let clonedControlCheckbox = controlAccessCheckbox.cloneNode(false)
-            clonedControlCheckbox.id = "controlAccessForNew"
-            clonedControlCheckbox.checked = false
-            let clonedControlLabel = controlAccessLabel.cloneNode(true)
-            clonedControlLabel.htmlFor = clonedControlCheckbox.id
-            clonedControlLabel.id = "controlAccessLabelForNew"
-
-            let submitButton = document.createElement("button")
-            submitButton.innerHTML = "Submit changes"
-            submitButton.id = "submitAccessButtonForNew"
-            submitButton.style.float = "right"
-            submitButton.style.marginTop = "5%"
-            submitButton.style.marginRight = "2.5%"
-            submitButton.classList.add("green-button")
-            submitButton.onclick = function () { grantNewAccess() }
-
-            let cancelButton = document.createElement("button")
-            cancelButton.innerHTML = "Cancel"
-            cancelButton.id = "cancelAccessButtonForNew"
-            cancelButton.style.float = "right"
-            cancelButton.style.marginTop = "5%"
-            cancelButton.classList.add("red-button")
-            cancelButton.onclick = function () {
-                document.getElementById("grantingNewAccessDiv").remove()
-                // document.getElementById("cancelAccessButtonForNew").style.display = "none"
-                document.getElementById("addNewAccessButton").style.display = "block"
-            }
-            addingNewAccess.append(webIDDiv, clonedReadCheckbox, clonedReadLabel, clonedWriteCheckbox, clonedWriteLabel, clonedAppendCheckbox, clonedAppendLabel, clonedControlCheckbox, clonedControlLabel, cancelButton, submitButton)
-
-            document.getElementById("containerForRecordAccess").appendChild(addingNewAccess)
-            document.getElementById("grantingNewAccessDiv").scrollIntoView()
-        }
-
-        document.getElementById("containerForRecordAccess").appendChild(buttonToAddNew)
     }
+    if (currentAccess == previousAccessValue) console.log("they are the same")
 }
 
 async function grantNewAccess() {
-    let newAgentWebID = document.getElementById("webIDNewAccess").value
+    let newAgentWebID = document.getElementById("webIDNewAccess").value             //Extract values from div
     let selectedReadAccess = document.getElementById("readAccessForNew").checked
     let selectedWriteAccess = document.getElementById("writeAccessForNew").checked
     let selectedAppendAccess = document.getElementById("appendAccessForNew").checked
     let selectedControlAccess = document.getElementById("controlAccessForNew").checked
 
-    if (initialStateOfDatasetAccess.hasOwnProperty(newAgentWebID)) {
+    if (initialStateOfDatasetAccess.hasOwnProperty(newAgentWebID)) {        //If person is already listed as an individual with access 
         alert("Individual has already been granted access.")
         document.getElementById("webIDNewAccess").value = ""
         return
     }
-    let accessObject = { read: selectedReadAccess, write: selectedWriteAccess, append: selectedAppendAccess, controlRead: selectedControlAccess, controlWrite: selectedControlAccess }
+    let accessObject = { read: selectedReadAccess, write: selectedWriteAccess, append: selectedAppendAccess, control: selectedControlAccess }
+
+    // ************* Might need to grant them access to the info and health data container too
     await grantAccessToDataset(session, newAgentWebID, currentlyAccessedDatasetUrl, accessObject, false)
     alert('Access granted to new individual successfully.')
     let selectedDepartment = document.getElementById("selectedDepartment").value
     let selectedRecordType = document.getElementById("selectedRecordType").value
     document.getElementById("grantingNewAccessDiv").remove();
     getAccessAndDisplay(selectedRecordType, selectedDepartment)
-
 }
 
 async function saveGeneralRecordDetailsToPod() {
@@ -839,6 +836,7 @@ async function savePrescriptionDetailsToPod() {
     let pharmacistToFillPrescription = document.getElementById("prescriptionPharmacist").value
     if (pharmacistToFillPrescription != "") {
         try {
+            //**********Might need to grant them access to the info and health data container too */
             await grantAccessToDataset(session, pharmacistToFillPrescription, urlOfDatasetToUploadFileTo, { read: true, write: false, append: false, control: false }, false)
             console.log("permission granted to ", pharmacistToFillPrescription, " successfully.")
         }
@@ -875,12 +873,11 @@ async function saveDiagnosisDetailsToPod() {
 }
 
 async function shareAccessForInsurance(insurerWebID) {
-    let departments = document.getElementById("insuranceDiv").getElementsByTagName("li")
+    let departments = document.getElementById("insuranceDiv").getElementsByTagName("li")    
     let departmentNames = []
-    for (var i = 0; i < departments.length; i++) {
+    for (var i = 0; i < departments.length; i++) {  //Iterate through department that will be shared with the insurer
         departmentNames.push(departments[i].innerText)
     }
-    console.log(departmentNames)
 
     let permissionSetForInsurer = { read: true, write: false, append: false, controlRead: false, controlWrite: false }
     for (var i = 0; i < departmentNames.length; i++) {
@@ -897,7 +894,6 @@ async function shareAccessForInsurance(insurerWebID) {
                 console.log(Date.now())
                 if (Date.now() - dateAsTimestamp <= 157709247)   //Timestamp for 5 years
                 {
-                    console.log(files[i], "is in range ")
                     //Grant access to health data dataset first, or check to see if user has been granted access to any container within the health data container
                     let existingDiagnosesForInsurance = await checkIfDatasetExists(session, accessedHealthDataContainerUrl + "InsuranceDiagnoses1")
                     if (existingDiagnosesForInsurance == false) {
@@ -915,7 +911,6 @@ async function shareAccessForInsurance(insurerWebID) {
                 }
             }
         }
-        // console.log(departmentNames[i], exists)
     }
 }
 

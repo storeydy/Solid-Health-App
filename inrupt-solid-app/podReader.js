@@ -50,9 +50,7 @@ export async function getDepartments(session, resourceUrl) {
 export async function getFilesInDataset(session, resourceUrl) {
     try {
         const selectedDataset = await getSolidDataset(resourceUrl, { fetch: session.fetch })
-        // console.log(selectedDataset)
         let filesInDataset = await getThingAll(selectedDataset, { fetch: session.fetch })
-        // console.log(filesInDataset)
         return filesInDataset
     }
     catch (err) {
