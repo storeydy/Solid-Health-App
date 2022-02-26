@@ -20,7 +20,7 @@
         <label id="labelLogin" for="btnLogin">1. Click the button to log into
           <span id="solid_identity_provider">...provided by the JavaScript code...</span>:
         </label>
-        <button name="btnLogin" id="btnLogin">Login</button>
+        <button name="btnLogin" class="green-button" id="btnLogin">Login</button>
       </div>
       <button name="btnLogout" id="btnLogout" class="orange-button" style="display:none; float:right;">Logout</button>
       <p id="labelStatus" class="labelStatus"></p>
@@ -30,13 +30,13 @@
       <form id="accessPodForm">
         <h3> Choose the Solid pod that you would like to access: </h3>
         <div class="row">
-          <button id="myPodButton" style="position: inherit; left: 20%; font-size: 15px;"> Access my
+          <button id="myPodButton" class="light-blue-button" style="position: inherit; left: 20%; font-size: 15px;"> Access my
             pod</button>
           <div class="row" style="align-content: center;">
             <h3 style="position: inherit; left:35%; max-width: max-content;"> OR</h3>
             <h4 style="position: inherit; left:45%; max-width: max-content;"> The pod belonging to: </h4>
-            <input type="url" id="podOwner" placeholder="Enter WebID of Patient pod" size="40" style="position: inherit; left:60%">
-            <button id="otherUserPodButton" style="position: inherit; left:65%"> Submit </button>
+            <input type="url" id="podOwner" placeholder="Enter WebID of Patient pod" size="40" style="position: inherit; left:60%" class="text-input-box">
+            <button id="otherUserPodButton" class="light-blue-button" style="position: inherit; left:65%"> Submit </button>
           </div>
         </div>
       </form>
@@ -115,7 +115,7 @@
         <h2 class="section-header" style="text-align: center; margin-top: 5%;"> Register new medical institution </h2>
         <div class="row newField">
           <label id="institutionTypeLabel"> Type of medical institution: </label>
-          <select name="institutionType" id="institutionType">
+          <select name="institutionType" class="text-input-box" id="institutionType">
             <option value="public"> Public </option>
             <option value="private"> Private </option>
             <option value="GP">General Practitioner (GP)</option>
@@ -123,18 +123,18 @@
         </div>
         <div class="row newField">
           <label id="institutionNameLabel"> Name of medical institution: </label>
-          <input type="text" id="institutionName" placeholder="Enter name of new medical institution" size="70" required="">
+          <input type="text" id="institutionName" class="text-input-box" placeholder="Enter name of new medical institution" size="70" required="">
         </div>
         <div class="row newField">
           <label id="institutionAddressLabel"> Address of medical institution: </label>
-          <input type="text" id="institutionAddress" placeholder="Enter address of new medical institution" size="70" required="">
+          <input type="text" id="institutionAddress" class="text-input-box" placeholder="Enter address of new medical institution" size="70" required="">
         </div>
         <div class="row newField">
           <label id="institutionSysAdminLabel"> WebID of medical institution administrator (optional): </label>
-          <input type="url" id="institutionSysAdmin" placeholder="Enter webID of medical institution administrator" size="70" value="">
+          <input type="url" id="institutionSysAdmin" class="text-input-box" placeholder="Enter webID of medical institution administrator" size="70" value="">
           <p><b> Note: The individual associated with this WebID will be able to organise appointments on your behalf
               and grant other users access to your health records, so it is important to ensure that the correct WebID
-              is entered </b></p>
+              is entered. You can change this value later at the homepage. </b></p>
         </div>
         <button type="submit" class="green-button"> Save institution details to pod </button>
         <button type="reset" id="cancelRegisterNewInsitutionButton" class="red-button"> Cancel changes </button>
@@ -164,8 +164,8 @@
       <form id="saveNewAppointmentDetailsForm">
         <div class="row">
           <label class="column-6"> Time of appointment: </label>
-          <input class="column-6" type="text" placeholder="hh:mm (24hr)" id="newAppointmentTime" required="" pattern="[0-9][0-9]:[0-5][0-9]" minlength="5" maxlength="5">
-          <input class="column-6" style="float:right" type="text" placeholder="dd/mm/yy" id="newAppointmentDate" required="" pattern="[0-9][0-9]/[0-1][0-9]/[0-9][0-9]" minlength="8" maxlength="8">
+          <input class="column-6 text-input-box" type="text" placeholder="hh:mm (24hr)" id="newAppointmentTime" required="" pattern="[0-9][0-9]:[0-5][0-9]" minlength="5" maxlength="5">
+          <input class="column-6 text-input-box" style="float:right" type="text" placeholder="dd/mm/yy" id="newAppointmentDate" required="" pattern="[0-9][0-9]/[0-1][0-9]/[0-9][0-9]" minlength="8" maxlength="8">
           <label class="column-6" style="float:right"> Date of appointment: </label>
         </div>
         <div class="row">
@@ -181,7 +181,7 @@
               is very important that the WebID entered here is the WebID of the trusted health worker.
             </p>
           </div>
-          <input class="column-4" type="url" placeholder="Enter Doctor's WebID" id="newAppointmentDoctor" required="">
+          <input class="column-4 text-input-box" type="url" placeholder="Enter Doctor's WebID" id="newAppointmentDoctor" required="">
           <textarea class="column-6" style="float:right; resize: none;" cols="40" rows="5" placeholder="Enter any notes relevant to the appointment" id="newAppointmentNotes"></textarea>
           <label class="column-6" style="float:right"> Notes: </label>
         </div>
@@ -197,7 +197,6 @@
         <h2 style="text-align: center; margin-top: 5%;"> Select a department to access record types within that
           department, or manage the access to it </h2>
       </form>
-      <!-- <div id = "displayMedicalRecordsDiv" class = "panel" s> -->
       <button id="viewAccessButton" class="light-blue-button" style="width: 200px"> Manage access to selected dataset
       </button>
 
@@ -209,7 +208,7 @@
     <h2 style="text-align: center;">Upload new medical record to selected user's pod </h2>
     <div id="medicalRecordTypeSelection">
       <div class="row">
-        <h5> Select a record type to upload. Hover over options for more details. </h5>
+        <h5> Select a record type to upload. Hover over the text for more details on each record type. </h5>
         <div class="column-6 selection-div">
           <input type="checkbox" name="test" value="Diagnosis" id="diagnosisCheckbox" onclick="disableOtherCheckboxes('recordCheckbox', 'prescriptionCheckbox')">
           <label title="Medical record containing details of a diagnosis that has been reached from test results" for="diagnosisCheckbox" style="margin-right: 2%;"> Diagnosis </label>
@@ -230,7 +229,7 @@
         <h5> Record type: <u>General Record</u></h5>
         <div class="row" id="newGeneralRecordDateAndDepartment">
           <label class="column-6">Date of record: </label>
-          <input class="column-6" placeholder="dd/mm/yy" required="" pattern="[0-9][0-9]/[0-1][0-9]/[0-9][0-9]" minlength="8" maxlength="8" id="generalRecordDate">
+          <input class="column-6 text-input-box" placeholder="dd/mm/yy" required="" pattern="[0-9][0-9]/[0-1][0-9]/[0-9][0-9]" minlength="8" maxlength="8" id="generalRecordDate">
           <div id="newRecordDepartmentPlaceholderDiv" class="column-6" style="float:right"></div>
           <label class="column-6" style="float:right"> Department: </label>
           <div class="help-tip-left">
@@ -239,7 +238,7 @@
           </div>
         </div>
         <div class="row">
-          <label class="column-6">Title of record: </label>
+          <label class="column-6 text-input-box">Title of record: </label>
           <input class="column-3" placeholder="Enter a title" required="" id="generalRecordTitle">
         </div>
         <div class="row">
@@ -255,7 +254,7 @@
         <h5> Record type: <u>Prescription</u></h5>
         <div class="row" id="newPrescriptionDateAndDepartment">
           <label class="column-6">Title of prescription: </label>
-          <input class="column-3" placeholder="Enter a title" required="" id="prescriptionTitle">
+          <input class="column-3 text-input-box" placeholder="Enter a title" required="" id="prescriptionTitle">
           <div id="newPrescriptionDepartmentPlaceholderDiv" class="column-6" style="float:right"></div>
           <label class="column-6" style="float:right"> Department: </label>
           <div class="help-tip-left">
@@ -265,15 +264,19 @@
         </div>
         <div class="row">
           <label class="column-6">Start date of prescription: </label>
-          <input class="column-6" placeholder="dd/mm/yy" required="" pattern="[0-9][0-9]/[0-1][0-9]/[0-9][0-9]" minlength="8" maxlength="8" id="prescriptionStartDate">
-          <input style="float:right" class="column-6" placeholder="dd/mm/yy" required="" pattern="[0-9][0-9]/[0-1][0-9]/[0-9][0-9]" minlength="8" maxlength="8" id="prescriptionEndDate">
+          <input class="column-6 text-input-box" placeholder="dd/mm/yy" required="" pattern="[0-9][0-9]/[0-1][0-9]/[0-9][0-9]" minlength="8" maxlength="8" id="prescriptionStartDate">
+          <input style="float:right" class="column-6 text-input-box" placeholder="dd/mm/yy" required="" pattern="[0-9][0-9]/[0-1][0-9]/[0-9][0-9]" minlength="8" maxlength="8" id="prescriptionEndDate">
           <label style="float:right" class="column-6">End date of prescription: </label>
         </div>
         <div class="row">
           <label class="column-6"> Description of prescription: </label>
           <textarea class="column-3" style="resize:none" required="" placeholder="Enter a description" cols="80" rows="10" id="newPrescriptionDescription"></textarea>
-          <input style="float:right" type="url" value="" class="column-6" placeholder="Enter a pharmacist WebID" id="prescriptionPharmacist">
+          <input style="float:right" type="url" value="" class="column-6 text-input-box" placeholder="Enter a pharmacist WebID" id="prescriptionPharmacist">
           <label style="float:right" class="column-6">Pharmacist to fill prescription (optional): </label>
+          <div class="help-tip-left">
+            <p>By specifying the WebID of the Pharmacist that will fill this prescription, you will be granting them
+              permission to view this dataset and the basic institution metadata seen on the homepage.</p>
+          </div>
         </div>
         <button type="submit" class="green-button" id="savePrescriptionDetailsButton"> Save prescription details to
           pod </button>
@@ -284,7 +287,7 @@
         <h5> Record type: <u>Diagnosis</u></h5>
         <div class="row" id="newDiagnosisDateAndDepartment">
           <label class="column-6">Title of diagnosis: </label>
-          <input class="column-3" placeholder="Enter a title" required="" id="diagnosisTitle">
+          <input class="column-3 text-input-box" placeholder="Enter a title" required="" id="diagnosisTitle">
           <div id="newDiagnosisDepartmentPlaceholderDiv" class="column-6" style="float:right"></div>
           <label class="column-6" style="float:right"> Department: </label>
           <div class="help-tip-left">
@@ -294,10 +297,7 @@
         </div>
         <div class="row">
           <label class="column-6">Date of diagnosis: </label>
-          <input class="column-6" placeholder="dd/mm/yy" required="" pattern="[0-9][0-9]/[0-1][0-9]/[0-9][0-9]" minlength="8" maxlength="8" id="diagnosisDate">
-          <!-- <input style="float:right" class="column-6" placeholder="dd/mm/yy" required pattern="[0-9][0-9]/[0-1][0-9]/[0-9][0-9]" required
-            minlength="8" maxlength="8" id="prescriptionEndDate">
-          <label style="float:right" class="column-6">End date of prescription: </label> -->
+          <input class="column-6 text-input-box" placeholder="dd/mm/yy" required="" pattern="[0-9][0-9]/[0-1][0-9]/[0-9][0-9]" minlength="8" maxlength="8" id="diagnosisDate">
         </div>
         <div class="row">
           <label class="column-6"> Description of diagnosis: </label>
@@ -330,25 +330,21 @@
     </ul>
     <h4><br><br>Enter below the WebID of the insurer, which will allow them to view these records that are stored in
       your pod. </h4>
-    <input type="url" placeholder="Insurer WebID" id="insurerWebID">
+    <input type="url" class="text-input-box" placeholder="Insurer WebID" id="insurerWebID">
     <button id="submitInsuranceRequestButton" style="margin-left:70px" class="green-button">Submit </button>
   </div>
 
   <div id="podDiagramDiv" class="panel" style="display: none">
     <button id="returnFromPodDiagram" class="red-button" style="float: right; position: inherit; align-self: flex-end; top: 5%"> Go back </button>
     <h3 class="section-header" style="margin-top: 5%;">Overall pod structure</h3>
-    <!-- <div class = "panel">
-      <h3> Overall pod structure </h3>
-    </div> -->
+
     <h1 style="font-size: medium;">In order to use this application, users make use of the <a href="https://solidproject.org/TR/protocol">Solid specification</a>
       in order to store and access medical records in individual patient's pods, which can be thought of as personal
       data stores.</h1>
-    <!-- <br><br> -->
-    <h1 style="font-size: medium;">All of the data used in this application is stored in the pod of the individual that
+]    <h1 style="font-size: medium;">All of the data used in this application is stored in the pod of the individual that
       was specified at the initial welcome screen after logging in. This data is set to private by default, meaning that
       explicit access must be granted to view or update any of it. It is also entirely isolated from all other data held
       in the pod.</h1>
-    <!-- <br><br> -->
     <h1 style="font-size: medium">The owner of this pod is <a href="" id="podOwnerUrl"></a>, and you have been granted
       access to health data stored in their pod for the types shown in green: </h1>
     <div id="diagramLegend">
@@ -380,11 +376,7 @@
   document.getElementById(checkboxToDisable1).disabled = !document.getElementById(checkboxToDisable1).disabled;
   document.getElementById(checkboxToDisable2).disabled = !document.getElementById(checkboxToDisable2).disabled;
 }</script>
-  <!-- <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
-        <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
-        <script src="healthCareDepartmentDropdown.js"></script> -->
-
-
+ 
 
   <div id="authenticatedOperations" style="display: none;">
 

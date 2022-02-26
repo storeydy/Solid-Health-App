@@ -849,7 +849,7 @@ async function savePrescriptionDetailsToPod() {
         try {
             //**********Might need to grant them access to the info and health data container too */
             await grantAccessToDataset(session, pharmacistToFillPrescription, accessedHealthDataContainerUrl, { read: true, write: false, append: false, control: false }, false)
-            await grantAccessToDataset(session, pharmacistToFillPrescription, accessedHealthDataInfoDatasetUrl, { read: true, write: false, append: false, control: false }, false)
+            await grantAccessToDataset(session, pharmacistToFillPrescription, accessedHealthDataContainerUrl + "Info", { read: true, write: false, append: false, control: false }, false)
             await grantAccessToDataset(session, pharmacistToFillPrescription, urlOfDatasetToUploadFileTo, { read: true, write: false, append: false, control: false }, false)
             console.log("permission granted to ", pharmacistToFillPrescription, " successfully.")
         }
@@ -1661,6 +1661,7 @@ continueWithSelectedRecordTypeButton.addEventListener("click", (event) => {
         document.getElementById("medicalRecordTypeSelection").style.display = "none"
         getPatientDepartmentsAndDisplay("uploadingNewRecord", "newPrescriptionDepartmentPlaceholderDiv")
         document.getElementById("createNewPrescriptionDiv").style.display = "block";
+        document.getElementById("createNewPrescriptionDiv").scrollIntoView();
         return;
     }
     if (document.getElementById("recordCheckbox").checked) {

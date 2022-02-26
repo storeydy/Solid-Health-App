@@ -417,7 +417,11 @@
   font-size: x-large;
   color:rgb(172, 184, 3)
 }
-
+.text-input-box{
+  border-radius: 12px 12px 12px 12px;
+  height: 30px;
+  /* width: fit-content; */
+}
 .diagram-outer-department{
   padding: 5%;
   background-color:#b9ecff;

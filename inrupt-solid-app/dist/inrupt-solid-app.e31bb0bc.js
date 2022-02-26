@@ -89610,7 +89610,7 @@ async function savePrescriptionDetailsToPod() {
         append: false,
         control: false
       }, false);
-      await (0, _podWriter.grantAccessToDataset)(session, pharmacistToFillPrescription, accessedHealthDataInfoDatasetUrl, {
+      await (0, _podWriter.grantAccessToDataset)(session, pharmacistToFillPrescription, accessedHealthDataContainerUrl + "Info", {
         read: true,
         write: false,
         append: false,
@@ -90445,6 +90445,7 @@ continueWithSelectedRecordTypeButton.addEventListener("click", event => {
     document.getElementById("medicalRecordTypeSelection").style.display = "none";
     getPatientDepartmentsAndDisplay("uploadingNewRecord", "newPrescriptionDepartmentPlaceholderDiv");
     document.getElementById("createNewPrescriptionDiv").style.display = "block";
+    document.getElementById("createNewPrescriptionDiv").scrollIntoView();
     return;
   }
 
