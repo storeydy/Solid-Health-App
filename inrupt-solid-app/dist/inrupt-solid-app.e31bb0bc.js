@@ -71238,7 +71238,10 @@ async function storeMedicalInsitutionInformation(session, healthDataDatasetUrl, 
   });
   const institutionDetailsFile = (0, _solidClient.buildThing)((0, _solidClient.createThing)({
     name: "medicalInstitutionDetails"
-  })).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.name, institutionDetails.name).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.address, institutionDetails.address).addStringNoLocale("https://schema.org/dateCreated", date).addUrl(_vocabCommonRdf.RDF.type, "https://schema.org/MedicalOrganization").addUrl("https://schema.org/member", institutionDetails.administrator).build();
+  })).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.name, institutionDetails.name).addStringNoLocale(_vocabCommonRdf.SCHEMA_INRUPT.address, institutionDetails.address).addStringNoLocale("https://schema.org/dateCreated", date).addUrl(_vocabCommonRdf.RDF.type, "https://schema.org/MedicalOrganization") // .addUrl("https://schema.org/member", institutionDetails.administrator)
+  .build();
+  if (institutionDetails.administrator) institutionDetailsFile = (0, _solidClient.addUrl)(institutionDetailsFile, "https://schema.org/member", institutionDetails.administrator); // thingToAdd = addUrl(thingToAdd, RDF.type, "https://schema.org/TextDigitalDocument")
+
   healthDataDataset = (0, _solidClient.setThing)(healthDataDataset, institutionDetailsFile);
   await (0, _solidClient.saveSolidDatasetAt)(healthDataDatasetUrl + "/Info", healthDataDataset, {
     fetch: session.fetch
@@ -88940,6 +88943,13 @@ function resetCurrentPodSession(completelyReset) {
     document.getElementById("accessHealthDataForm").style.display = "none";
     document.getElementById("accessingPod").style.display = "block";
     document.getElementById("accessPodForm").style.display = "block";
+    document.getElementById("publicButton").disabled = true;
+    document.getElementById("privateButton").disabled = true;
+    document.getElementById("GPButton").disabled = true;
+    document.getElementById("publicHealthDataType").style.backgroundColor = "grey";
+    document.getElementById("publicHealthDataType").style.backgroundColor = "grey";
+    document.getElementById("GPHealthDataType").style.backgroundColor = "grey";
+    typesOfHealthDataExists.fill(false);
   }
 
   document.getElementById("uploadNewAppointmentDetails").style.display = "none"; //Set all divs to hidden that could possibly be displayed
@@ -89594,6 +89604,18 @@ async function savePrescriptionDetailsToPod() {
   if (pharmacistToFillPrescription != "") {
     try {
       //**********Might need to grant them access to the info and health data container too */
+      await (0, _podWriter.grantAccessToDataset)(session, pharmacistToFillPrescription, accessedHealthDataContainerUrl, {
+        read: true,
+        write: false,
+        append: false,
+        control: false
+      }, false);
+      await (0, _podWriter.grantAccessToDataset)(session, pharmacistToFillPrescription, accessedHealthDataInfoDatasetUrl, {
+        read: true,
+        write: false,
+        append: false,
+        control: false
+      }, false);
       await (0, _podWriter.grantAccessToDataset)(session, pharmacistToFillPrescription, urlOfDatasetToUploadFileTo, {
         read: true,
         write: false,
@@ -90354,33 +90376,36 @@ setAdministratorToEditable.addEventListener("click", event => {
       }
 
       updateMedicalInstitutionField("https://schema.org/member", document.getElementById("editableInstitutionAdministrator").value).then(async () => {
-        let noAccess = {
-          read: false,
-          append: false,
-          write: false,
-          controlRead: false,
-          controlWrite: false
-        };
         let administratorAccess = {
           read: true,
           append: true,
           write: true,
           control: true
         };
-        await (0, _podWriter.grantAccessToDataset)(session, existingValue, accessedHealthDataContainerUrl, noAccess, false); //Revoke access
 
-        await (0, _podWriter.grantAccessToDataset)(session, existingValue, accessedHealthDataContainerUrl + "Info", noAccess, false); // from previous
+        if (existingValue != "null") {
+          let noAccess = {
+            read: false,
+            append: false,
+            write: false,
+            controlRead: false,
+            controlWrite: false
+          };
+          await (0, _podWriter.grantAccessToDataset)(session, existingValue, accessedHealthDataContainerUrl, noAccess, false); //Revoke access
 
-        await (0, _podWriter.grantAccessToDataset)(session, document.getElementById("editableInstitutionAdministrator").value, accessedHealthDataContainerUrl, administratorAccess, false); //Grant access 
+          await (0, _podWriter.grantAccessToDataset)(session, existingValue, accessedHealthDataContainerUrl + "Info", noAccess, false); // from previous
+        }
 
-        await (0, _podWriter.grantAccessToDataset)(session, document.getElementById("editableInstitutionAdministrator").value, accessedHealthDataContainerUrl + "Info", administratorAccess, false); // to new
+        await (0, _podWriter.grantAccessToDataset)(session, document.getElementById("editableInstitutionAdministrator").value, accessedHealthDataContainerUrl, administratorAccess, true); //Grant access 
+
+        await (0, _podWriter.grantAccessToDataset)(session, document.getElementById("editableInstitutionAdministrator").value, accessedHealthDataContainerUrl + "Info", administratorAccess, true); // to new
 
         alert("Field updated successfully");
         document.getElementById("setAdministratorToReadOnly").style.display = "none";
         document.getElementById("administratorOfInstitution").style.display = "block";
         document.getElementById("setAdministratorToEditable").style.display = "block";
         document.getElementById("administratorTooltip").style.display = "block";
-        document.getElementById("warningMessageForUpdatingAdmin").remove();
+        if (document.getElementById("warningMessageForUpdatingAdmin")) document.getElementById("warningMessageForUpdatingAdmin").remove();
         document.getElementById("editableInstitutionAdministrator").remove();
         await selectTypeOfHealthData(accessedHealthDataType);
       });
@@ -90494,7 +90519,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "65525" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "63759" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

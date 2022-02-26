@@ -219,6 +219,17 @@ function resetCurrentPodSession(completelyReset) {
         document.getElementById("accessHealthDataForm").style.display = "none";
         document.getElementById("accessingPod").style.display = "block";
         document.getElementById("accessPodForm").style.display = "block";
+
+        document.getElementById("publicButton").disabled = true
+        document.getElementById("privateButton").disabled = true
+        document.getElementById("GPButton").disabled = true
+
+        document.getElementById("publicHealthDataType").style.backgroundColor = "grey"
+        document.getElementById("publicHealthDataType").style.backgroundColor = "grey"
+        document.getElementById("GPHealthDataType").style.backgroundColor = "grey"
+
+        typesOfHealthDataExists.fill(false)
+        
     }
     document.getElementById("uploadNewAppointmentDetails").style.display = "none"       //Set all divs to hidden that could possibly be displayed
     document.getElementById("accessingRecordsDiv").style.display = "none";
@@ -837,6 +848,8 @@ async function savePrescriptionDetailsToPod() {
     if (pharmacistToFillPrescription != "") {
         try {
             //**********Might need to grant them access to the info and health data container too */
+            await grantAccessToDataset(session, pharmacistToFillPrescription, accessedHealthDataContainerUrl, { read: true, write: false, append: false, control: false }, false)
+            await grantAccessToDataset(session, pharmacistToFillPrescription, accessedHealthDataInfoDatasetUrl, { read: true, write: false, append: false, control: false }, false)
             await grantAccessToDataset(session, pharmacistToFillPrescription, urlOfDatasetToUploadFileTo, { read: true, write: false, append: false, control: false }, false)
             console.log("permission granted to ", pharmacistToFillPrescription, " successfully.")
         }
@@ -1594,19 +1607,21 @@ setAdministratorToEditable.addEventListener("click", (event) => {
                 return
             }
             updateMedicalInstitutionField("https://schema.org/member", document.getElementById("editableInstitutionAdministrator").value).then(async () => {
-                let noAccess = { read: false, append: false, write: false, controlRead: false, controlWrite: false }
                 let administratorAccess = { read: true, append: true, write: true, control: true }
+                if(existingValue != "null"){
+                let noAccess = { read: false, append: false, write: false, controlRead: false, controlWrite: false }
                 await grantAccessToDataset(session, existingValue, accessedHealthDataContainerUrl, noAccess, false)                 //Revoke access
                 await grantAccessToDataset(session, existingValue, accessedHealthDataContainerUrl + "Info", noAccess, false)        // from previous
-                await grantAccessToDataset(session, document.getElementById("editableInstitutionAdministrator").value, accessedHealthDataContainerUrl, administratorAccess, false)             //Grant access 
-                await grantAccessToDataset(session, document.getElementById("editableInstitutionAdministrator").value, accessedHealthDataContainerUrl + "Info", administratorAccess, false)    // to new
+                }
+                await grantAccessToDataset(session, document.getElementById("editableInstitutionAdministrator").value, accessedHealthDataContainerUrl, administratorAccess, true)             //Grant access 
+                await grantAccessToDataset(session, document.getElementById("editableInstitutionAdministrator").value, accessedHealthDataContainerUrl + "Info", administratorAccess, true)    // to new
 
                 alert("Field updated successfully")
                 document.getElementById("setAdministratorToReadOnly").style.display = "none"
                 document.getElementById("administratorOfInstitution").style.display = "block"
                 document.getElementById("setAdministratorToEditable").style.display = "block"
                 document.getElementById("administratorTooltip").style.display = "block"
-                document.getElementById("warningMessageForUpdatingAdmin").remove()
+                if(document.getElementById("warningMessageForUpdatingAdmin")) document.getElementById("warningMessageForUpdatingAdmin").remove()
                 document.getElementById("editableInstitutionAdministrator").remove()
                 await selectTypeOfHealthData(accessedHealthDataType)
             })
