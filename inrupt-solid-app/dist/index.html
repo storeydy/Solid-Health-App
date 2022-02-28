@@ -13,8 +13,8 @@
     <header style="background-color: #1c93ed; border: 2%; border-color: black;">
       <div class="row">
         <h2 style="padding-left: 40%;">Solid Health App</h2>
-        <h4 <="" div="">
-    </h4></div></header>
+
+    </div></header>
     <section id="login" class="panel">
       <div id="loginButtonDiv" class="row">
         <label id="labelLogin" for="btnLogin">1. Click the button to log into
@@ -29,14 +29,20 @@
     <div id="accessingPod" class="podSelector" style="display: none;">
       <form id="accessPodForm">
         <h3> Choose the Solid pod that you would like to access: </h3>
-        <div class="row">
-          <button id="myPodButton" class="light-blue-button" style="position: inherit; left: 20%; font-size: 15px;"> Access my
-            pod</button>
-          <div class="row" style="align-content: center;">
-            <h3 style="position: inherit; left:35%; max-width: max-content;"> OR</h3>
-            <h4 style="position: inherit; left:45%; max-width: max-content;"> The pod belonging to: </h4>
-            <input type="url" id="podOwner" placeholder="Enter WebID of Patient pod" size="40" style="position: inherit; left:60%" class="text-input-box">
-            <button id="otherUserPodButton" class="light-blue-button" style="position: inherit; left:65%"> Submit </button>
+        <div class="row" style="align-content: center;">
+          <div class="column-4">
+            <button id="myPodButton" class="light-blue-button">
+              Access my
+              pod</button>
+          </div>
+          <div class="column-4">
+            <h3> OR</h3>
+          </div>
+          <div class="column-3">
+            <h4> The pod belonging to: </h4>
+            <input type="url" pattern="https://.*" id="podOwner" placeholder="Enter WebID of Patient pod" size="40" class="text-input-box">
+            <button id="otherUserPodButton" class="light-blue-button"> Submit
+            </button>
           </div>
         </div>
       </form>
@@ -51,7 +57,6 @@
 
     <div id="institutionInformation" class="podSelector" style="display:none">
       <div class="row">
-        <!-- <form id="institutionInformationForm"> -->
         <h3 id="typeOfAccessedHealthData" class="section-header"></h3>
         <h3 id="ownerOfPod"></h3>
         <br><br>
@@ -69,8 +74,6 @@
           <h3 id="administratorOfInstitution" class="column-2"></h3> <input style="float:right; margin-left: 10%; margin-top: 1%; display:none" type="button" class="white-button-small" id="setAdministratorToEditable" value="Edit">
           <input style="float:right; margin-left: 10%; margin-top: 1%; display: none" type="button" class="red-button-small" id="setAdministratorToReadOnly" value="Cancel">
           <div class="help-tip-left" style="left: 40%; align-items:inherit;" id="administratorTooltip">
-            <!-- <div class="help-tip" style="position: inherit"> -->
-
             <p>This is the only individual than the pod owner that is able to register appointments in a new
               department
               on behalf of the patient. <br> <br> By specifying the WebID of the doctor conducting an appointment,
@@ -83,7 +86,6 @@
         <button id="cancelSessionWithPodButton" class="white-button column-5" style="margin: 2%;"> Cancel session with
           current pod owner
         </button>
-        <!-- </form> -->
         <button type="submit" class="white-button column-5" id="registerNewMedicalInstitutionButton" disabled="true" style="margin: 2%;" title="This action can currently only be performed by the pod owner">
           Register new medical institution</button>
         <button type="submit" class="white-button column-5" id="registerNewAppointmentButton" style="margin: 2%;" disabled="true" title="This action can currently only be performed by the pod owner or institution administrator">
@@ -96,15 +98,12 @@
           Upload medical records </button>
         <button class="white-button column-5" id="initiateInsuranceRequestButton" style="margin: 2%;" title="This action can currently only be performed by the pod owner" disabled="true">Make insurance
           request</button>
-
         <button class="white-button column-5" id="viewPodDiagramButton" style="margin: 2%;">View pod diagram</button>
-        <!-- <button class = "white-button column-5" id = "viewInsuranceDiagnosesButton" style = "margin: 2%;">View pertinent diagnoses for insurance</button> -->
       </div>
     </div>
 
     <div id="noInstitutionInformation" style="display:none">
       <form id="noInstitutionInformationForm">
-        <!-- <label id = "currentPlace">  </label> -->
         <h2> There is currently no registered medical institution in your pod, click below to add one </h2>
         <button type="submit"> Register new medical institution </button>
       </form>
@@ -131,7 +130,7 @@
         </div>
         <div class="row newField">
           <label id="institutionSysAdminLabel"> WebID of medical institution administrator (optional): </label>
-          <input type="url" id="institutionSysAdmin" class="text-input-box" placeholder="Enter webID of medical institution administrator" size="70" value="">
+          <input type="url" pattern="https://.*" id="institutionSysAdmin" class="text-input-box" placeholder="Enter webID of medical institution administrator" size="70" value="">
           <p><b> Note: The individual associated with this WebID will be able to organise appointments on your behalf
               and grant other users access to your health records, so it is important to ensure that the correct WebID
               is entered. You can change this value later at the homepage. </b></p>
@@ -144,12 +143,22 @@
     <div id="uploadNewAppointmentDetails" class="panel" style="display: none; height: 140%">
       <button id="returnFromUploadingAppointment" class="red-button" style="float: right; position: inherit; align-self: flex-end; top: 5%"> Go back </button>
       <h2 style="text-align: center;"> Upload new appointment details </h2>
+      <h5>Uploading an appointment creates a new department of health data if it is the first recorded appointment in
+        that department. This entails a Solid container for the department itself, and 4 inner Datasets; Appointments,
+        Diagnoses, Prescriptions and Records. <br><br> The administrator of the currently accessed healthcare
+        institution
+        is granted owner status of all 4 of these datasets, required to grant other users permissions when registering
+        future appointments. The Doctor conducting the appointment is granted permission to read
+        files from the Appointments dataset, permission to read and write from the Diagnoses and Records datasets, and
+        permission to read, write and change the access of the Prescriptions dataset (To grant read access to a
+        Pharmacist when uploading a prescription record to a Patient's pod. <br><br>
+        By default, Emergency Workers are granted read access to the Prescriptions dataset within all departments, to be
+        aware of crucial information in the event of an emergency involving a Patient user of this application.</h5>
       <div class="row">
         <label class="column-4" style="font-size: 2vh;"> Department of appointment: </label>
         <div class="help-tip-right" style="left: 20%;" id="administratorTooltip">
-          <!-- <div class="help-tip" style="position: inherit"> -->
-          <p>Only pod owner or institution administrator can upload details of an appointment in a department where no
-            records previously exist <br> <br>
+          <p>Only pod owner or institution administrator can upload details of an appointment, due to granting
+            permissions as part of the procedure<br> <br>
           </p>
         </div>
         <form class="column-4" id="selectedDepartmentForm">
@@ -181,7 +190,7 @@
               is very important that the WebID entered here is the WebID of the trusted health worker.
             </p>
           </div>
-          <input class="column-4 text-input-box" type="url" placeholder="Enter Doctor's WebID" id="newAppointmentDoctor" required="">
+          <input class="column-4 text-input-box" pattern="https://.*" type="url" placeholder="Enter Doctor's WebID" id="newAppointmentDoctor" required="">
           <textarea class="column-6" style="float:right; resize: none;" cols="40" rows="5" placeholder="Enter any notes relevant to the appointment" id="newAppointmentNotes"></textarea>
           <label class="column-6" style="float:right"> Notes: </label>
         </div>
@@ -271,7 +280,7 @@
         <div class="row">
           <label class="column-6"> Description of prescription: </label>
           <textarea class="column-3" style="resize:none" required="" placeholder="Enter a description" cols="80" rows="10" id="newPrescriptionDescription"></textarea>
-          <input style="float:right" type="url" value="" class="column-6 text-input-box" placeholder="Enter a pharmacist WebID" id="prescriptionPharmacist">
+          <input style="float:right" pattern="https://.*" type="url" value="" class="column-6 text-input-box" placeholder="Enter a pharmacist WebID" id="prescriptionPharmacist">
           <label style="float:right" class="column-6">Pharmacist to fill prescription (optional): </label>
           <div class="help-tip-left">
             <p>By specifying the WebID of the Pharmacist that will fill this prescription, you will be granting them
@@ -310,28 +319,30 @@
   </div>
 
   <div id="insuranceDiv" class="panel" style="display: none">
+
     <button id="returnFromInsurance" class="red-button" style="float: right; position: inherit; align-self: flex-end; top: 5%"> Go back </button>
-    <h2 class="section-header" style="text-align: center; margin-top: 5%;">Share medical records for health/life
-      insurance</h2>
-    <h4>In order to get a quote for life insurance, insurance companies must be aware of any ongoing health conditions
-      of the insured. <br><br>
-      This is done by a process called underwriting, and it determines how much of a risk the individual is to cover.
-      <br><br>
-      By using this feature you will be providing all of the required data to a specified insurer, including any
-      diagnoses dated in the last 5 years from the following departments:
-    </h4>
-    <ul>
-      <li>Cardiology</li>
-      <li>Oncology</li>
-      <li>Haematology</li>
-      <li>Oncology</li>
-      <li>Psychiatry</li>
-      <li>Rheumatology</li>
-    </ul>
-    <h4><br><br>Enter below the WebID of the insurer, which will allow them to view these records that are stored in
-      your pod. </h4>
-    <input type="url" class="text-input-box" placeholder="Insurer WebID" id="insurerWebID">
-    <button id="submitInsuranceRequestButton" style="margin-left:70px" class="green-button">Submit </button>
+    <form id="submitInsuranceRequestForm">
+      <h2 class="section-header" style="text-align: center; margin-top: 5%;">Share medical records for health/life
+        insurance</h2>
+      <h4>In order to get a quote for life insurance, insurance companies must be aware of any ongoing health conditions
+        of the insured. <br><br>
+        This is done by a process called underwriting, and it determines how much of a risk the individual is to cover.
+        <br><br>
+        By using this feature you will be providing all of the required data to a specified insurer, including any
+        diagnoses dated in the last 5 years from the following departments:
+      </h4>
+      <ul>
+        <li>Cardiology</li>
+        <li>Haematology</li>
+        <li>Oncology</li>
+        <li>Psychiatry</li>
+        <li>Rheumatology</li>
+      </ul>
+      <h4><br><br>Enter below the WebID of the insurer, which will allow them to view these records that are stored in
+        your pod. </h4>
+      <input type="url" pattern="https://.*" class="text-input-box" placeholder="Insurer WebID" id="insurerWebID">
+      <button id="submitInsuranceRequestButton" style="margin-left:70px" class="green-button">Submit </button>
+    </form>
   </div>
 
   <div id="podDiagramDiv" class="panel" style="display: none">
@@ -341,23 +352,38 @@
     <h1 style="font-size: medium;">In order to use this application, users make use of the <a href="https://solidproject.org/TR/protocol">Solid specification</a>
       in order to store and access medical records in individual patient's pods, which can be thought of as personal
       data stores.</h1>
-]    <h1 style="font-size: medium;">All of the data used in this application is stored in the pod of the individual that
+    <h1 style="font-size: medium;">All of the data used in this application is stored in the pod of the individual
+      that
       was specified at the initial welcome screen after logging in. This data is set to private by default, meaning that
       explicit access must be granted to view or update any of it. It is also entirely isolated from all other data held
       in the pod.</h1>
+
+    <h1 style="font-size: medium;">By default, whenever a type of health data is created within this application, a
+      Dataset is created called 'Info' which contains the medical institution metadata seen on the homepage.</h1>
     <h1 style="font-size: medium">The owner of this pod is <a href="" id="podOwnerUrl"></a>, and you have been granted
       access to health data stored in their pod for the types shown in green: </h1>
     <div id="diagramLegend">
       <div class="row">
-        <div class="column-4">
+        <div class="column-4 resource-descriptor-box">
+          <div style="float:left" class="help-tip-left">
+            <p>A Solid resource that is analogous to a folder in traditional data structures. Containers have their own
+              dedicated URI and access permissions, and can contain further Containers or Datasets.</p>
+          </div>
           <div class="container-box"> </div>
           <a style="float:left; margin-top: 6%;"> Container </a>
         </div>
-        <div class="column-4">
+        <div class="column-4 resource-descriptor-box">
+          <div style="float:left" class="help-tip-left">
+            <p>A Solid resource with its own URI and access permissions, that contains one or more Things but cannot
+              contain Containers.</p>
+          </div>
           <div class="dataset-box"> </div>
           <a style="float:left; margin-top: 6%;"> Dataset </a>
         </div>
-        <div class="column-4">
+        <div class="column-4 resource-descriptor-box">
+          <div style="float:left" class="help-tip-left">
+            <p>A data entity associated with a set of data or properties about the Thing. Saved as part of a Dataset</p>
+          </div>
           <div class="thing-box"> </div>
           <a style="float:left; margin-top: 6%;"> Thing </a>
         </div>
@@ -370,177 +396,7 @@
     </div>
   </div>
 
-
-
-  <script>function disableOtherCheckboxes(checkboxToDisable1, checkboxToDisable2) {
-  document.getElementById(checkboxToDisable1).disabled = !document.getElementById(checkboxToDisable1).disabled;
-  document.getElementById(checkboxToDisable2).disabled = !document.getElementById(checkboxToDisable2).disabled;
-}</script>
- 
-
-  <div id="authenticatedOperations" style="display: none;">
-
-    <div id="read" class="panel">
-      <div class="row">
-        <form id="writeForm">
-          <label id="writelabel" for="name">2. Create a new Solid Dataset: </label>
-          <button type="submit">
-            Create Dataset
-          </button>
-        </form>
-      </div>
-
-      <dl class="display">
-        <dt>Writing status:&nbsp</dt>
-        <dd id="labelWriteStatus" class="labelStatus">...not written yet...</dd>
-      </dl>
-    </div>
-
-    <div id="createAcl" class="panel">
-      <div class="row">
-        <form id="createAclForm">
-          <label id="createAclLabel" for="webID">3. Create ACL for dataset that has been created:
-          </label>
-          <button type="submit" name="btnCreateAcl" id="btnCreateAcl">
-            Create ACL
-          </button>
-        </form>
-      </div>
-      <dl class="display">
-        <dt>Formatted Name (FN) read from Pod:&nbsp</dt>
-        <dd id="webID">...not read yet...</dd>
-      </dl>
-    </div>
-
-    <div id="readAgent" class="panel">
-      <div class="row">
-        <form id="readAgentAccessForm">
-          <label id="readlabel" for="webID">4. Read agent access of dataset that has been created:
-          </label>
-          <input type="url" id="agentID" name="agentID" size="50" placeholder="Enter a webID to see the access that webID has">
-          <button type="submit" name="btnRead" id="btnRead">
-            Read Profile
-          </button>
-        </form>
-      </div>
-      <dl class="display">
-        <dt>Formatted Name (FN) read from Pod:&nbsp</dt>
-        <dd id="labelFN">...not read yet...</dd>
-      </dl>
-    </div>
-
-    <div id="read" class="panel">
-      <div class="row">
-        <form id="readDatasetForm">
-          <label id="readlabel">4. Read back content of dataset
-          </label>
-          <button type="submit" name="btnReadDataset" id="btnReadDataset">
-            Get dataset contents
-          </button>
-        </form>
-      </div>
-      <dl class="display">
-        <dt>File read from Pod:&nbsp</dt>
-        <dd id="labelFN">...not read yet...</dd>
-      </dl>
-    </div>
-
-    <div id="giveAccess" class="panel">
-      <div class="row">
-        <form id="giveAccessForm">
-          <label id="giveAccesslabel" for="webID">5. Grant access to user for created dataset
-          </label>
-          <input type="url" id="granteeID" name="webID" size="50" placeholder="Enter any WebID to grant access to the created dataset">
-          <br>
-          <input type="checkbox" id="readAccessBox">
-          <label for="readAccessBox"> Read </label>
-          <input type="checkbox" id="writeAccessBox">
-          <label for="writeAccessBox"> Write </label>
-          <input type="checkbox" id="appendAccessBox">
-          <label for="appendAccessBox"> Append </label>
-          <input type="checkbox" id="controlAccessBox">
-          <label for="controlAccessBox"> Control </label>
-          <br>
-          <button type="submit" name="btnRead" id="btnRead">
-            Grant Access
-          </button>
-        </form>
-      </div>
-      <dl class="display">
-        <dt>Writing access status: </dt>
-        <dd id="accessStatusLabel">...not written yet...</dd>
-      </dl>
-      <!-- <dl class="display">
-          <dt>Formatted Name (FN) read from Pod:&nbsp</dt>
-          <dd id="labelFN">...not read yet...</dd>
-        </dl> -->
-    </div>
-
-    <div id="read" class="panel">
-      <div class="row">
-        <form id="readPrivateForm">
-          <label id="readlabel" for="webID">6. Read back private text file belonging to Test User 1
-          </label>
-          <button type="submit" name="btnReadPrivateFile" id="btnReadPrivateFile">
-            Get private file
-          </button>
-        </form>
-      </div>
-      <dl class="display">
-        <dt>File read from Pod:&nbsp</dt>
-        <dd id="labelFN">...not read yet...</dd>
-      </dl>
-    </div>
-
-    <div id="uploadFile" class="panel">
-      <div class="row">
-        <form id="uploadFileForm">
-          <label id="readlabel" for="webID">7. Upload new file to dataset
-          </label>
-          <input type="text" id="fileName" name="fileName" size="30" placeholder="Enter name of file">
-          <br>
-          <br>
-          <input type="text" id="fileContent" name="fileContent" size="50" placeholder="Enter file content">
-          <button type="submit" name="btnUploadPrivateFile" id="btnUploadPrivateFile">
-            Upload file
-          </button>
-        </form>
-      </div>
-      <dl class="display">
-        <dt>Writing status: </dt>
-        <dd id="uploadLabel">...not written yet...</dd>
-      </dl>
-    </div>
-
-    <div id="deleteFile" class="panel">
-      <div class="row">
-        <form id="deleteFileForm">
-          <label id="readlabel" for="webID">8. Delete file from dataset
-          </label>
-          <br>
-          <br>
-          <input type="url" id="fileUrl" name="fileUrl" size="50" placeholder="Enter file URL">
-          <button type="submit" name="btnDeletePrivateFile" id="btnDeletePrivateFile">
-            Delete file
-          </button>
-        </form>
-      </div>
-      <dl class="display">
-        <dt>Deleting status: </dt>
-        <dd id="deleteLabel">...not deleted yet...</dd>
-      </dl>
-    </div>
-
-    <button id="deleteDatasetButton" onclick="deleteDataset()"> Delete dataset</button>
-  </div>
-  
-
-  <script>/* When the user clicks on the button,
-    toggle between hiding and showing the dropdown content */
-// function myFunction() {
-//   document.getElementById("myDropdown").classList.toggle("show");
-// }
-function filterFunction() {
+  <script>function filterFunction() {
   var input, filter, ul, li, a, i;
   input = document.getElementById("selectedAppointmentDepartmentDropdown");
   filter = input.value.toUpperCase();
@@ -556,6 +412,11 @@ function filterFunction() {
       a[i].style.display = "none";
     }
   }
+}
+
+function disableOtherCheckboxes(checkboxToDisable1, checkboxToDisable2) {
+  document.getElementById(checkboxToDisable1).disabled = !document.getElementById(checkboxToDisable1).disabled;
+  document.getElementById(checkboxToDisable2).disabled = !document.getElementById(checkboxToDisable2).disabled;
 }</script>
 </body>
 

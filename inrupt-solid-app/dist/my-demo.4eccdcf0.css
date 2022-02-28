@@ -422,6 +422,12 @@
   height: 30px;
   /* width: fit-content; */
 }
+.resource-descriptor-box{
+  border: 2px solid navy;
+  padding: 2%; 
+  margin: 2%;
+  border-radius: 7px
+}
 .diagram-outer-department{
   padding: 5%;
   background-color:#b9ecff;

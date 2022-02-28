@@ -1,14 +1,11 @@
 import {
     createContainerAt,
-    createContainerInContainer,
     createSolidDataset,
     getSolidDataset,
     saveSolidDatasetAt,
-    saveSolidDatasetInContainer,
     setThing,
     buildThing,
     createThing,
-    getSolidDatasetWithAcl,
     createAcl,
     getResourceAcl,
     getResourceInfoWithAcl,
@@ -17,12 +14,10 @@ import {
     saveAclFor,
     addStringNoLocale,
     addUrl,
-    SolidDataset,
     hasResourceAcl,
     hasAccessibleAcl,
     hasFallbackAcl,
     createAclFromFallbackAcl,
-    isContainer,
     deleteSolidDataset,
 
 } from "@inrupt/solid-client"
@@ -39,10 +34,6 @@ const doctorPermissionSetForRecordsDiagnoses = { read: true, write: true, append
 const doctorPermissionSetForAppointments = { read: true, write: false, append: false, control: false }
 const doctorPermissionSetForPrescriptions = { read: true, write: true, append: true, control: true }
 
-const expectedAdministratorAppointmentsPermissionSet = { read: true, write: true, append: true, controlRead: false, controlWrite: false }       //Institution administrator should be able to upload details of a new appointment to any department
-const administratorPermissionSetForAppointments = { read: true, write: true, append: true, control: true }         //Administrator will need to be able to upload records to the appointments dataset, and grant view access to doctors when uploading an appointment
-const administratorPermissionSetForDiagnosesPrescriptionsRecords = { read: false, write: false, append: false, control: true }        //Doesn't need to view/update these records but needs to be able to grant read,write access to doctors when they are uploading details of a new appointment
-
 
 const permissionSetForCreatorOfDepartment = { read: true, append: true, write: true, control: true }  //This works and not controlRead, controlWrite
 
@@ -54,30 +45,22 @@ export async function writeAppointment(session, healthDataContainerUrl, appointm
     let departmentDatasetUrl = healthDataContainerUrl + appointmentDetails.appointmentDepartment    // for example: "https://testuser1.solidcommunity.net/publicHealthData/" + "Cardiology"
     let departmentExists = await checkIfDatasetExists(session, departmentDatasetUrl + "/Appointments") //If the appointment dataset exists then the other datasets will - means don't need to grant access to administrator to overall department container
     if (departmentExists == false) {
-        // console.log("creating department for the appointment")
         await createDepartmentDataset(session, healthDataContainerUrl, departmentDatasetUrl, appointmentDetails.podOwnerUrl, appointmentDetails.institutionAdministrator)
     }
 
-    //TO CHECK IF SOMEONE HAS ACCESS THEY NEED CONTROL ACCESS. MAKES THEM AN OWNER.
-    let doctorHasAccessToOverall = await checkIfPersonHasAccess(session, healthDataContainerUrl, appointmentDetails.appointmentDoctor, expectedOverallPermissionSet)
+    let doctorHasAccessToOverall = await checkIfPersonHasAccess(session, healthDataContainerUrl, appointmentDetails.appointmentDoctor, expectedOverallPermissionSet)  
     if (doctorHasAccessToOverall == false) await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, healthDataContainerUrl, expectedOverallPermissionSet, false)       //Doctor atleast needs read access to overall HealthData container to access Patient's pod 
 
     let infoDatasetUrl = healthDataContainerUrl + "Info"
-    console.log(infoDatasetUrl)
     let doctorHasAccessToInfo = await checkIfPersonHasAccess(session, infoDatasetUrl, appointmentDetails.appointmentDoctor, expectedDoctorInfoPermissionSet)
     if (doctorHasAccessToInfo == false) await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, infoDatasetUrl, expectedDoctorInfoPermissionSet, false)         //Doctor also needs read access to info dataset HealthData container to display homepage in Patient's pod
 
     let doctorHasAccessToDepartment = await checkIfPersonHasAccess(session, departmentDatasetUrl + "/Appointments", appointmentDetails.appointmentDoctor, expectedDoctorPermissionSetForAppointments)  //Same permission set for multiple datasets, only one check needed
     if (doctorHasAccessToDepartment == false) {
-        console.log("giving doctor access")
         await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, departmentDatasetUrl + "/Appointments", doctorPermissionSetForAppointments, false)
-        console.log("granted to appointments");
         await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, departmentDatasetUrl + "/Records", doctorPermissionSetForRecordsDiagnoses, false)
-        console.log("granted to records");
         await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, departmentDatasetUrl + "/Diagnoses", doctorPermissionSetForRecordsDiagnoses, false)
-        console.log("granted to diagnoses");
         await grantAccessToDataset(session, appointmentDetails.appointmentDoctor, departmentDatasetUrl + "/Prescriptions", doctorPermissionSetForPrescriptions, false)
-        console.log("granted to prescriptions");
     }
 
 
@@ -94,7 +77,6 @@ export async function writeAppointment(session, healthDataContainerUrl, appointm
 
     departmentAppointmentDataset = setThing(departmentAppointmentDataset, appointmentDetailsFile)
     await saveSolidDatasetAt(departmentDatasetUrl + "/Appointments", departmentAppointmentDataset, { fetch: session.fetch })
-    console.log("appointment details saved to pod")
 }
 
 export async function createDepartmentDataset(session, healthDataContainerUrl, departmentDatasetUrl, podOwnerUrl, institutionAdministrator) {
@@ -168,17 +150,14 @@ export async function storeMedicalInsitutionInformation(session, healthDataDatas
 
     let healthDataDataset = await createSolidDataset();
     await createContainerAt(healthDataDatasetUrl, { fetch: session.fetch });
-    const institutionDetailsFile = buildThing(createThing({ name: "medicalInstitutionDetails" }))
+    let institutionDetailsFile = buildThing(createThing({ name: "medicalInstitutionDetails" }))
         .addStringNoLocale(SCHEMA_INRUPT.name, institutionDetails.name)
         .addStringNoLocale(SCHEMA_INRUPT.address, institutionDetails.address)
         .addStringNoLocale("https://schema.org/dateCreated", date)
         .addUrl(RDF.type, "https://schema.org/MedicalOrganization")
-        // .addUrl("https://schema.org/member", institutionDetails.administrator)
         .build();
 
-    if (institutionDetails.administrator) institutionDetailsFile = addUrl(institutionDetailsFile, "https://schema.org/member", institutionDetails.administrator)
-
-    // thingToAdd = addUrl(thingToAdd, RDF.type, "https://schema.org/TextDigitalDocument")
+    if (institutionDetails.administrator) institutionDetailsFile = addUrl(institutionDetailsFile, "https://schema.org/member", institutionDetails.administrator)    //Add admin if one was specified
 
     healthDataDataset = setThing(healthDataDataset, institutionDetailsFile)
     await saveSolidDatasetAt(
@@ -200,7 +179,7 @@ export async function storeMedicalInsitutionInformation(session, healthDataDatas
         { read: true, append: true, write: true, control: true }
     )
 
-    if (institutionDetails.administrator) {
+    if (institutionDetails.administrator) {     //Grant appropriate access to administrator if one was specified
         updatedContainerAcl = setAgentResourceAccess(
             updatedContainerAcl,
             institutionDetails.administrator,
@@ -269,12 +248,7 @@ export async function createInsuranceDiagnosesDataset(session, insuranceDatasetU
         { fetch: session.fetch }
     )
     let permissionSetForOwner = { read: true, write: true, append: true, control: true }
-    await grantAccessToDataset(session, podOwnerUrl, insuranceDatasetUrl + "1", permissionSetForOwner, true)
-    // const insuranceDiagnosesDatasetWithAcl = await getResourceInfoWithAcl(insuranceDatasetUrl, {fetch: session.fetch})
-    // const insuranceDiagnosesDatasetAcl = createAcl(insuranceDiagnosesDatasetWithAcl)
-    // let updatedInsuranceDiagnosesDatasetAcl = setAgentResourceAccess(insuranceDiagnosesDatasetAcl, podOwnerUrl, {read: true, append: true, write: true, control: true })
-    // updatedInsuranceDiagnosesDatasetAcl = setAgentDefaultAccess(insuranceDiagnosesDatasetAcl, podOwnerUrl, {read: true, append: true, write: true, control: true })
-    // await saveAclFor(insuranceDiagnosesDatasetWithAcl, updatedInsuranceDiagnosesDatasetAcl, {fetch: session.fetch})
+    await grantAccessToDataset(session, podOwnerUrl, insuranceDatasetUrl, permissionSetForOwner, true)
 }
 
 export async function addThingToDataset(session, datasetUrl, thing) {
@@ -289,15 +263,56 @@ export async function deleteExistingHealthData(session, resourceUrl) {
         let departmentsWithinHealthData = await getDepartments(session, resourceUrl)
         for (var i = 0; i < departmentsWithinHealthData.length; i++) {
             for (var j = 0; j < datasetsWithinDepartment.length; j++) {
-                console.log("deleting ", departmentsWithinHealthData[i] + datasetsWithinDepartment[j]);
                 await deleteSolidDataset(departmentsWithinHealthData[i] + datasetsWithinDepartment[j], { fetch: session.fetch })  //Delete each of the 4 child datasets within a department container
             }
             await deleteSolidDataset(departmentsWithinHealthData[i], { fetch: session.fetch })    //Then delete the department container
         }
         await deleteSolidDataset(resourceUrl, { fetch: session.fetch });    //Then delete the overall dataset
-        console.log("deleted dataset")
     }
     catch (err) {
         console.log(err)
+    }
+}
+
+export async function deleteDataset(session, datasetUrl) {
+    try {
+        await deleteSolidDataset(
+            datasetUrl, { fetch: session.fetch }
+        );
+    }
+    catch (err) {
+        console.log(err)
+    }
+}
+
+async function deleteFileFromUrl(session, fileUrl) {
+
+    let myDataset = await getSolidDataset(
+        "https://testuser1.solidcommunity.net/healthDataDataset",
+        { fetch: session.fetch }          // fetch from authenticated session
+    );
+    try {
+        const thingToDelete = getThing(myDataset, fileUrl, { fetch: session.fetch })
+    }
+    catch (err) {
+        console.log("File url did not exist in solid dataset or invalid permission to read file. Exception generated: ", err)
+    }
+
+    try {
+        myDataset = removeThing(myDataset, thingToDelete);  //Delete thing from dataset    
+    }
+    catch (err) {
+        console.log("Error deleting file from dataset. Exception generated: ", err)
+    }
+
+    try {
+        const savedPrivateInfoDataset = await saveSolidDatasetAt(
+            "https://testuser1.solidcommunity.net/healthDataDataset",
+            myDataset,
+            { fetch: session.fetch }
+        )
+    }
+    catch (err) {
+        console.log("Error saving changes to dataset after delete. Exception generated: ", err);
     }
 }

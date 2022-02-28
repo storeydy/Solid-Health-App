@@ -47,10 +47,9 @@ import {
 import { Session, getDefaultSession, fetch } from "@inrupt/solid-client-authn-browser";
 import { SCHEMA_INRUPT, VCARD, FOAF, RDF } from "@inrupt/vocab-common-rdf";
 import { departments } from "./healthcareDepartments";
-import { checkIfDatasetExists, checkIfAdministrator, getDepartments, getFilesInDataset, getAccessToDataset, checkIfPersonHasAccess } from "./podReader";
-import { writeAppointment, createDepartmentDataset, storeMedicalInsitutionInformation, uploadMedicalRecord, grantAccessToDataset, createInsuranceDiagnosesDataset, addThingToDataset } from "./podWriter";
+import { checkIfDatasetExists, getDepartments, getFilesInDataset, getAccessToDataset, checkIfPersonHasAccess } from "./podReader";
+import { writeAppointment, storeMedicalInsitutionInformation, uploadMedicalRecord, grantAccessToDataset, createInsuranceDiagnosesDataset, addThingToDataset } from "./podWriter";
 import * as _ from 'lodash'
-//import fetch from 'unfetch';
 
 // If your Pod is *not* on `solidcommunity.net`, change this to your identity provider.
 const SOLID_IDENTITY_PROVIDER = "https://solidcommunity.net";
@@ -63,20 +62,17 @@ const NOT_ENTERED_WEBID =
 
 var session = new Session();
 
-const buttonLogin = document.getElementById("btnLogin");
-const writeForm = document.getElementById("writeForm");
-const readForm = document.getElementById("readForm");
-var accessedPodOwnerUrl = ""
-var accessedPodOwnerBaseUrl = ""
-var accessedHealthDataContainerUrl = ""
-var accessedHealthDataType = ""
-var accessedHealthDataContainerAdministrator = ""
-var medicalInstitutionRegistered = Boolean(0);
-var initialStateOfDatasetAccess = {}
-var currentlyAccessedDatasetUrl = ""
+var accessedPodOwnerUrl = ""        //WebID of owner of current pod
+var accessedPodOwnerBaseUrl = ""    //Username of owner of current pod (combination of userID and pod provider)
+var accessedHealthDataContainerUrl = ""     //URI of current type of accessed health data within pod 
+var accessedHealthDataType = ""             //Currently accessed health data type
+var accessedHealthDataContainerAdministrator = ""       //Administrator of current health data container
+var initialStateOfDatasetAccess = {}                //Initial access to a resource
+var currentlyAccessedDatasetUrl = ""              
 var typesOfHealthData = ['public', 'private', 'GP']
 var typesOfHealthDataForDisplay = ['Public', 'Private', 'General Practitioner (GP)']
 var typesOfHealthDataExists = [false, false, false]
+
 // 1a. Start Login Process. Call session.login() function.
 async function login() {
     if (!session.info.isLoggedIn) {
@@ -88,7 +84,7 @@ async function login() {
     }
 }
 
-async function logout() {
+async function logout() {   //Not currently supported
     document.getElementById("webID").value = "";
     document.getElementById("loginButtonDiv").style.display = "block"
     document.getElementById("btnLogout").style.display = "none"
@@ -113,7 +109,6 @@ async function handleRedirectAfterLogin() {
             "labelStatus"
         ).innerHTML = `Your session is logged in with the WebID [<a target="_blank" href="${session.info.webId}">${session.info.webId}</a>].`;
         document.getElementById("labelStatus").setAttribute("role", "alert");
-        document.getElementById("webID").value = session.info.webId;
         document.getElementById("btnLogout").style.display = "block"
         document.getElementById("loginButtonDiv").style.display = "none"
         document.getElementById("accessingPod").style.display = "block"
@@ -136,7 +131,7 @@ async function checkMedicalInstitutionStatus(podOwner) {
 
         let accessTypeOfHealthDataForm = document.getElementById("accessHealthDataForm")
         for (var i = 0; i < typesOfHealthData.length; i++) {    //Loop through array containing 'public', 'private', 'GP'
-            var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/" + typesOfHealthData[i] + "HealthData3/Info"
+            var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/" + typesOfHealthData[i] + "HealthData/Info"
             let healthDataExists = await checkIfDatasetExists(session, healthDataDatasetUrl)    //Checks that they have read access to 'info' dataset, meaning they can do something to that type of health data
             if (healthDataExists == true) { //If the user has been granted some aspect of access to the current health data type
                 let selectableHealthDataType = document.getElementById(typesOfHealthData[i] + "Button")
@@ -152,7 +147,6 @@ async function checkMedicalInstitutionStatus(podOwner) {
         if (!typesOfHealthDataExists.includes(true)) {  //Means no health data exists
             if (podOwner == "signedInUser") {
                 alert("You have not created a dataset in your Solid pod to hold medical record information. Please create one by following the steps below.")
-                medicalInstitutionRegistered = false;
                 document.getElementById("accessingPod").style.display = "none"
                 document.getElementById("registerNewMedicalInstitution").style.display = 'block'        //Display pod allowing them to create a health data container
             }
@@ -181,9 +175,8 @@ async function checkMedicalInstitutionStatus(podOwner) {
 
 async function selectTypeOfHealthData(healthDataType) {
     accessedHealthDataType = healthDataType //Either 'public', 'private', or 'GP'
-    accessedHealthDataContainerUrl = accessedPodOwnerBaseUrl + "/" + healthDataType + "HealthData3/"
+    accessedHealthDataContainerUrl = accessedPodOwnerBaseUrl + "/" + healthDataType + "HealthData/"
     var accessedHealthDataInfoDatasetUrl = accessedHealthDataContainerUrl + "Info"
-    let signedInUsersAccessToOverall = ""
     document.getElementById("accessingPod").style.display = "none"
     const healthDataInfoDataset = await getSolidDataset(accessedHealthDataInfoDatasetUrl, { fetch: session.fetch });        //Get 'Info' dataset and extract variables
     const institutionDetails = await getThing(healthDataInfoDataset, accessedHealthDataInfoDatasetUrl + "#medicalInstitutionDetails")
@@ -229,7 +222,7 @@ function resetCurrentPodSession(completelyReset) {
         document.getElementById("GPHealthDataType").style.backgroundColor = "grey"
 
         typesOfHealthDataExists.fill(false)
-        
+
     }
     document.getElementById("uploadNewAppointmentDetails").style.display = "none"       //Set all divs to hidden that could possibly be displayed
     document.getElementById("accessingRecordsDiv").style.display = "none";
@@ -264,7 +257,7 @@ function resetCurrentPodSession(completelyReset) {
     buttonForRegisteringNewInsitution.classList.remove("clicked-button")
     buttonForRegisteringNewInsitution.style.display = "block"
 
-    let departmentSelectionForm = document.getElementById("departmentSelectionForm")        
+    let departmentSelectionForm = document.getElementById("departmentSelectionForm")
     while (departmentSelectionForm.children.length > 1) {                           //Remove all department options from the department dropdown
         let nextNode = departmentSelectionForm.lastChild
         departmentSelectionForm.removeChild(nextNode);
@@ -284,7 +277,7 @@ async function registerNewMedicalInstitution() {        //Extract values from fo
     const institutionAddress = document.getElementById("institutionAddress").value;
     let administratorWebID = document.getElementById("institutionSysAdmin").value;
     if (administratorWebID == "") administratorWebID = null
-    var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/" + institutionType + "HealthData3"  // https://testuser1.solidcommunity.net/profile/card#me
+    var healthDataDatasetUrl = accessedPodOwnerBaseUrl + "/" + institutionType + "HealthData"  // https://testuser1.solidcommunity.net/profile/card#me
     let institutionDetails = {
         name: institutionName,
         address: institutionAddress,
@@ -294,6 +287,7 @@ async function registerNewMedicalInstitution() {        //Extract values from fo
     await checkMedicalInstitutionStatus("signedInUser");
     await selectTypeOfHealthData(institutionType)       //Access new health data container after it has been created
     resetCurrentPodSession(false)
+    alert('Health data created successfully')
 }
 
 async function updateMedicalInstitutionField(fieldID, newValue) {       //Update field in the medical institution metadata thing
@@ -307,7 +301,7 @@ async function updateMedicalInstitutionField(fieldID, newValue) {       //Update
 }
 
 async function saveNewAppointment() {       //Extract fields of new appointment and send object to podWriter
-    let department = document.getElementById("selectedAppointmentDepartmentDropdown").value 
+    let department = document.getElementById("selectedAppointmentDepartmentDropdown").value
     let timeOfAppointment = document.getElementById("newAppointmentTime").value;
     let dateOfAppointment = document.getElementById("newAppointmentDate").value;
     let doctorWebID = document.getElementById("newAppointmentDoctor").value;
@@ -373,7 +367,7 @@ async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdow
             selectAbleDepartment.style.margin = "2%"
             for (var i = 0; i <= departments.length - 1; i++) {
                 let newOption = document.createElement("option")
-                newOption.innerHTML = departments[i].substring(departments[i].lastIndexOf("HealthData3/") + 12, departments[i].length - 1)
+                newOption.innerHTML = departments[i].substring(departments[i].lastIndexOf("HealthData/") + 12, departments[i].length - 1)
                 selectAbleDepartment.appendChild(newOption)
             }
             departmentListForm.appendChild(selectAbleDepartment)
@@ -410,7 +404,10 @@ async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdow
                     submitButtonToViewInsuranceDiagnoses.value = "View diagnoses for insurance"
                     submitButtonToViewInsuranceDiagnoses.classList.add("light-blue-button")
                     submitButtonToViewInsuranceDiagnoses.style.width = "200px"
-
+                    if(!await checkIfDatasetExists(session, accessedHealthDataContainerUrl+"InsuranceDiagnoses")) {
+                        submitButtonToViewInsuranceDiagnoses.disabled = true
+                        submitButtonToViewInsuranceDiagnoses.title = "Initiate an insurance request to use this feature"
+                    }
                     submitButtonToViewInsuranceDiagnoses.id = "buttonForViewingInsuranceDataset"
                     submitButtonToViewInsuranceDiagnoses.style.marginLeft = "20%"
 
@@ -437,7 +434,7 @@ async function getAccessAndDisplay(recordType, department) {
         else if (err == 404) alert('No access has been established for the current dataset.')
     }
     initialStateOfDatasetAccess = { ...access }                 //Save initial state of the access to the selected dataset for comparison after updates
-    currentlyAccessedDatasetUrl = urlOfSelectedDataset      
+    currentlyAccessedDatasetUrl = urlOfSelectedDataset
     if (Object.entries(access).length > 0) {        //If there is at least one person with access to the dataset
         let existingDisplayedFiles = document.getElementById("containerForDisplayedRecords")   //Remove currently displayed records if they are displayed
         if (existingDisplayedFiles) existingDisplayedFiles.remove();
@@ -453,7 +450,19 @@ async function getAccessAndDisplay(recordType, department) {
         headerOfContainer.className = "section-header"
         containerDivForAccess.appendChild(headerOfContainer)
 
-        //******************Add description of what each access level means*****************************
+        let readDescription = document.createElement("h5")
+        readDescription.innerHTML = "<u>Read:</u> Access to view the contents of the applicable Resource"
+
+        let writeDescription = document.createElement("h5")
+        writeDescription.innerHTML = "<u>Write:</u> Access to add (i.e. append), update, and delete contents of Resource. Granting Write access automatically grants Append Access"
+
+        let appendDescription = document.createElement("h5")
+        appendDescription.innerHTML = "<u>Append:</u> Access to add data to the applicable Resource"
+
+        let controlDescription = document.createElement("h5")
+        controlDescription.innerHTML = "<u>Control:</u> Access to view and manage who has access to the applicable Resource. Applicable to the ACL authorization system."
+
+        containerDivForAccess.append(readDescription, writeDescription, appendDescription, controlDescription)
 
         let index = 0
         let readAccessCheckbox = document.createElement("input")        //Labels and checkboxes for each individuals access
@@ -477,7 +486,7 @@ async function getAccessAndDisplay(recordType, department) {
             readAccessCheckbox = document.createElement("input")
             readAccessCheckbox.type = "checkbox"
             readAccessCheckbox.id = "readAccessFor" + index
-            readAccessCheckbox.style.marginBottom = "5%"      
+            readAccessCheckbox.style.marginBottom = "5%"
             if (personsAccess.read) readAccessCheckbox.checked = true
 
             readAccessLabel = document.createElement("label")
@@ -571,7 +580,9 @@ async function getAccessAndDisplay(recordType, department) {
             newAgentWebID.type = "url"
             newAgentWebID.placeholder = "Enter a new user's WebID"
             newAgentWebID.id = "webIDNewAccess"
+            newAgentWebID.pattern = "https://.*"
             newAgentWebID.className = "column-3"
+            newAgentWebID.classList.add("text-input-box")
             newAgentWebID.style.marginTop = "2.5%"
             newAgentWebID.style.float = "left"
             newAgentWebID.style.width = "50%"
@@ -640,17 +651,14 @@ async function getAccessAndDisplay(recordType, department) {
 async function getPatientFilesAndDisplay(recordType, department, isForInsurer) {
     let urlOfSelectedDataset = ""
     if (isForInsurer == false) {
-        console.log("now its here");
         urlOfSelectedDataset = accessedHealthDataContainerUrl + department + "/" + recordType
     }
     else {
-        console.log("made it here")
-        urlOfSelectedDataset = accessedHealthDataContainerUrl + "InsuranceDiagnoses1"
+        urlOfSelectedDataset = accessedHealthDataContainerUrl + "InsuranceDiagnoses"
     }
     let filesInSelectedDataset = ""
     try {
         filesInSelectedDataset = await getFilesInDataset(session, urlOfSelectedDataset)
-        console.log(filesInSelectedDataset)
     }
     catch (errorCode) {
         if (errorCode == 403) alert('You have not been authorized to view the chosen record type. Contact the pod owner to request access')
@@ -742,14 +750,11 @@ async function updateDatasetAccess(accessPerson) {
         controlRead: document.getElementById("controlAccessFor" + indexOfAccessPerson).checked,
         controlWrite: document.getElementById("controlAccessFor" + indexOfAccessPerson).checked
     }
-    console.log(currentAccess)
     if (_.isEqual(currentAccess, previousAccessValue)) {
         alert("No change detected from initial access level. Change the values of checkboxes to make updates.")
         return
     }
     else {
-        console.log(previousAccessKey)
-        console.log(currentlyAccessedDatasetUrl)
         try {
             let isOwner = false
             if (previousAccessKey == accessedPodOwnerUrl) isOwner = true
@@ -769,7 +774,6 @@ async function updateDatasetAccess(accessPerson) {
             console.log(err)
         }
     }
-    if (currentAccess == previousAccessValue) console.log("they are the same")
 }
 
 async function grantNewAccess() {
@@ -785,8 +789,9 @@ async function grantNewAccess() {
         return
     }
     let accessObject = { read: selectedReadAccess, write: selectedWriteAccess, append: selectedAppendAccess, control: selectedControlAccess }
-
-    // ************* Might need to grant them access to the info and health data container too
+    let basicAccessForHomePage = {read: true, write: false, append: false, control: false}
+    await grantAccessToDataset(session, newAgentWebID, accessedHealthDataContainerUrl, basicAccessForHomePage, false)
+    await grantAccessToDataset(session, newAgentWebID, accessedHealthDataContainerUrl + "Info", basicAccessForHomePage, false)
     await grantAccessToDataset(session, newAgentWebID, currentlyAccessedDatasetUrl, accessObject, false)
     alert('Access granted to new individual successfully.')
     let selectedDepartment = document.getElementById("selectedDepartment").value
@@ -847,11 +852,9 @@ async function savePrescriptionDetailsToPod() {
     let pharmacistToFillPrescription = document.getElementById("prescriptionPharmacist").value
     if (pharmacistToFillPrescription != "") {
         try {
-            //**********Might need to grant them access to the info and health data container too */
             await grantAccessToDataset(session, pharmacistToFillPrescription, accessedHealthDataContainerUrl, { read: true, write: false, append: false, control: false }, false)
             await grantAccessToDataset(session, pharmacistToFillPrescription, accessedHealthDataContainerUrl + "Info", { read: true, write: false, append: false, control: false }, false)
             await grantAccessToDataset(session, pharmacistToFillPrescription, urlOfDatasetToUploadFileTo, { read: true, write: false, append: false, control: false }, false)
-            console.log("permission granted to ", pharmacistToFillPrescription, " successfully.")
         }
         catch (err) {
             console.log(err)
@@ -886,354 +889,48 @@ async function saveDiagnosisDetailsToPod() {
 }
 
 async function shareAccessForInsurance(insurerWebID) {
-    let departments = document.getElementById("insuranceDiv").getElementsByTagName("li")    
+    let departments = document.getElementById("insuranceDiv").getElementsByTagName("li")
     let departmentNames = []
-    for (var i = 0; i < departments.length; i++) {  //Iterate through department that will be shared with the insurer
+    let insuranceDatasetCreated = false
+    let insuranceDatasetAlreadyExisted = false
+    for (var i = 0; i < departments.length; i++) {  //Iterate through departments that will be shared with the insurer
         departmentNames.push(departments[i].innerText)
     }
 
+    if(await checkIfDatasetExists(session, accessedHealthDataContainerUrl + "InsuranceDiagnoses"))  insuranceDatasetAlreadyExisted = true
     let permissionSetForInsurer = { read: true, write: false, append: false, controlRead: false, controlWrite: false }
     for (var i = 0; i < departmentNames.length; i++) {
         let urlOfDiagnosisDataset = accessedHealthDataContainerUrl + departmentNames[i] + "/Diagnoses"
         if (await checkIfDatasetExists(session, urlOfDiagnosisDataset)) {    //Diagnoses in the current department
             let files = await getFilesInDataset(session, urlOfDiagnosisDataset)
-            console.log(files)
-            for (var i = 0; i < files.length; i++) {
-                console.log(i)
-                var startDateOfDiagnosis = getStringNoLocale(files[i], "https://schema.org/startDate")
-                console.log(startDateOfDiagnosis)
-                var dateAsTimestamp = Date.parse(startDateOfDiagnosis)
-                console.log(dateAsTimestamp)
-                console.log(Date.now())
-                if (Date.now() - dateAsTimestamp <= 157709247)   //Timestamp for 5 years
+            for (var j = 0; j < files.length; j++) {
+                var startDateOfDiagnosis = getStringNoLocale(files[j], "https://schema.org/startDate")
+                startDateOfDiagnosis = startDateOfDiagnosis.substring(3,5) + "/" + startDateOfDiagnosis.substring(0,2) + startDateOfDiagnosis.substring(5)    //Date.parse takes dates in  mm/dd/yy format
+                var dateAsTimestamp = Date.parse(startDateOfDiagnosis+"Z")
+                if((parseInt(Date.now() - dateAsTimestamp) / (1000*60*60*24*365.25)) <= 5 )  //Current diagnosis in department is timestamped within last  5 years
                 {
-                    //Grant access to health data dataset first, or check to see if user has been granted access to any container within the health data container
-                    let existingDiagnosesForInsurance = await checkIfDatasetExists(session, accessedHealthDataContainerUrl + "InsuranceDiagnoses1")
+                    // Grant access to health data dataset first, or check to see if user has been granted access to any container within the health data container
+                    let existingDiagnosesForInsurance = await checkIfDatasetExists(session, accessedHealthDataContainerUrl + "InsuranceDiagnoses")
                     if (existingDiagnosesForInsurance == false) {
-                        await createInsuranceDiagnosesDataset(session, accessedHealthDataContainerUrl + "InsuranceDiagnoses1", accessedPodOwnerUrl)
+                        insuranceDatasetCreated = true
+                        await createInsuranceDiagnosesDataset(session, accessedHealthDataContainerUrl + "InsuranceDiagnoses", accessedPodOwnerUrl)
                     }
-                    let insurerHasAccess = await checkIfPersonHasAccess(session, accessedHealthDataContainerUrl + "InsuranceDiagnoses1", insurerWebID, permissionSetForInsurer)
+                    let insurerHasAccess = await checkIfPersonHasAccess(session, accessedHealthDataContainerUrl + "InsuranceDiagnoses", insurerWebID, permissionSetForInsurer)
                     if (insurerHasAccess == false) {
-                        console.log("granting access")
                         await grantAccessToDataset(session, insurerWebID, accessedHealthDataContainerUrl, permissionSetForInsurer, false)
                         await grantAccessToDataset(session, insurerWebID, accessedHealthDataContainerUrl + "Info", permissionSetForInsurer, false)
-                        await grantAccessToDataset(session, insurerWebID, accessedHealthDataContainerUrl + "InsuranceDiagnoses1", permissionSetForInsurer, false)
+                        await grantAccessToDataset(session, insurerWebID, accessedHealthDataContainerUrl + "InsuranceDiagnoses", permissionSetForInsurer, false)
                     }
-
-                    await addThingToDataset(session, accessedHealthDataContainerUrl + "InsuranceDiagnoses1", files[i])
+                    await addThingToDataset(session, accessedHealthDataContainerUrl + "InsuranceDiagnoses", files[j])
                 }
             }
         }
     }
-}
-
-// 2. Create new dataset with a file in it
-async function writeProfile() {
-
-    if (!session.info.isLoggedIn) {
-        document.getElementById(
-            "labelWriteStatus"
-        ).textContent = `...you can't write [${name}] until you first login!`;
-        document.getElementById("labelWriteStatus").setAttribute("role", "alert");
-        return;
-    }
-    const webID = session.info.webId;
-    const profileDocumentUrl = new URL(webID);
-    profileDocumentUrl.hash = "";
-
-
-    let healthRecordDataset = createSolidDataset();
-    const privateInfoDocument = buildThing(createThing({ name: "some_private_file.txt" }))
-        .addStringNoLocale(SCHEMA_INRUPT.text, "Some text that should be privately available")
-        .addUrl(RDF.type, "https://schema.org/TextDigitalDocument")
-        .build();
-
-    healthRecordDataset = setThing(healthRecordDataset, privateInfoDocument);  //Insert new doc into new dataset    
-
-    const savedPrivateInfoDataset = await saveSolidDatasetAt(
-        "https://testuser1.solidcommunity.net/healthDataDataset1",
-        healthRecordDataset,
-        { fetch: session.fetch }
-    )
-}
-
-// 3. Create ACL for created Dataset
-async function createAclForDataset() {
-    const webID = document.getElementById("webID").value;
-    console.log(webID);
-
-    if (webID === NOT_ENTERED_WEBID) {
-        document.getElementById(
-            "labelFN"
-        ).textContent = `Login first, or enter a WebID (any WebID!) to read from its profile`;
-        return false;
-    }
-
-    try {
-        new URL(webID);
-    } catch (_) {
-        document.getElementById(
-            "labelFN"
-        ).textContent = `Provided WebID [${webID}] is not a valid URL - please try again`;
-        return false;
-    }
-
-
-    // ANSWER CAME FROM : https://forum.solidproject.org/t/solved-solid-client-create-acl-for-container-makes-agent-lose-control/4029/3
-    const myDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/healthDataDataset1", { fetch: session.fetch })
-    const myDatasetsAcl = createAcl(myDatasetWithAcl)
-    console.log(myDatasetsAcl)
-    let updatedAcl = setAgentResourceAccess(
-        myDatasetsAcl,
-        "https://testuser1.solidcommunity.net/profile/card#me",
-        { read: true, append: true, write: true, control: true }
-    )
-    updatedAcl = setAgentDefaultAccess(
-        updatedAcl,
-        "https://testuser1.solidcommunity.net/profile/card#me",
-        { read: true, append: true, write: true, control: true }
-    )
-    console.log(updatedAcl)
-    try {
-        await saveAclFor(myDatasetWithAcl, updatedAcl, { fetch: session.fetch })
-    }
-    catch (err) {
-        console.log(err)
-    }
-}
-
-// 3. Read agent access
-async function readAgentAccess() {
-    const agentID = document.getElementById("agentID").value;
-    console.log(agentID);
-
-    const myDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/healthDataDataset1", { fetch: session.fetch });
-
-    console.log(myDatasetWithAcl)
-
-    const myDatasetsAgentAccess = await access.getAgentAccess(
-        "https://testuser1.solidcommunity.net/healthDataDataset1",       // resource  
-        agentID,  // agent
-        { fetch: session.fetch }                      // fetch function from authenticated session
-    ).then(access => {
-        logAccessInfo(agentID, access, "https://testuser1.solidcommunity.net/healthDataDataset1");
-    });
-}
-
-
-async function readDataset() {
-    const webID = document.getElementById("webID").value;
-    console.log(webID)
-
-    if (webID === NOT_ENTERED_WEBID) {
-        document.getElementById(
-            "labelFN"
-        ).textContent = `Login first, or enter a WebID (any WebID!) to read from its profile`;
-        return false;
-    }
-
-    let myDataset;
-    try {
-        if (session.info.isLoggedIn) {
-            myDataset = await getSolidDataset("https://testuser1.solidcommunity.net/healthDataDataset1", { fetch: session.fetch });
-        } else {
-            myDataset = await getSolidDataset("https://testuser1.solidcommunity.net/healthDataDataset1");
-        }
-    } catch (error) {
-        document.getElementById(
-            "labelFN"
-        ).textContent = `Entered value [${webID}] does not appear to be a WebID. Error: [${error}]`;
-        return false;
-    }
-    console.log(myDataset);
-
-    const datasetContents = getThingAll(myDataset, { fetch: session.fetch });
-    console.log(datasetContents);
-    for (let i = 0; i < datasetContents.length; i++) {
-        let fileContents = getStringNoLocale(datasetContents[i], SCHEMA_INRUPT.text)
-        let fileName = getStringNoLocale(datasetContents[i], SCHEMA_INRUPT.name);
-        console.log(fileName, fileContents);
-    }
-
-}
-
-async function grantAccess() {
-    const webID = document.getElementById("granteeID").value;
-    console.log(webID)
-
-    const readAccess = document.getElementById("readAccessBox").checked;
-    const writeAccess = document.getElementById("writeAccessBox").checked;
-    const controlAccess = document.getElementById("controlAccessBox").checked;
-    const appendAccess = document.getElementById("appendAccessBox").checked;
-
-    // console.log("read ", readAccess);
-    // console.log("write " ,writeAccess);
-    // console.log("append ", appendAccess);
-    // console.log("control", controlAccess);
-
-    try {
-        const myDatasetWithAcl = await getSolidDatasetWithAcl("https://testuser1.solidcommunity.net/healthDataDataset1", { fetch: session.fetch })
-        const myDatasetsAcl = createAcl(myDatasetWithAcl)
-        //const myDatasetsAcl = getResourceAcl("https://testuser1.solidcommunity.net/privateInfoDataset2", { fetch: session.fetch })
-        console.log(myDatasetsAcl)
-        let updatedAcl = setAgentResourceAccess(
-            myDatasetsAcl,
-            webID,
-            { read: readAccess, append: appendAccess, write: writeAccess, control: controlAccess }
-        )
-        console.log(updatedAcl)
-        await saveAclFor(myDatasetWithAcl, updatedAcl, { fetch: session.fetch })
-        document.getElementById("accessStatusLabel").textContent = "Updated access successfully";
-    }
-    catch (err) {
-        console.log("Error updating access to dataset. Exception generated: ", err)
-        document.getElementById("accessStatusLabel").textContent = "Failed to update access";
-    }
-
-}
-
-async function readPrivateFile() {
-    const webID = document.getElementById("webID").value;
-    console.log(webID)
-
-    if (webID === NOT_ENTERED_WEBID) {
-        document.getElementById(
-            "labelFN"
-        ).textContent = `Login first, or enter a WebID (any WebID!) to read from its profile`;
-        return false;
-    }
-
-    const profileDocumentUrl = new URL(webID);
-    console.log(profileDocumentUrl);
-    profileDocumentUrl.hash = "";
-
-    // Profile is public data; i.e., you do not need to be logged in to read the data.
-    // For illustrative purposes, shows both an authenticated and non-authenticated reads.
-
-    let myDataset;
-    try {
-        if (session.info.isLoggedIn) {
-            myDataset = await getSolidDataset(profileDocumentUrl.href, { fetch: session.fetch });
-            //myDataset = await getSolidDataset()
-        } else {
-            myDataset = await getSolidDataset(profileDocumentUrl.href);
-        }
-    } catch (error) {
-        document.getElementById(
-            "labelFN"
-        ).textContent = `Entered value [${webID}] does not appear to be a WebID. Error: [${error}]`;
-        return false;
-    }
-    console.log(myDataset);
-
-    //const testDataUrl = new URL('https://storeydy.solidcommunity.net/public/testData.ttl');
-    const testDataUrl = new URL('https://testuser1.solidcommunity.net/private/testUser1HealthRecords.txt')
-    console.log(testDataUrl);
-
-
-    //const fetch = window.fetch.bind(window);
-
-    const testDataFile = await getFile('https://testuser1.solidcommunity.net/private/testUser1HealthRecords.txt', { fetch: session.fetch });
-    console.log(testDataFile)
-    console.log(getContentType(testDataFile));
-
-    //npm install rdflib.js
-    //const $rdf = require('rdflib');
-    //const store = $rdf.graph();
-    //var file = $rdf.sym('https://storeydy.solidcommunity.net/public/testData.ttl');
-    //var obj = store.any(file, rel('enemyOf'));
-    var fileReader = new FileReader();
-    fileReader.onload = function () {
-        console.log(fileReader.result);
-    }
-    fileReader.readAsText(testDataFile);
-
-}
-
-async function uploadFile() {
-    const fileName = document.getElementById("fileName").value;
-    //console.log(fileName);
-    const fileContent = document.getElementById("fileContent").value;
-
-    console.log("fileName: ", fileName);
-    console.log("fileContent: ", fileContent);
-
-    const profileDocumentUrl = new URL(session.info.webId);
-    console.log(profileDocumentUrl);
-    profileDocumentUrl.hash = "";
-    let myProfileDataset = await getSolidDataset(profileDocumentUrl.href, { fetch: session.fetch })
-    const profile = getThing(myProfileDataset, session.info.webId)
-    console.log(profile)
-    const name = getStringNoLocale(profile, VCARD.fn)
-    const role = getStringNoLocale(profile, VCARD.role);
-    console.log(role)
-    const date = new Date().toUTCString()
-    console.log(date)
-
-    let myDataset = await getSolidDataset("https://testuser1.solidcommunity.net/healthDataDataset1", { fetch: session.fetch });
-    const newDocument = buildThing(createThing({ name: fileName + ".txt" }))
-        .addStringNoLocale(SCHEMA_INRUPT.name, fileName + ".txt")
-        .addStringNoLocale(SCHEMA_INRUPT.text, fileContent)
-        .addStringNoLocale(FOAF.Person, name)
-        .addStringNoLocale("https://schema.org/dateCreated", date)
-        .addUrl(RDF.type, "https://schema.org/TextDigitalDocument")
-        .build();
-
-    myDataset = setThing(myDataset, newDocument);  //Insert new doc into dataset    
-
-    const savedPrivateInfoDataset = await saveSolidDatasetAt(
-        "https://testuser1.solidcommunity.net/healthDataDataset1",
-        myDataset,
-        { fetch: session.fetch }
-    )
-
-    document.getElementById("uploadLabel").textContent = "Wrote file successfully";
-}
-
-async function deleteFileFromUrl() {
-    const fileUrl = document.getElementById("fileUrl").value;
-    console.log(fileUrl)
-
-    let myDataset = await getSolidDataset(
-        "https://testuser1.solidcommunity.net/healthDataDataset",
-        { fetch: session.fetch }          // fetch from authenticated session
-    );
-    try {
-        const thingToDelete = getThing(myDataset, fileUrl, { fetch: session.fetch })
-    }
-    catch (err) {
-        console.log("File url did not exist in solid dataset or invalid permission to read file. Exception generated: ", err)
-    }
-
-    try {
-        myDataset = removeThing(myDataset, thingToDelete);  //Insert new doc into new dataset    
-    }
-    catch (err) {
-        console.log("Error deleting file from dataset. Exception generated: ", err)
-    }
-
-    try {
-        const savedPrivateInfoDataset = await saveSolidDatasetAt(
-            "https://testuser1.solidcommunity.net/healthDataDataset",
-            myDataset,
-            { fetch: session.fetch }
-        )
-    }
-    catch (err) {
-        console.log("Error saving changes to dataset after delete. Exception generated: ", err);
-    }
-}
-
-async function deleteDataset() {
-    try {
-        await deleteSolidDataset(
-            "https://testuser1.solidcommunity.net/healthDataDataset1", { fetch: session.fetch }
-        );
-        console.log("deleted dataset")
-    }
-    catch (err) {
-        console.log(err)
-    }
+    if (insuranceDatasetCreated == false && insuranceDatasetAlreadyExisted == false) alert('Sharing data access to insurer failed because no diagnoses from the required departments dated in the past 5 years.')
+    else if(insuranceDatasetCreated == false && insuranceDatasetAlreadyExisted == true ) alert('Dataset for insurance existed previously but has now been shared with new insurer')
+    else if(insuranceDatasetCreated == true && insuranceDatasetAlreadyExisted == false) alert('Insurance diagnoses records created. Click the Access medical records button to view them.')
+    // else if(insuranceDatasetCreated == true && insuranceDatasetAlreadyExisted == true) alert('')
+    document.getElementById("submitInsuranceRequestForm").reset()
 }
 
 function logAccessInfo(agent, access, resource) {
@@ -1249,7 +946,7 @@ function logAccessInfo(agent, access, resource) {
     }
 }
 
-async function onDropdownClick(userType) {
+async function onDropdownClick(userType) {  //Populate department dropdown when it has been clicked
 
     var dropdownOptions = document.getElementById("myDropdown");
     if (dropdownOptions.children.length <= 1) {
@@ -1260,19 +957,17 @@ async function onDropdownClick(userType) {
         else if (userType == "standardUser") {
             selectableDepartments = await getDepartments(session, accessedHealthDataContainerUrl)
             for (var i = 0; i < selectableDepartments.length; i++) {
-                selectableDepartments[i] = { label: selectableDepartments[i].substring(selectableDepartments[i].lastIndexOf("HealthData3/") + 12, selectableDepartments[i].length - 1) }
+                selectableDepartments[i] = { label: selectableDepartments[i].substring(selectableDepartments[i].lastIndexOf("HealthData/") + 12, selectableDepartments[i].length - 1) }
             }
         }
 
         const departmentList = selectableDepartments;
         for (var i = 0; i <= departmentList.length - 1; i++) {
-            //console.log(departmentList[i].label)
             if (departmentList[i].label) {
                 let newOption = document.createElement("a")
                 const labelValue = departmentList[i].label
                 newOption.innerHTML = labelValue
                 newOption.onclick = function () {
-                    console.log(newOption.innerHTML)
                     document.getElementById('selectedAppointmentDepartmentDropdown').value = labelValue;
                     document.getElementById("departmentDropdownButton").innerHTML = labelValue;
                     document.getElementById('myDropdown').classList.toggle('show');
@@ -1285,22 +980,19 @@ async function onDropdownClick(userType) {
 }
 
 async function displayPodDiagram() {
-    console.log(typesOfHealthData)
-    console.log(typesOfHealthDataExists)
     let innerDatasetsWithinDepartment = ['Appointments', 'Diagnoses', 'Prescriptions', 'Records']
     for (var i = 0; i < typesOfHealthData.length; i++) {
         if (typesOfHealthDataExists[i] == true) {
             let divForCurrentHealthDataType = document.getElementById(typesOfHealthData[i] + "HealthDataType")
             divForCurrentHealthDataType.style.backgroundColor = "green"
             let departmentsToBeDisplayed = document.createElement("ul")
-            let healthDataContainerUrl = accessedPodOwnerBaseUrl + "/" + typesOfHealthData[i] + "HealthData3/"
+            let healthDataContainerUrl = accessedPodOwnerBaseUrl + "/" + typesOfHealthData[i] + "HealthData/"
             try {
                 let departmentsInCurrentHealthDataType = await getDepartments(session, healthDataContainerUrl)
-                console.log(departmentsInCurrentHealthDataType)
                 for (var j = 0; j < departmentsInCurrentHealthDataType.length; j++) {
                     let item = document.createElement("li")
                     item.classList.add("diagram-outer-department")
-                    let departmentNameAsPlaintext = departmentsInCurrentHealthDataType[j].substring(departmentsInCurrentHealthDataType[j].lastIndexOf("HealthData3/") + 12, departmentsInCurrentHealthDataType[j].length - 1)
+                    let departmentNameAsPlaintext = departmentsInCurrentHealthDataType[j].substring(departmentsInCurrentHealthDataType[j].lastIndexOf("HealthData/") + 12, departmentsInCurrentHealthDataType[j].length - 1)
                     item.innerText = departmentNameAsPlaintext
                     for (var k = 0; k < innerDatasetsWithinDepartment.length; k++) {
                         let innerDept = document.createElement("li")
@@ -1315,7 +1007,7 @@ async function displayPodDiagram() {
                             console.log(err)
                             numberOfFiles = "Unauthorized to view contents"
                         }
-                        innerDept.innerText = innerDatasetsWithinDepartment[k] //+ ": " + numberOfFiles
+                        innerDept.innerText = innerDatasetsWithinDepartment[k]
                         let thingsInDept = document.createElement("p")
                         thingsInDept.innerText = numberOfFiles
                         thingsInDept.classList.add("diagram-things")
@@ -1335,11 +1027,11 @@ async function displayPodDiagram() {
     }
 }
 
-buttonLogin.onclick = function () {
+document.getElementById("btnLogin").onclick = function () {
     login();
 };
 
-btnLogout.onclick = function () {
+document.getElementById("btnLogout").onclick = function () {
     logout();
 }
 
@@ -1367,7 +1059,6 @@ departmentSelectionForm.addEventListener("submit", (event) => {
     event.preventDefault();
     let selectedDepartment = document.getElementById("selectedDepartment").value
     let selectedRecordType = document.getElementById("selectedRecordType").value
-    console.log("getting called")
     getPatientFilesAndDisplay(selectedRecordType, selectedDepartment, false);
 })
 
@@ -1377,13 +1068,11 @@ document.getElementById("viewAccessButton").addEventListener("click", (event) =>
     let selectedRecordType = document.getElementById("selectedRecordType").value
     getAccessAndDisplay(selectedRecordType, selectedDepartment)
 })
-
-document.getElementById("submitInsuranceRequestButton").addEventListener("click", (event) => {
+submitInsuranceRequestForm.addEventListener("submit", (event) => {
     event.preventDefault();
     let insurerWebID = document.getElementById("insurerWebID").value
     shareAccessForInsurance(insurerWebID);
 })
-
 
 myPodButton.addEventListener('click', (event) => {
     event.preventDefault();
@@ -1394,11 +1083,6 @@ otherUserPodButton.addEventListener('click', (event) => {
     event.preventDefault();
     checkMedicalInstitutionStatus("specifiedUser");
 })
-
-// institutionInformationForm.addEventListener("submit", (event) => {
-//     event.preventDefault();
-//     resetCurrentPodSession(true);
-// })
 
 cancelSessionWithPodButton.addEventListener("click", (event) => {
     event.preventDefault();
@@ -1516,7 +1200,6 @@ viewPodDiagramButton.addEventListener("click", (event) => {
     document.getElementById("registerNewMedicalInstitution").style.display = "none"
     document.getElementById("viewPodDiagramButton").classList.add("clicked-button")
     document.getElementById("podDiagramDiv").style.display = "block"
-    console.log("Getting called after clicking button");
     displayPodDiagram()
     setTimeout(() => { window.scrollTo(0, document.body.scrollHeight) }, 500)    //Wait half a second then scroll to bottom of page
 })
@@ -1608,10 +1291,10 @@ setAdministratorToEditable.addEventListener("click", (event) => {
             }
             updateMedicalInstitutionField("https://schema.org/member", document.getElementById("editableInstitutionAdministrator").value).then(async () => {
                 let administratorAccess = { read: true, append: true, write: true, control: true }
-                if(existingValue != "null"){
-                let noAccess = { read: false, append: false, write: false, controlRead: false, controlWrite: false }
-                await grantAccessToDataset(session, existingValue, accessedHealthDataContainerUrl, noAccess, false)                 //Revoke access
-                await grantAccessToDataset(session, existingValue, accessedHealthDataContainerUrl + "Info", noAccess, false)        // from previous
+                if (existingValue != "null") {
+                    let noAccess = { read: false, append: false, write: false, controlRead: false, controlWrite: false }
+                    await grantAccessToDataset(session, existingValue, accessedHealthDataContainerUrl, noAccess, false)                 //Revoke access
+                    await grantAccessToDataset(session, existingValue, accessedHealthDataContainerUrl + "Info", noAccess, false)        // from previous
                 }
                 await grantAccessToDataset(session, document.getElementById("editableInstitutionAdministrator").value, accessedHealthDataContainerUrl, administratorAccess, true)             //Grant access 
                 await grantAccessToDataset(session, document.getElementById("editableInstitutionAdministrator").value, accessedHealthDataContainerUrl + "Info", administratorAccess, true)    // to new
@@ -1621,7 +1304,7 @@ setAdministratorToEditable.addEventListener("click", (event) => {
                 document.getElementById("administratorOfInstitution").style.display = "block"
                 document.getElementById("setAdministratorToEditable").style.display = "block"
                 document.getElementById("administratorTooltip").style.display = "block"
-                if(document.getElementById("warningMessageForUpdatingAdmin")) document.getElementById("warningMessageForUpdatingAdmin").remove()
+                if (document.getElementById("warningMessageForUpdatingAdmin")) document.getElementById("warningMessageForUpdatingAdmin").remove()
                 document.getElementById("editableInstitutionAdministrator").remove()
                 await selectTypeOfHealthData(accessedHealthDataType)
             })
@@ -1673,48 +1356,3 @@ continueWithSelectedRecordTypeButton.addEventListener("click", (event) => {
     }
     alert('No record type to upload has been selected. Please select one to continue.')
 })
-
-
-
-// ////////////////////////////////////////////////////////////
-
-writeForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    writeProfile();
-});
-
-createAclForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    createAclForDataset();
-});
-
-readAgentAccessForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    readAgentAccess();
-});
-
-readDatasetForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    readDataset();
-});
-
-giveAccessForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    grantAccess();
-})
-
-readPrivateForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    readPrivateFile();
-});
-
-uploadFileForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    uploadFile();
-});
-
-deleteFileForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    deleteFileFromUrl();
-})
-
