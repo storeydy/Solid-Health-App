@@ -84207,6 +84207,8 @@ const permissionSetForEmergencyWorkersToPrescriptions = {
 }; //Emergency worker user needs to be able to view all prescriptions
 
 async function writeAppointment(session, healthDataContainerUrl, appointmentDetails) {
+  console.log(session);
+  console.log(appointmentDetails);
   let departmentDatasetUrl = healthDataContainerUrl + appointmentDetails.appointmentDepartment; // for example: "https://testuser1.solidcommunity.net/publicHealthData/" + "Cardiology"
 
   let departmentExists = await (0, _podReader.checkIfDatasetExists)(session, departmentDatasetUrl + "/Appointments"); //If the appointment dataset exists then the other datasets will - means don't need to grant access to administrator to overall department container
@@ -84545,11 +84547,9 @@ function _interopRequireWildcard(obj, nodeInterop) { if (!nodeInterop && obj && 
 // import {
 //     setPublicAccess,
 // } from "@inrupt/solid-client/access/universal";
-// import { solid } from "https://solid.github.io/solid-auth-client/dist/solid-auth-client.bundle.js";
 // If your Pod is *not* on `solidcommunity.net`, change this to your identity provider.
 const SOLID_IDENTITY_PROVIDER = "https://solidcommunity.net";
-document.getElementById("solid_identity_provider").innerHTML = `[<a target="_blank" href="${SOLID_IDENTITY_PROVIDER}">${SOLID_IDENTITY_PROVIDER}</a>]`; // const auth = require('solid-auth-client')
-
+document.getElementById("solid_identity_provider").innerHTML = `[<a target="_blank" href="${SOLID_IDENTITY_PROVIDER}">${SOLID_IDENTITY_PROVIDER}</a>]`;
 const NOT_ENTERED_WEBID = "...not logged in yet - but enter any WebID to read from its profile...";
 var session = new _solidClientAuthnBrowser.Session();
 var accessedPodOwnerUrl = ""; //WebID of owner of current pod
@@ -84577,10 +84577,6 @@ async function login() {
       redirectUrl: window.location.href
     });
   }
-
-  console.log("making it here"); // let session = await solid.auth.currentSession();
-  // let popupUri = 'https://solidcommunity.net/common/popup.html';
-  // if(!session) session = await solid.auth.popupLogin({popupUri});
 }
 
 async function logout() {
@@ -85549,7 +85545,7 @@ async function onDropdownClick(userType) {
 
       for (var i = 0; i < selectableDepartments.length; i++) {
         selectableDepartments[i] = {
-          label: selectableDepartments[i].substring(selectableDepartments[i].lastIndexOf("HealthData/") + 12, selectableDepartments[i].length - 1)
+          label: selectableDepartments[i].substring(selectableDepartments[i].lastIndexOf("HealthData/") + 11, selectableDepartments[i].length - 1)
         };
       }
     }
@@ -85998,7 +85994,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "63165" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "64302" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
