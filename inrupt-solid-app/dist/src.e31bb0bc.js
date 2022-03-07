@@ -85889,15 +85889,15 @@ setAdministratorToEditable.addEventListener("click", event => {
           write: true,
           control: true
         };
+        let noAccess = {
+          read: false,
+          append: false,
+          write: false,
+          controlRead: false,
+          controlWrite: false
+        };
 
         if (existingValue != "null") {
-          let noAccess = {
-            read: false,
-            append: false,
-            write: false,
-            controlRead: false,
-            controlWrite: false
-          };
           await (0, _podWriter.grantAccessToDataset)(session, existingValue, accessedHealthDataContainerUrl, noAccess, false); //Revoke access
 
           await (0, _podWriter.grantAccessToDataset)(session, existingValue, accessedHealthDataContainerUrl + "Info", noAccess, false); // from previous
@@ -85906,6 +85906,22 @@ setAdministratorToEditable.addEventListener("click", event => {
         await (0, _podWriter.grantAccessToDataset)(session, document.getElementById("editableInstitutionAdministrator").value, accessedHealthDataContainerUrl, administratorAccess, true); //Grant access 
 
         await (0, _podWriter.grantAccessToDataset)(session, document.getElementById("editableInstitutionAdministrator").value, accessedHealthDataContainerUrl + "Info", administratorAccess, true); // to new
+
+        let existingDepartmentContainers = await (0, _podReader.getDepartments)(session, accessedHealthDataContainerUrl);
+        let datasetsWithinDepartment = ['Appointments', 'Diagnoses', 'Prescriptions', 'Records'];
+
+        for (var i = 0; i < existingDepartmentContainers.length; i++) {
+          //Change acccess of existing records
+          if (existingValue != "null") await (0, _podWriter.grantAccessToDataset)(session, existingValue, existingDepartmentContainers[i], noAccess, false); //Revoke access from previous
+
+          await (0, _podWriter.grantAccessToDataset)(session, document.getElementById("editableInstitutionAdministrator").value, existingDepartmentContainers[i], administratorAccess, true); // Grant access to new
+
+          for (var j = 0; j < datasetsWithinDepartment.length; j++) {
+            if (existingValue != "null") await (0, _podWriter.grantAccessToDataset)(session, existingValue, existingDepartmentContainers[i] + datasetsWithinDepartment[j], noAccess, false); //Revoke access from previous
+
+            await (0, _podWriter.grantAccessToDataset)(session, document.getElementById("editableInstitutionAdministrator").value, existingDepartmentContainers[i] + datasetsWithinDepartment[j], administratorAccess, true); // Grant access to new
+          }
+        }
 
         alert("Field updated successfully");
         document.getElementById("setAdministratorToReadOnly").style.display = "none";
@@ -85994,7 +86010,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "64302" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52713" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

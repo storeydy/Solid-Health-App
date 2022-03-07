@@ -68,7 +68,7 @@ var accessedHealthDataContainerUrl = ""     //URI of current type of accessed he
 var accessedHealthDataType = ""             //Currently accessed health data type
 var accessedHealthDataContainerAdministrator = ""       //Administrator of current health data container
 var initialStateOfDatasetAccess = {}                //Initial access to a resource
-var currentlyAccessedDatasetUrl = ""              
+var currentlyAccessedDatasetUrl = ""
 var typesOfHealthData = ['public', 'private', 'GP']
 var typesOfHealthDataForDisplay = ['Public', 'Private', 'General Practitioner (GP)']
 var typesOfHealthDataExists = [false, false, false]
@@ -404,7 +404,7 @@ async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdow
                     submitButtonToViewInsuranceDiagnoses.value = "View diagnoses for insurance"
                     submitButtonToViewInsuranceDiagnoses.classList.add("light-blue-button")
                     submitButtonToViewInsuranceDiagnoses.style.width = "200px"
-                    if(!await checkIfDatasetExists(session, accessedHealthDataContainerUrl+"InsuranceDiagnoses")) {
+                    if (!await checkIfDatasetExists(session, accessedHealthDataContainerUrl + "InsuranceDiagnoses")) {
                         submitButtonToViewInsuranceDiagnoses.disabled = true
                         submitButtonToViewInsuranceDiagnoses.title = "Initiate an insurance request to use this feature"
                     }
@@ -789,7 +789,7 @@ async function grantNewAccess() {
         return
     }
     let accessObject = { read: selectedReadAccess, write: selectedWriteAccess, append: selectedAppendAccess, control: selectedControlAccess }
-    let basicAccessForHomePage = {read: true, write: false, append: false, control: false}
+    let basicAccessForHomePage = { read: true, write: false, append: false, control: false }
     await grantAccessToDataset(session, newAgentWebID, accessedHealthDataContainerUrl, basicAccessForHomePage, false)
     await grantAccessToDataset(session, newAgentWebID, accessedHealthDataContainerUrl + "Info", basicAccessForHomePage, false)
     await grantAccessToDataset(session, newAgentWebID, currentlyAccessedDatasetUrl, accessObject, false)
@@ -897,7 +897,7 @@ async function shareAccessForInsurance(insurerWebID) {
         departmentNames.push(departments[i].innerText)
     }
 
-    if(await checkIfDatasetExists(session, accessedHealthDataContainerUrl + "InsuranceDiagnoses"))  insuranceDatasetAlreadyExisted = true
+    if (await checkIfDatasetExists(session, accessedHealthDataContainerUrl + "InsuranceDiagnoses")) insuranceDatasetAlreadyExisted = true
     let permissionSetForInsurer = { read: true, write: false, append: false, controlRead: false, controlWrite: false }
     for (var i = 0; i < departmentNames.length; i++) {
         let urlOfDiagnosisDataset = accessedHealthDataContainerUrl + departmentNames[i] + "/Diagnoses"
@@ -905,9 +905,9 @@ async function shareAccessForInsurance(insurerWebID) {
             let files = await getFilesInDataset(session, urlOfDiagnosisDataset)
             for (var j = 0; j < files.length; j++) {
                 var startDateOfDiagnosis = getStringNoLocale(files[j], "https://schema.org/startDate")
-                startDateOfDiagnosis = startDateOfDiagnosis.substring(3,5) + "/" + startDateOfDiagnosis.substring(0,2) + startDateOfDiagnosis.substring(5)    //Date.parse takes dates in  mm/dd/yy format
-                var dateAsTimestamp = Date.parse(startDateOfDiagnosis+"Z")
-                if((parseInt(Date.now() - dateAsTimestamp) / (1000*60*60*24*365.25)) <= 5 )  //Current diagnosis in department is timestamped within last  5 years
+                startDateOfDiagnosis = startDateOfDiagnosis.substring(3, 5) + "/" + startDateOfDiagnosis.substring(0, 2) + startDateOfDiagnosis.substring(5)    //Date.parse takes dates in  mm/dd/yy format
+                var dateAsTimestamp = Date.parse(startDateOfDiagnosis + "Z")
+                if ((parseInt(Date.now() - dateAsTimestamp) / (1000 * 60 * 60 * 24 * 365.25)) <= 5)  //Current diagnosis in department is timestamped within last  5 years
                 {
                     // Grant access to health data dataset first, or check to see if user has been granted access to any container within the health data container
                     let existingDiagnosesForInsurance = await checkIfDatasetExists(session, accessedHealthDataContainerUrl + "InsuranceDiagnoses")
@@ -927,8 +927,8 @@ async function shareAccessForInsurance(insurerWebID) {
         }
     }
     if (insuranceDatasetCreated == false && insuranceDatasetAlreadyExisted == false) alert('Sharing data access to insurer failed because no diagnoses from the required departments dated in the past 5 years.')
-    else if(insuranceDatasetCreated == false && insuranceDatasetAlreadyExisted == true ) alert('Dataset for insurance existed previously but has now been shared with new insurer')
-    else if(insuranceDatasetCreated == true && insuranceDatasetAlreadyExisted == false) alert('Insurance diagnoses records created. Click the Access medical records button to view them.')
+    else if (insuranceDatasetCreated == false && insuranceDatasetAlreadyExisted == true) alert('Dataset for insurance existed previously but has now been shared with new insurer')
+    else if (insuranceDatasetCreated == true && insuranceDatasetAlreadyExisted == false) alert('Insurance diagnoses records created. Click the Access medical records button to view them.')
     // else if(insuranceDatasetCreated == true && insuranceDatasetAlreadyExisted == true) alert('')
     document.getElementById("submitInsuranceRequestForm").reset()
 }
@@ -1291,14 +1291,23 @@ setAdministratorToEditable.addEventListener("click", (event) => {
             }
             updateMedicalInstitutionField("https://schema.org/member", document.getElementById("editableInstitutionAdministrator").value).then(async () => {
                 let administratorAccess = { read: true, append: true, write: true, control: true }
+                let noAccess = { read: false, append: false, write: false, controlRead: false, controlWrite: false }
                 if (existingValue != "null") {
-                    let noAccess = { read: false, append: false, write: false, controlRead: false, controlWrite: false }
                     await grantAccessToDataset(session, existingValue, accessedHealthDataContainerUrl, noAccess, false)                 //Revoke access
                     await grantAccessToDataset(session, existingValue, accessedHealthDataContainerUrl + "Info", noAccess, false)        // from previous
                 }
                 await grantAccessToDataset(session, document.getElementById("editableInstitutionAdministrator").value, accessedHealthDataContainerUrl, administratorAccess, true)             //Grant access 
                 await grantAccessToDataset(session, document.getElementById("editableInstitutionAdministrator").value, accessedHealthDataContainerUrl + "Info", administratorAccess, true)    // to new
-
+                let existingDepartmentContainers = await getDepartments(session, accessedHealthDataContainerUrl)
+                let datasetsWithinDepartment = ['Appointments', 'Diagnoses', 'Prescriptions', 'Records']
+                for (var i = 0; i < existingDepartmentContainers.length; i++) {     //Change acccess of existing records
+                    if (existingValue != "null") await grantAccessToDataset(session, existingValue, existingDepartmentContainers[i], noAccess, false)                 //Revoke access from previous
+                    await grantAccessToDataset(session, document.getElementById("editableInstitutionAdministrator").value, existingDepartmentContainers[i], administratorAccess, true)    // Grant access to new
+                    for (var j = 0; j < datasetsWithinDepartment.length; j++) {
+                        if (existingValue != "null") await grantAccessToDataset(session, existingValue, existingDepartmentContainers[i] + datasetsWithinDepartment[j], noAccess, false)                 //Revoke access from previous
+                        await grantAccessToDataset(session, document.getElementById("editableInstitutionAdministrator").value, existingDepartmentContainers[i] + datasetsWithinDepartment[j], administratorAccess, true)    // Grant access to new
+                    }
+                }
                 alert("Field updated successfully")
                 document.getElementById("setAdministratorToReadOnly").style.display = "none"
                 document.getElementById("administratorOfInstitution").style.display = "block"
