@@ -89086,7 +89086,7 @@ async function getPatientDepartmentsAndDisplay(useOfDropdown, locationForDropdow
 
       for (var i = 0; i <= departments.length - 1; i++) {
         let newOption = document.createElement("option");
-        newOption.innerHTML = departments[i].substring(departments[i].lastIndexOf("HealthData/") + 12, departments[i].length - 1);
+        newOption.innerHTML = departments[i].substring(departments[i].lastIndexOf("HealthData/") + 11, departments[i].length - 1);
         selectAbleDepartment.appendChild(newOption);
       }
 
@@ -89181,13 +89181,13 @@ async function getAccessAndDisplay(recordType, department) {
     headerOfContainer.className = "section-header";
     containerDivForAccess.appendChild(headerOfContainer);
     let readDescription = document.createElement("h5");
-    readDescription.innerHTML = "<u>Read:</u> Access to view the contents of the applicable Resource";
+    readDescription.innerHTML = "<u>Read:</u> Access to view the contents of the applicable Resource.";
     let writeDescription = document.createElement("h5");
-    writeDescription.innerHTML = "<u>Write:</u> Access to add (i.e. append), update, and delete contents of Resource. Granting Write access automatically grants Append Access";
+    writeDescription.innerHTML = "<u>Write:</u> Access to add (i.e. append), update, and delete contents of Resource. Granting Write access automatically grants Append Access.";
     let appendDescription = document.createElement("h5");
-    appendDescription.innerHTML = "<u>Append:</u> Access to add data to the applicable Resource";
+    appendDescription.innerHTML = "<u>Append:</u> Access to add data to the applicable Resource.";
     let controlDescription = document.createElement("h5");
-    controlDescription.innerHTML = "<u>Control:</u> Access to view and manage who has access to the applicable Resource. Applicable to the ACL authorization system.";
+    controlDescription.innerHTML = "<u>Control:</u> Access to view and manage who has access to the applicable Resource.";
     containerDivForAccess.append(readDescription, writeDescription, appendDescription, controlDescription);
     let index = 0;
     let readAccessCheckbox = document.createElement("input"); //Labels and checkboxes for each individuals access
@@ -89268,7 +89268,7 @@ async function getAccessAndDisplay(recordType, department) {
         if (renderedObj.childNodes[i].childNodes[j].nodeName == "LABEL") renderedObj.childNodes[i].childNodes[j].htmlFor = renderedObj.childNodes[i].childNodes[j - 1].id; //Update the 'htmlFor' attribute of each label as the ID of the corresponding checkbox - which is the previous sibling
         else if (renderedObj.childNodes[i].childNodes[j].nodeName == "INPUT") {
           //If the current node is a checkbox - find the corresponding button for this individual and set it to visible when the checkbox has been changed
-          let buttonId = "updateAccessFor" + (i - 1); //First child node is h3 tag, first person with access will be at pos. 1 with an id of updateAccessFor0
+          let buttonId = "updateAccessFor" + (i - 5); //First child node is h3 tag, then the descriptions of access levels, first person with access will be at pos. 5 with an id of updateAccessFor0
 
           renderedObj.childNodes[i].childNodes[j].onchange = function () {
             document.getElementById(buttonId).style.display = "block";
@@ -89736,7 +89736,7 @@ async function onDropdownClick(userType) {
 
       for (var i = 0; i < selectableDepartments.length; i++) {
         selectableDepartments[i] = {
-          label: selectableDepartments[i].substring(selectableDepartments[i].lastIndexOf("HealthData/") + 12, selectableDepartments[i].length - 1)
+          label: selectableDepartments[i].substring(selectableDepartments[i].lastIndexOf("HealthData/") + 11, selectableDepartments[i].length - 1)
         };
       }
     }
@@ -89779,7 +89779,7 @@ async function displayPodDiagram() {
         for (var j = 0; j < departmentsInCurrentHealthDataType.length; j++) {
           let item = document.createElement("li");
           item.classList.add("diagram-outer-department");
-          let departmentNameAsPlaintext = departmentsInCurrentHealthDataType[j].substring(departmentsInCurrentHealthDataType[j].lastIndexOf("HealthData/") + 12, departmentsInCurrentHealthDataType[j].length - 1);
+          let departmentNameAsPlaintext = departmentsInCurrentHealthDataType[j].substring(departmentsInCurrentHealthDataType[j].lastIndexOf("HealthData/") + 11, departmentsInCurrentHealthDataType[j].length - 1);
           item.innerText = departmentNameAsPlaintext;
 
           for (var k = 0; k < innerDatasetsWithinDepartment.length; k++) {
@@ -90185,7 +90185,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "63759" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "64589" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
