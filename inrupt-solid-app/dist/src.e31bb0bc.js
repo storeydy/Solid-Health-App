@@ -23953,6 +23953,7 @@ exports.getAgentDefaultAccess = getAgentDefaultAccess;
 exports.getAgentDefaultAccessAll = getAgentDefaultAccessAll;
 exports.getAgentResourceAccess = getAgentResourceAccess;
 exports.getAgentResourceAccessAll = getAgentResourceAccessAll;
+exports.getAltProfileUrlAllFrom = getAltProfileUrlAllFrom;
 exports.getBoolean = getBoolean;
 exports.getBooleanAll = getBooleanAll;
 exports.getContainedResourceUrlAll = getContainedResourceUrlAll;
@@ -24063,6 +24064,7 @@ exports.setTerm = setTerm;
 exports.setThing = setThing;
 exports.setUrl = exports.setTime = void 0;
 exports.solidDatasetAsMarkdown = solidDatasetAsMarkdown;
+exports.solidDatasetAsTurtle = solidDatasetAsTurtle;
 exports.thingAsMarkdown = thingAsMarkdown;
 exports.toRdfJsDataset = toRdfJsDataset;
 exports.universalAccess = void 0;
@@ -31300,6 +31302,25 @@ async function addPublicKeyToProfileJwks(publicKey, webId, options = internal_de
  */
 
 /**
+ * List all the alternative profiles IRI found in a given WebID profile.
+ *
+ * Note that some of these profiles may be private, and you may not have access to
+ * the resulting resource.
+ *
+ * @param webId The WebID of the user's whose alternative profiles you are discovering.
+ * @param webIdProfile The WebID profile obtained dereferencing the provided WebID.
+ * @returns A list of URLs of the user's alternative profiles.
+ * @since 1.20.0
+ */
+
+
+function getAltProfileUrlAllFrom(webId, webIdProfile) {
+  const webIdThing = getThing(webIdProfile, webId);
+  const altProfileUrlAll = getThingAll(webIdProfile).filter(thing => getIriAll(thing, foaf.primaryTopic).length > 0).map(asIri).concat(webIdThing ? getIriAll(webIdThing, foaf.isPrimaryTopicOf) : []).filter(profileIri => profileIri !== getSourceIri(webIdProfile)); // Deduplicate the results.
+
+  return Array.from(new Set(altProfileUrlAll));
+}
+/**
  * Get all the Profile Resources discoverable from a WebID Profile.
  *
  * A WebID Profile may be any RDF resource on the Web, it doesn't have
@@ -31327,12 +31348,10 @@ async function getProfileAll(webId, options = internal_defaultFetchOptions) {
       fetch
     })
   } = options;
-  const webIdThing = getThing(webIdProfile, webId);
-  const altProfilesIri = getThingAll(webIdProfile).filter(thing => getIriAll(thing, foaf.primaryTopic).length > 0).map(asIri).concat(webIdThing ? getIriAll(webIdThing, foaf.isPrimaryTopicOf) : []).filter(profileIri => profileIri !== getSourceIri(webIdProfile)); // Ensure that each given profile only appears once.
-
-  const altProfileAll = await Promise.all(Array.from(new Set(altProfilesIri)).map(uniqueProfileIri => getSolidDataset(uniqueProfileIri, {
+  const altProfileAll = (await Promise.allSettled(getAltProfileUrlAllFrom(webId, webIdProfile).map(uniqueProfileIri => getSolidDataset(uniqueProfileIri, {
     fetch
-  })));
+  }))) // Ignore the alternative profiles lookup which failed.
+  ).filter(result => result.status === "fulfilled").map(successfulResult => successfulResult.value);
   return {
     webIdProfile,
     altProfileAll
@@ -31378,13 +31397,119 @@ function getPodUrlAllFrom(profiles, webId) {
   [profiles.webIdProfile, ...profiles.altProfileAll].forEach(profileResource => {
     const webIdThing = getThing(profileResource, webId);
 
-    if (webIdThing === null) {
-      throw new Error(`The WebId [${webId}] does not appear in the resource fetched at [${getSourceIri(profileResource)}]`);
+    if (webIdThing !== null) {
+      getIriAll(webIdThing, pim.storage).forEach(podIri => result.add(podIri));
     }
-
-    getIriAll(webIdThing, pim.storage).forEach(podIri => result.add(podIri));
   });
   return Array.from(result);
+}
+/**
+ * Copyright 2022 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+
+const prefixes = {
+  acl: "http://www.w3.org/ns/auth/acl#",
+  acp: "http://www.w3.org/ns/solid/acp#",
+  cc: "http://creativecommons.org/ns#",
+  cert: "http://www.w3.org/ns/auth/cert#",
+  csvw: "http://www.w3.org/ns/csvw#",
+  current: "#",
+  dc: "http://purl.org/dc/terms/",
+  dcam: "http://purl.org/dc/dcam/",
+  dcat: "http://www.w3.org/ns/dcat#",
+  dctype: "http://purl.org/dc/dcmitype/",
+  foaf: "http://xmlns.com/foaf/0.1/",
+  ldp: "http://www.w3.org/ns/ldp#",
+  owl: "http://www.w3.org/2002/07/owl#",
+  posixstat: "http://www.w3.org/ns/posix/stat#",
+  rdf: "http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+  rdfs: "http://www.w3.org/2000/01/rdf-schema#",
+  schema: "https://schema.org/",
+  shacl: "http://www.w3.org/ns/shacl#",
+  skos: "http://www.w3.org/2004/02/skos/core#",
+  skosxl: "http://www.w3.org/2008/05/skos-xl#",
+  solid: "http://www.w3.org/ns/solid/terms#",
+  swapdoc: "http://www.w3.org/2000/10/swap/pim/doc#",
+  ui: "http://www.w3.org/ns/ui#",
+  vann: "http://purl.org/vocab/vann/",
+  vcard: "http://www.w3.org/2006/vcard/ns#",
+  ws: "http://www.w3.org/ns/pim/space#",
+  xsd: "http://www.w3.org/2001/XMLSchema#"
+};
+/**
+ * Copyright 2022 Inrupt Inc.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal in
+ * the Software without restriction, including without limitation the rights to use,
+ * copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software, and to permit persons to whom the Software is furnished to do so,
+ * subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED,
+ * INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A
+ * PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+ * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
+ * OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
+/**
+ * A function to serialise a Solid Dataset as Turtle
+ *
+ * @param dataset The Dataset to serialize as Turtle
+ * @param options.prefixes The Prefixes to use for Turtle serialisation (defaulting to a set of well known prefixes)
+ * @param options.thing Restricts serialisation to the part of a dataset related to the thing
+ * @returns RDF serialised as Turtle
+ * @since 1.20.0
+ */
+
+async function solidDatasetAsTurtle(dataset, options) {
+  const {
+    prefixes: prefixes$1 = prefixes,
+    thing
+  } = Object.assign({}, options);
+  const writer = new _n.Writer({
+    format: "application/turtle",
+    prefixes: prefixes$1
+  });
+  const subject = thing ? new _n.NamedNode(thing) : undefined; // If the subject is undefined, all the triples match.
+
+  for (const quad of toRdfJsDataset(dataset).match(subject)) {
+    writer.addQuad(quad);
+  }
+
+  return new Promise((resolve, reject) => {
+    writer.end((error, result) => {
+      /* istanbul ignore next */
+      if (error) {
+        return reject(error);
+      }
+
+      resolve(result);
+    });
+  });
 }
 /**
  * Copyright 2022 Inrupt Inc.
@@ -35774,20 +35899,20 @@ function removePolicyUrl(resourceWithAcr, policyUrl) {
  */
 
 /**
-* ```{note}
-* The ACP specification is a draft. As such, this function is experimental and
-* subject to change, even in a non-major release.
-* See also: https://solid.github.io/authorization-panel/acp-specification/
-* ```
-*
-* Insert the given [[ResourcePolicy]] into the given Resource's Acccess Control
-* Resource, replacing previous instances of that Policy.
-*
-* @param resourceWithAcr The Resource whose Access Control Resource contains Access Policies.
-* @param policy The Policy to insert into the Resource's Access Control Resource.
-* @returns A new Resource equal to the given Resource, but with the given Policy in its Access Control Resource.
-* @since 1.18.0
-*/
+ * ```{note}
+ * The ACP specification is a draft. As such, this function is experimental and
+ * subject to change, even in a non-major release.
+ * See also: https://solid.github.io/authorization-panel/acp-specification/
+ * ```
+ *
+ * Insert the given [[ResourcePolicy]] into the given Resource's Acccess Control
+ * Resource, replacing previous instances of that Policy.
+ *
+ * @param resourceWithAcr The Resource whose Access Control Resource contains Access Policies.
+ * @param policy The Policy to insert into the Resource's Access Control Resource.
+ * @returns A new Resource equal to the given Resource, but with the given Policy in its Access Control Resource.
+ * @since 1.18.0
+ */
 
 
 function setResourcePolicy(resourceWithAcr, policy) {
@@ -39482,7 +39607,7 @@ var universal_v2 = /*#__PURE__*/Object.freeze({
  * to retrieve the Server Resource Info.
  * @param {DefaultOptions} options
  * @returns The Server Resource Info if available, null otherwise.
- * @since unreleased
+ * @since 1.19.0
  */
 
 exports.access_v2 = universal_v2;
@@ -39871,7 +39996,7 @@ async function getResourceAcr(resource, options) {
  * @param resourceUrl URL of the Resource you want to read the access for.
  * @param webId WebID of the Agent you want to get the access for.
  * @param options Default Options such as a fetch function.
- * @since unreleased
+ * @since 1.19.0
  */
 
 
@@ -39959,7 +40084,7 @@ async function getPublicAccess$1(resourceWithAcr) {
  *
  * @param resourceUrl URL of the Resource you want to read the access for.
  * @param options Default Options such as a fetch function.
- * @since unreleased
+ * @since 1.19.0
  */
 
 
@@ -40253,7 +40378,7 @@ async function setAgentAccess$1(resourceWithAcr, webId, access) {
  * @param webId WebID of the Agent you want to set access for.
  * @param access The Access Modes to add (true) or remove (false).
  * @param options Default Options such as a fetch function.
- * @since unreleased
+ * @since 1.19.0
  */
 
 
@@ -40359,7 +40484,7 @@ async function setPublicAccess$1(resourceWithAcr, access) {
  * @param resourceUrl URL of the Resource you want to set access for.
  * @param access The Access Modes to add (true) or remove (false).
  * @param options Default Options such as a fetch function.
- * @since unreleased
+ * @since 1.19.0
  */
 
 
@@ -40417,10 +40542,13 @@ exports.REFRESH_BEFORE_EXPIRATION_SECONDS = exports.EVENTS = exports.PREFERRED_S
 exports.SOLID_CLIENT_AUTHN_KEY_PREFIX = "solidClientAuthn:";
 exports.PREFERRED_SIGNING_ALG = ["ES256", "RS256"];
 exports.EVENTS = {
+    ERROR: "error",
+    LOGIN: "login",
+    LOGOUT: "logout",
     NEW_REFRESH_TOKEN: "newRefreshToken",
-    ERROR: "onError",
     SESSION_EXPIRED: "sessionExpired",
     SESSION_EXTENDED: "sessionExtended",
+    SESSION_RESTORED: "sessionRestore",
     TIMEOUT_SET: "timeoutSet",
 };
 exports.REFRESH_BEFORE_EXPIRATION_SECONDS = 5;
@@ -41248,7 +41376,7 @@ function checkEncCryptoKey(key, alg, ...usages) {
         break;
       }
 
-    case 'ECDH-ES':
+    case 'ECDH':
       if (!isAlgorithm(key.algorithm, 'ECDH')) throw unusable('ECDH');
       break;
 
@@ -41640,19 +41768,14 @@ async function deriveKey(publicKey, privateKey, algorithm, keyLength, apu = new 
     throw new TypeError((0, _invalid_key_input.default)(publicKey, ..._is_key_like.types));
   }
 
-  (0, _crypto_key.checkEncCryptoKey)(publicKey, 'ECDH-ES');
+  (0, _crypto_key.checkEncCryptoKey)(publicKey, 'ECDH');
 
   if (!(0, _webcrypto.isCryptoKey)(privateKey)) {
     throw new TypeError((0, _invalid_key_input.default)(privateKey, ..._is_key_like.types));
   }
 
-  (0, _crypto_key.checkEncCryptoKey)(privateKey, 'ECDH-ES', 'deriveBits', 'deriveKey');
+  (0, _crypto_key.checkEncCryptoKey)(privateKey, 'ECDH', 'deriveBits');
   const value = (0, _buffer_utils.concat)((0, _buffer_utils.lengthAndInput)(_buffer_utils.encoder.encode(algorithm)), (0, _buffer_utils.lengthAndInput)(apu), (0, _buffer_utils.lengthAndInput)(apv), (0, _buffer_utils.uint32be)(keyLength));
-
-  if (!privateKey.usages.includes('deriveBits')) {
-    throw new TypeError('ECDH-ES private key "usages" must include "deriveBits"');
-  }
-
   const sharedSecret = new Uint8Array(await _webcrypto.default.subtle.deriveBits({
     name: 'ECDH',
     public: publicKey
@@ -41762,7 +41885,7 @@ async function deriveKey(p2s, alg, p2c, key) {
   throw new TypeError('PBKDF2 key "usages" must include "deriveBits" or "deriveKey"');
 }
 
-const encrypt = async (alg, key, cek, p2c = Math.floor(Math.random() * 2049) + 2048, p2s = (0, _random.default)(new Uint8Array(16))) => {
+const encrypt = async (alg, key, cek, p2c = 2048, p2s = (0, _random.default)(new Uint8Array(16))) => {
   const derived = await deriveKey(p2s, alg, p2c, key);
   const encryptedKey = await (0, _aeskw.wrap)(alg.slice(-6), derived, cek);
   return {
@@ -42801,7 +42924,7 @@ async function decryptKeyManagement(alg, key, encryptedKey, joseHeader) {
     case 'ECDH-ES+A256KW':
       {
         if (!(0, _is_object.default)(joseHeader.epk)) throw new _errors.JWEInvalid(`JOSE Header "epk" (Ephemeral Public Key) missing or invalid`);
-        if (!ECDH.ecdhAllowed(key)) throw new _errors.JOSENotSupported('ECDH-ES with the provided key is not allowed or not supported by your javascript runtime');
+        if (!ECDH.ecdhAllowed(key)) throw new _errors.JOSENotSupported('ECDH with the provided key is not allowed or not supported by your javascript runtime');
         const epk = await (0, _import.importJWK)(joseHeader.epk, alg);
         let partyUInfo;
         let partyVInfo;
@@ -43181,7 +43304,7 @@ async function compactDecrypt(jwe, key, options) {
   }
 
   const decrypted = await (0, _decrypt.flattenedDecrypt)({
-    ciphertext: ciphertext || undefined,
+    ciphertext,
     iv: iv || undefined,
     protected: protectedHeader || undefined,
     tag: tag || undefined,
@@ -43376,7 +43499,7 @@ async function encryptKeyManagement(alg, enc, key, providedCek, providedParamete
     case 'ECDH-ES+A256KW':
       {
         if (!ECDH.ecdhAllowed(key)) {
-          throw new _errors.JOSENotSupported('ECDH-ES with the provided key is not allowed or not supported by your javascript runtime');
+          throw new _errors.JOSENotSupported('ECDH with the provided key is not allowed or not supported by your javascript runtime');
         }
 
         const {
@@ -43906,9 +44029,16 @@ class GeneralEncrypt {
       const recipient = this._recipients[i];
       const target = {};
       jwe.recipients.push(target);
+      const joseHeader = { ...this._protectedHeader,
+        ...this._unprotectedHeader,
+        ...recipient.unprotectedHeader
+      };
+      const p2c = joseHeader.alg.startsWith('PBES2') ? 2048 + i : undefined;
 
       if (i === 0) {
-        const flattened = await new _encrypt.FlattenedEncrypt(this._plaintext).setAdditionalAuthenticatedData(this._aad).setContentEncryptionKey(cek).setProtectedHeader(this._protectedHeader).setSharedUnprotectedHeader(this._unprotectedHeader).setUnprotectedHeader(recipient.unprotectedHeader).encrypt(recipient.key, { ...recipient.options,
+        const flattened = await new _encrypt.FlattenedEncrypt(this._plaintext).setAdditionalAuthenticatedData(this._aad).setContentEncryptionKey(cek).setProtectedHeader(this._protectedHeader).setSharedUnprotectedHeader(this._unprotectedHeader).setUnprotectedHeader(recipient.unprotectedHeader).setKeyManagementParameters({
+          p2c
+        }).encrypt(recipient.key, { ...recipient.options,
           ...options,
           [_encrypt.unprotected]: true
         });
@@ -43926,7 +44056,9 @@ class GeneralEncrypt {
       const {
         encryptedKey,
         parameters
-      } = await (0, _encrypt_key_management.default)(((_a = recipient.unprotectedHeader) === null || _a === void 0 ? void 0 : _a.alg) || ((_b = this._protectedHeader) === null || _b === void 0 ? void 0 : _b.alg) || ((_c = this._unprotectedHeader) === null || _c === void 0 ? void 0 : _c.alg), enc, recipient.key, cek);
+      } = await (0, _encrypt_key_management.default)(((_a = recipient.unprotectedHeader) === null || _a === void 0 ? void 0 : _a.alg) || ((_b = this._protectedHeader) === null || _b === void 0 ? void 0 : _b.alg) || ((_c = this._unprotectedHeader) === null || _c === void 0 ? void 0 : _c.alg), enc, recipient.key, cek, {
+        p2c
+      });
       target.encrypted_key = (0, _base64url.encode)(encryptedKey);
       if (recipient.unprotectedHeader || parameters) target.header = { ...recipient.unprotectedHeader,
         ...parameters
@@ -45481,8 +45613,6 @@ exports.default = void 0;
 
 var _errors = require("../util/errors.js");
 
-var _env = require("./env.js");
-
 const fetchJwks = async (url, timeout) => {
   let controller;
   let id;
@@ -45498,13 +45628,7 @@ const fetchJwks = async (url, timeout) => {
 
   const response = await fetch(url.href, {
     signal: controller ? controller.signal : undefined,
-    redirect: 'manual',
-    method: 'GET',
-    ...(!(0, _env.isCloudflareWorkers)() ? {
-      referrerPolicy: 'no-referrer',
-      credentials: 'omit',
-      mode: 'cors'
-    } : undefined)
+    redirect: 'manual'
   }).catch(err => {
     if (timedOut) throw new _errors.JWKSTimeout();
     throw err;
@@ -45524,7 +45648,7 @@ const fetchJwks = async (url, timeout) => {
 
 var _default = fetchJwks;
 exports.default = _default;
-},{"../util/errors.js":"../node_modules/jose/dist/browser/util/errors.js","./env.js":"../node_modules/jose/dist/browser/runtime/env.js"}],"../node_modules/jose/dist/browser/jwks/remote.js":[function(require,module,exports) {
+},{"../util/errors.js":"../node_modules/jose/dist/browser/util/errors.js"}],"../node_modules/jose/dist/browser/jwks/remote.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -48224,19 +48348,10 @@ async function clearOidcPersistentStorage() {
 
   itemsToRemove.forEach(key => myStorage.removeItem(key));
 }
-},{"@inrupt/oidc-client":"../node_modules/@inrupt/oidc-client/lib/oidc-client.min.js","@inrupt/solid-client-authn-core":"../node_modules/@inrupt/solid-client-authn-core/dist/index.js","form-urlencoded":"../node_modules/form-urlencoded/form-urlencoded.js"}],"../node_modules/@inrupt/solid-client-authn-browser/dist/constant.js":[function(require,module,exports) {
-"use strict";
-Object.defineProperty(exports, "__esModule", { value: true });
-exports.KEY_CURRENT_URL = exports.KEY_CURRENT_SESSION = void 0;
-const solid_client_authn_core_1 = require("@inrupt/solid-client-authn-core");
-exports.KEY_CURRENT_SESSION = `${solid_client_authn_core_1.SOLID_CLIENT_AUTHN_KEY_PREFIX}currentSession`;
-exports.KEY_CURRENT_URL = `${solid_client_authn_core_1.SOLID_CLIENT_AUTHN_KEY_PREFIX}currentUrl`;
-
-},{"@inrupt/solid-client-authn-core":"../node_modules/@inrupt/solid-client-authn-core/dist/index.js"}],"../node_modules/@inrupt/solid-client-authn-browser/dist/ClientAuthentication.js":[function(require,module,exports) {
+},{"@inrupt/oidc-client":"../node_modules/@inrupt/oidc-client/lib/oidc-client.min.js","@inrupt/solid-client-authn-core":"../node_modules/@inrupt/solid-client-authn-core/dist/index.js","form-urlencoded":"../node_modules/form-urlencoded/form-urlencoded.js"}],"../node_modules/@inrupt/solid-client-authn-browser/dist/ClientAuthentication.js":[function(require,module,exports) {
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const oidc_client_ext_1 = require("@inrupt/oidc-client-ext");
-const constant_1 = require("./constant");
 const globalFetch = (request, init) => window.fetch(request, init);
 class ClientAuthentication {
     constructor(loginHandler, redirectHandler, logoutHandler, sessionInfoManager, issuerConfigFetcher) {
@@ -48267,11 +48382,7 @@ class ClientAuthentication {
         this.getAllSessionInfo = async () => {
             return this.sessionInfoManager.getAll();
         };
-        this.validateCurrentSession = async () => {
-            const currentSessionId = window.localStorage.getItem(constant_1.KEY_CURRENT_SESSION);
-            if (currentSessionId === null) {
-                return null;
-            }
+        this.validateCurrentSession = async (currentSessionId) => {
             const sessionInfo = await this.sessionInfoManager.get(currentSessionId);
             if (sessionInfo === undefined ||
                 sessionInfo.clientAppId === undefined ||
@@ -48302,7 +48413,7 @@ class ClientAuthentication {
 }
 exports.default = ClientAuthentication;
 
-},{"@inrupt/oidc-client-ext":"../node_modules/@inrupt/oidc-client-ext/dist/index.es.js","./constant":"../node_modules/@inrupt/solid-client-authn-browser/dist/constant.js"}],"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/OidcLoginHandler.js":[function(require,module,exports) {
+},{"@inrupt/oidc-client-ext":"../node_modules/@inrupt/oidc-client-ext/dist/index.es.js"}],"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/OidcLoginHandler.js":[function(require,module,exports) {
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const solid_client_authn_core_1 = require("@inrupt/solid-client-authn-core");
@@ -48509,6 +48620,9 @@ function processConfig(config) {
             parsedConfig[issuerConfigKeyMap[key].toKey] = config[key];
         }
     });
+    if (!Array.isArray(parsedConfig.scopesSupported)) {
+        parsedConfig.scopesSupported = ["openid"];
+    }
     return parsedConfig;
 }
 class IssuerConfigFetcher {
@@ -48681,7 +48795,6 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthCodeRedirectHandler = exports.DEFAULT_LIFESPAN = void 0;
 const solid_client_authn_core_1 = require("@inrupt/solid-client-authn-core");
 const oidc_client_ext_1 = require("@inrupt/oidc-client-ext");
-const constant_1 = require("../../../constant");
 exports.DEFAULT_LIFESPAN = 30 * 60 * 1000;
 async function setupResourceServerSession(webId, authenticatedFetch, storageUtility) {
     const webIdAsUrl = new URL(webId);
@@ -48729,7 +48842,6 @@ class AuthCodeRedirectHandler {
         const isDpop = (await this.storageUtility.getForUser(storedSessionId, "dpop")) ===
             "true";
         const issuer = (await this.storageUtility.getForUser(storedSessionId, "issuer", { errorIfNull: true }));
-        window.localStorage.setItem(constant_1.KEY_CURRENT_SESSION, storedSessionId);
         const issuerConfig = await this.issuerConfigFetcher.fetchConfig(issuer);
         const client = await this.clientRegistrar.getClient({ sessionId: storedSessionId }, issuerConfig);
         let tokens;
@@ -48790,7 +48902,7 @@ class AuthCodeRedirectHandler {
 }
 exports.AuthCodeRedirectHandler = AuthCodeRedirectHandler;
 
-},{"@inrupt/solid-client-authn-core":"../node_modules/@inrupt/solid-client-authn-core/dist/index.js","@inrupt/oidc-client-ext":"../node_modules/@inrupt/oidc-client-ext/dist/index.es.js","../../../constant":"../node_modules/@inrupt/solid-client-authn-browser/dist/constant.js"}],"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/redirectHandler/AggregateRedirectHandler.js":[function(require,module,exports) {
+},{"@inrupt/solid-client-authn-core":"../node_modules/@inrupt/solid-client-authn-core/dist/index.js","@inrupt/oidc-client-ext":"../node_modules/@inrupt/oidc-client-ext/dist/index.es.js"}],"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/redirectHandler/AggregateRedirectHandler.js":[function(require,module,exports) {
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const solid_client_authn_core_1 = require("@inrupt/solid-client-authn-core");
@@ -49039,7 +49151,15 @@ function getClientAuthenticationWithDependencies(dependencies) {
 }
 exports.getClientAuthenticationWithDependencies = getClientAuthenticationWithDependencies;
 
-},{"@inrupt/solid-client-authn-core":"../node_modules/@inrupt/solid-client-authn-core/dist/index.js","./storage/StorageUtility":"../node_modules/@inrupt/solid-client-authn-browser/dist/storage/StorageUtility.js","./ClientAuthentication":"../node_modules/@inrupt/solid-client-authn-browser/dist/ClientAuthentication.js","./login/oidc/OidcLoginHandler":"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/OidcLoginHandler.js","./login/oidc/oidcHandlers/AuthorizationCodeWithPkceOidcHandler":"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/oidcHandlers/AuthorizationCodeWithPkceOidcHandler.js","./login/oidc/IssuerConfigFetcher":"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/IssuerConfigFetcher.js","./login/oidc/redirectHandler/FallbackRedirectHandler":"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/redirectHandler/FallbackRedirectHandler.js","./logout/GeneralLogoutHandler":"../node_modules/@inrupt/solid-client-authn-browser/dist/logout/GeneralLogoutHandler.js","./sessionInfo/SessionInfoManager":"../node_modules/@inrupt/solid-client-authn-browser/dist/sessionInfo/SessionInfoManager.js","./login/oidc/redirectHandler/AuthCodeRedirectHandler":"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/redirectHandler/AuthCodeRedirectHandler.js","./login/oidc/redirectHandler/AggregateRedirectHandler":"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/redirectHandler/AggregateRedirectHandler.js","./storage/BrowserStorage":"../node_modules/@inrupt/solid-client-authn-browser/dist/storage/BrowserStorage.js","./login/oidc/Redirector":"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/Redirector.js","./login/oidc/ClientRegistrar":"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/ClientRegistrar.js","./login/oidc/redirectHandler/ErrorOidcHandler":"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/redirectHandler/ErrorOidcHandler.js","./login/oidc/refresh/TokenRefresher":"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/refresh/TokenRefresher.js"}],"../node_modules/@inrupt/solid-client-authn-browser/dist/Session.js":[function(require,module,exports) {
+},{"@inrupt/solid-client-authn-core":"../node_modules/@inrupt/solid-client-authn-core/dist/index.js","./storage/StorageUtility":"../node_modules/@inrupt/solid-client-authn-browser/dist/storage/StorageUtility.js","./ClientAuthentication":"../node_modules/@inrupt/solid-client-authn-browser/dist/ClientAuthentication.js","./login/oidc/OidcLoginHandler":"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/OidcLoginHandler.js","./login/oidc/oidcHandlers/AuthorizationCodeWithPkceOidcHandler":"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/oidcHandlers/AuthorizationCodeWithPkceOidcHandler.js","./login/oidc/IssuerConfigFetcher":"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/IssuerConfigFetcher.js","./login/oidc/redirectHandler/FallbackRedirectHandler":"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/redirectHandler/FallbackRedirectHandler.js","./logout/GeneralLogoutHandler":"../node_modules/@inrupt/solid-client-authn-browser/dist/logout/GeneralLogoutHandler.js","./sessionInfo/SessionInfoManager":"../node_modules/@inrupt/solid-client-authn-browser/dist/sessionInfo/SessionInfoManager.js","./login/oidc/redirectHandler/AuthCodeRedirectHandler":"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/redirectHandler/AuthCodeRedirectHandler.js","./login/oidc/redirectHandler/AggregateRedirectHandler":"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/redirectHandler/AggregateRedirectHandler.js","./storage/BrowserStorage":"../node_modules/@inrupt/solid-client-authn-browser/dist/storage/BrowserStorage.js","./login/oidc/Redirector":"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/Redirector.js","./login/oidc/ClientRegistrar":"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/ClientRegistrar.js","./login/oidc/redirectHandler/ErrorOidcHandler":"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/redirectHandler/ErrorOidcHandler.js","./login/oidc/refresh/TokenRefresher":"../node_modules/@inrupt/solid-client-authn-browser/dist/login/oidc/refresh/TokenRefresher.js"}],"../node_modules/@inrupt/solid-client-authn-browser/dist/constant.js":[function(require,module,exports) {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.KEY_CURRENT_URL = exports.KEY_CURRENT_SESSION = void 0;
+const solid_client_authn_core_1 = require("@inrupt/solid-client-authn-core");
+exports.KEY_CURRENT_SESSION = `${solid_client_authn_core_1.SOLID_CLIENT_AUTHN_KEY_PREFIX}currentSession`;
+exports.KEY_CURRENT_URL = `${solid_client_authn_core_1.SOLID_CLIENT_AUTHN_KEY_PREFIX}currentUrl`;
+
+},{"@inrupt/solid-client-authn-core":"../node_modules/@inrupt/solid-client-authn-core/dist/index.js"}],"../node_modules/@inrupt/solid-client-authn-browser/dist/Session.js":[function(require,module,exports) {
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.Session = exports.silentlyAuthenticate = void 0;
@@ -49053,7 +49173,7 @@ async function silentlyAuthenticate(sessionId, clientAuthn, options = {
     inIframe: false,
 }, session) {
     var _a;
-    const storedSessionInfo = await clientAuthn.validateCurrentSession();
+    const storedSessionInfo = await clientAuthn.validateCurrentSession(sessionId);
     if (storedSessionInfo !== null) {
         window.localStorage.setItem(constant_1.KEY_CURRENT_URL, window.location.href);
         await clientAuthn.login({
@@ -49098,12 +49218,16 @@ class Session extends events_1.EventEmitter {
                         init === null || init === void 0 ? void 0 : init.credentials,
             });
         };
-        this.logout = async () => {
+        this.internalLogout = async (emitSignal) => {
+            window.localStorage.removeItem(constant_1.KEY_CURRENT_SESSION);
             await this.clientAuthentication.logout(this.info.sessionId);
             this.info.isLoggedIn = false;
             this.tmpFetchWithCookies = false;
-            this.emit("logout");
+            if (emitSignal) {
+                this.emit(solid_client_authn_core_1.EVENTS.LOGOUT);
+            }
         };
+        this.logout = async () => this.internalLogout(true);
         this.handleIncomingRedirect = async (inputOptions = {}) => {
             var _a;
             if (this.info.isLoggedIn) {
@@ -49159,11 +49283,11 @@ class Session extends events_1.EventEmitter {
                 this.setSessionInfo(sessionInfo);
                 const currentUrl = window.localStorage.getItem(constant_1.KEY_CURRENT_URL);
                 if (currentUrl === null) {
-                    this.emit("login");
+                    this.emit(solid_client_authn_core_1.EVENTS.LOGIN);
                 }
                 else {
                     window.localStorage.removeItem(constant_1.KEY_CURRENT_URL);
-                    this.emit("sessionRestore", currentUrl);
+                    this.emit(solid_client_authn_core_1.EVENTS.SESSION_RESTORED, currentUrl);
                 }
             }
             else if (options.restorePreviousSession === true) {
@@ -49213,18 +49337,21 @@ class Session extends events_1.EventEmitter {
         this.on("tokenRenewal", () => silentlyAuthenticate(this.info.sessionId, this.clientAuthentication, {
             inIframe: true,
         }, this));
+        this.on(solid_client_authn_core_1.EVENTS.LOGIN, () => window.localStorage.setItem(constant_1.KEY_CURRENT_SESSION, this.info.sessionId));
+        this.on(solid_client_authn_core_1.EVENTS.SESSION_EXPIRED, () => this.internalLogout(false));
+        this.on(solid_client_authn_core_1.EVENTS.ERROR, () => this.internalLogout(false));
     }
     onLogin(callback) {
-        this.on("login", callback);
+        this.on(solid_client_authn_core_1.EVENTS.LOGIN, callback);
     }
     onLogout(callback) {
-        this.on("logout", callback);
+        this.on(solid_client_authn_core_1.EVENTS.LOGOUT, callback);
     }
     onError(callback) {
         this.on(solid_client_authn_core_1.EVENTS.ERROR, callback);
     }
     onSessionRestore(callback) {
-        this.on("sessionRestore", callback);
+        this.on(solid_client_authn_core_1.EVENTS.SESSION_RESTORED, callback);
     }
     onSessionExpiration(callback) {
         this.on(solid_client_authn_core_1.EVENTS.SESSION_EXPIRED, callback);
@@ -86010,7 +86137,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52713" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "56822" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
