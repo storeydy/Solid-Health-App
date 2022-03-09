@@ -530,6 +530,8 @@ async function getAccessAndDisplay(recordType, department) {
             updateAccessButton.classList.add("light-blue-button")
             updateAccessButton.innerHTML = "Make changes to access"
 
+            if(person == accessedPodOwnerUrl) updateAccessButton.disabled = true        //Make sure nobody can change dataset access belonging to pod owner
+
             accessDisplayObj.append(individualsName, readAccessCheckbox, readAccessLabel, writeAccessCheckbox, writeAccessLabel, appendAccessCheckbox, appendAccessLabel, controlAccessCheckbox, controlAccessLabel, updateAccessButton)
 
             containerDivForAccess.appendChild(accessDisplayObj)

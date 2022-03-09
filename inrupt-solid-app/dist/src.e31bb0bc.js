@@ -85060,6 +85060,8 @@ async function getAccessAndDisplay(recordType, department) {
       updateAccessButton.id = "updateAccessFor" + index;
       updateAccessButton.classList.add("light-blue-button");
       updateAccessButton.innerHTML = "Make changes to access";
+      if (person == accessedPodOwnerUrl) updateAccessButton.disabled = true; //Make sure nobody can change dataset access belonging to pod owner
+
       accessDisplayObj.append(individualsName, readAccessCheckbox, readAccessLabel, writeAccessCheckbox, writeAccessLabel, appendAccessCheckbox, appendAccessLabel, controlAccessCheckbox, controlAccessLabel, updateAccessButton);
       containerDivForAccess.appendChild(accessDisplayObj);
       index++;
@@ -86010,7 +86012,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "52713" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "51884" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
